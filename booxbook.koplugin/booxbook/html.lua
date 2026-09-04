@@ -201,12 +201,23 @@ function Html.wrapDocument(title, body)
 end
 
 function Html.writeFile(path, content)
-    local file, err = io.open(path, "wb")
+    local pending = path .. ".part"
+    local file, err = io.open(pending, "wb")
     if not file then
         return false, err
     end
-    file:write(content)
-    file:close()
+    local written, write_err = file:write(content)
+    local closed, close_err = file:close()
+    if not written or not closed then
+        os.remove(pending)
+        return false, write_err or close_err
+    end
+    -- Keep the previous article intact if a refresh cannot be written completely.
+    local renamed, rename_err = os.rename(pending, path)
+    if not renamed then
+        os.remove(pending)
+        return false, rename_err
+    end
     return true
 end
 

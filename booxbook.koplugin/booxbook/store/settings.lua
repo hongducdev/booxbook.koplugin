@@ -3,13 +3,15 @@ local Settings = {}
 local DEFAULTS = {
     download_dir = nil,
     delay_ms = 1200,
-    include_images = false,
+    include_images = true,
     adult_content = false,
     wattpad_cookie = "",
     docln_cookie = "",
     stv_cookie = "",
     stv_enabled = false,
     stv_warning_accepted = false,
+    custom_rss_feeds = {},
+    news_limit = 10,
 }
 
 local store
@@ -118,7 +120,7 @@ local function mkdir_p(path)
         lfs_ok, lfs = pcall(require, "lfs")
     end
     if not lfs_ok then
-        return
+        return false
     end
     local acc = ""
     for part in string.gmatch(path, "[^/\\]+") do
@@ -131,6 +133,11 @@ local function mkdir_p(path)
         end
         pcall(lfs.mkdir, acc)
     end
+    return lfs.attributes(path, "mode") == "directory"
+end
+
+function Settings.ensureDir(path)
+    return mkdir_p(path)
 end
 
 function Settings.downloadDir()

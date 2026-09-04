@@ -5,11 +5,12 @@ local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local _ = require("gettext")
 
-local Catalog = require("ui.catalog")
-local Epub = require("epub")
-local Html = require("html")
-local Http = require("http")
-local Settings = require("store.settings")
+local Catalog = require("booxbook.ui.catalog")
+local Epub = require("booxbook.epub")
+local Html = require("booxbook.html")
+local Http = require("booxbook.http")
+local Settings = require("booxbook.store.settings")
+local News = require("booxbook.ui.news")
 
 local BooxBook = WidgetContainer:extend{
     name = "booxbook",
@@ -43,10 +44,31 @@ function BooxBook:addToMainMenu(menu_items)
     menu_items.booxbook = {
         text = _("BooxBook"),
         sorting_hint = "tools",
-        sub_item_table = {
+        callback = function(touchmenu)
+            if touchmenu then
+                touchmenu:closeMenu()
+            end
+            UIManager:nextTick(function()
+                Catalog.clearStack()
+                self:showMainMenu()
+            end)
+        end,
+        keep_menu_open = true,
+    }
+end
+
+function BooxBook:showMainMenu()
+    Catalog.show{
+        title = _("BooxBook"),
+        items = {
             {
                 text = _("Báo"),
-                callback = comingSoon,
+                keep_menu_open = true,
+                callback = function()
+                    UIManager:nextTick(function()
+                        Catalog.show{ title = _("Báo"), items = News.menu() }
+                    end)
+                end,
             },
             {
                 text = _("Truyện"),
@@ -58,7 +80,9 @@ function BooxBook:addToMainMenu(menu_items)
             },
             {
                 text = _("Cài đặt"),
-                sub_item_table = self:settingsMenu(),
+                callback = function()
+                    Catalog.show{ title = _("Cài đặt"), items = self:settingsMenu() }
+                end,
             },
         },
     }

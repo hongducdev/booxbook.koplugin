@@ -1,4 +1,4 @@
-local Catalog = require("ui.catalog")
+local Catalog = require("booxbook.ui.catalog")
 local InfoMessage = require("ui/widget/infomessage")
 local UIManager = require("ui/uimanager")
 local _ = require("gettext")

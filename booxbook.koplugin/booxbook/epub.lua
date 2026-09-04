@@ -1,4 +1,4 @@
-local Html = require("html")
+local Html = require("booxbook.html")
 
 local Epub = {}
 

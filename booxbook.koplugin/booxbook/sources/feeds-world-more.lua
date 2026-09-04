@@ -1,0 +1,46 @@
+-- Official RSS links verified 2026-09-04; see docs/news-categories.md.
+return {
+    { id = "skynews", title = "Sky News", lang = "en", region = "world",
+      base_url = "", categories = {
+        { "Trang chủ", "https://feeds.skynews.com/feeds/rss/home.xml" },
+        { "UK", "https://feeds.skynews.com/feeds/rss/uk.xml" },
+        { "World", "https://feeds.skynews.com/feeds/rss/world.xml" },
+        { "US", "https://feeds.skynews.com/feeds/rss/us.xml" },
+        { "Business", "https://feeds.skynews.com/feeds/rss/business.xml" },
+        { "Politics", "https://feeds.skynews.com/feeds/rss/politics.xml" },
+        { "Technology", "https://feeds.skynews.com/feeds/rss/technology.xml" },
+        { "Entertainment", "https://feeds.skynews.com/feeds/rss/entertainment.xml" },
+        { "Strange News", "https://feeds.skynews.com/feeds/rss/strange.xml" },
+    } },
+    { id = "independent", title = "The Independent", lang = "en", region = "world",
+      base_url = "", categories = {
+        { "news / NEWS", "https://www.independent.co.uk/news/rss" },
+        { "news / UK", "https://www.independent.co.uk/news/uk/rss" },
+        { "news / World", "https://www.independent.co.uk/news/world/rss" },
+        { "news / Business", "https://www.independent.co.uk/news/business/rss" },
+        { "news / Media", "https://www.independent.co.uk/news/media/rss" },
+        { "sport / SPORT", "https://www.independent.co.uk/sport/rss" },
+        { "sport / Athletics", "https://www.independent.co.uk/sport/general/athletics/rss" },
+        { "sport / Football", "https://www.independent.co.uk/sport/football/rss" },
+        { "sport / Golf", "https://www.independent.co.uk/sport/golf/rss" },
+        { "life-style / LIFE & STYLE", "https://www.independent.co.uk/life-style/rss" },
+        { "arts-entertainment / ARTS & ENTERTAINMENT", "https://www.independent.co.uk/arts-entertainment/rss" },
+        { "arts-entertainment / Films", "https://www.independent.co.uk/arts-entertainment/films/rss" },
+        { "arts-entertainment / TV & Radio", "https://www.independent.co.uk/arts-entertainment/tv/rss" },
+        { "travel / TRAVEL", "https://www.independent.co.uk/travel/rss" },
+        { "travel / News", "https://www.independent.co.uk/travel/news-and-advice/rss" },
+        { "money / Money", "https://www.independent.co.uk/money/rss" },
+    } },
+    { id = "aljazeera", title = "Al Jazeera", lang = "en", region = "world",
+      base_url = "", categories = {
+        { "Tin mới nhất", "https://www.aljazeera.com/xml/rss/all.xml" },
+    } },
+    { id = "france24", title = "France 24", lang = "en", region = "world",
+      base_url = "", categories = {
+        { "Tin mới nhất", "https://www.france24.com/en/rss" },
+    } },
+    { id = "abcau", title = "ABC News Australia", lang = "en", region = "world",
+      base_url = "", categories = {
+        { "Tin mới nhất", "https://www.abc.net.au/news/feed/51120/rss.xml" },
+    } },
+}

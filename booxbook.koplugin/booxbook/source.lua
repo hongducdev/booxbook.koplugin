@@ -35,4 +35,6 @@ function Source.enabledList(settings)
     return list
 end
 
+Source.register(require("booxbook.sources.rss"))
+
 return Source

@@ -2,10 +2,11 @@ local ltn12 = require("ltn12")
 local socket_http = require("socket.http")
 local socket = require("socket")
 
-local RateLimit = require("rate_limit")
+local RateLimit = require("booxbook.rate_limit")
+local Settings = require("booxbook.store.settings")
 
 local Http = {
-    USER_AGENT = "Mozilla/5.0 (Linux; Android 12; Boox) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
     MAX_BODY = 2 * 1024 * 1024,
     DEFAULT_TIMEOUT = 10,
     DEFAULT_MAXTIME = 30,
@@ -136,28 +137,31 @@ end
 
 local function requestOnce(opts)
     local chunks = {}
+    local received = 0
     local headers = {}
     for k, v in pairs(opts.headers or {}) do
-        headers[k] = v
+        headers[headerKey(k)] = v
     end
-    headers["user-agent"] = headers["user-agent"] or headers["User-Agent"] or Http.USER_AGENT
-    headers["User-Agent"] = nil
-    headers["accept"] = headers["accept"] or headers["Accept"] or "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8"
-    headers["Accept"] = nil
-    local cookie = Http.cookieHeader(opts.cookies)
+    headers["user-agent"] = headers["user-agent"] or Http.USER_AGENT
+    headers["accept"] = headers["accept"] or "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8"
+    local cookie = Http.cookieHeader(opts.cookies) or headers.cookie
+    local host = (opts.url:match("^https?://([^/:?#]+)") or ""):lower()
+    if host == "vnexpress.net" or host:match("%.vnexpress%.net$") then
+        -- Presentation cookies, not login cookies: Android variants can return empty RSS.
+        -- Reference: Yuneko-dev/Nekori-plugins commit c63f848 (desktop compatibility).
+        cookie = Http.cookieHeader(Http.mergeCookies(cookie, { device_env = "4", device_env_real = "4" }))
+    end
     if cookie then
         headers["cookie"] = cookie
     end
     if opts.referer then
         headers["referer"] = opts.referer
-        headers["Referer"] = nil
     end
 
     local method = string.upper(opts.method or "GET")
     local body = opts.body or ""
     if method ~= "GET" and method ~= "HEAD" then
-        headers["content-type"] = headers["content-type"] or headers["Content-Type"] or "application/x-www-form-urlencoded"
-        headers["Content-Type"] = nil
+        headers["content-type"] = headers["content-type"] or "application/x-www-form-urlencoded"
         headers["content-length"] = tostring(#body)
     end
 
@@ -168,7 +172,15 @@ local function requestOnce(opts)
         url = opts.url,
         method = method,
         headers = headers,
-        sink = ltn12.sink.table(chunks),
+        sink = function(chunk, err)
+            if chunk then
+                received = received + #chunk
+                if received > Http.MAX_BODY then return nil, "body too large" end
+                chunks[#chunks + 1] = chunk
+            end
+            if err then return nil, err end
+            return 1
+        end,
         redirect = false,
     }
     if method ~= "GET" and method ~= "HEAD" then
@@ -218,9 +230,14 @@ function Http.resolveUrl(base, location)
     if not scheme then
         return location
     end
+    if location:sub(1, 2) == "//" then
+        return scheme .. ":" .. location
+    end
     if location:sub(1, 1) == "/" then
         return scheme .. "://" .. host .. location
     end
+    path = path:gsub("[?#].*$", "")
+    if path == "" then path = "/" end
     path = path:gsub("[^/]*$", "")
     return scheme .. "://" .. host .. path .. location
 end
@@ -236,17 +253,20 @@ function Http.request(opts)
     local method = opts.method or "GET"
     local cookies = opts.cookies
     local hops = 0
-    RateLimit.wait(RateLimit.hostFromUrl(url), opts.delay_ms)
+    local delay_ms = opts.delay_ms or Settings.delayMs()
+    local request_headers = {}
+    for key, value in pairs(opts.headers or {}) do request_headers[key] = value end
 
     local attempts = 0
     local max_tries = 3
     local last_err
     while attempts < max_tries do
         attempts = attempts + 1
+        RateLimit.wait(RateLimit.hostFromUrl(url), delay_ms)
         local code, status, headers, body = requestOnce({
             url = url,
             method = method,
-            headers = opts.headers,
+            headers = request_headers,
             cookies = cookies,
             referer = opts.referer,
             body = opts.body,
@@ -262,15 +282,23 @@ function Http.request(opts)
                 end
                 if not Http.sameOrigin(url, next_url) then
                     cookies = nil
+                    for key in pairs(request_headers) do
+                        if headerKey(key) == "cookie" or headerKey(key) == "authorization" then
+                            request_headers[key] = nil
+                        end
+                    end
                 end
                 url = next_url
                 if code == 303 then
                     method = "GET"
                 end
                 attempts = attempts - 1
-            elseif code == 403 or code == 429 then
+            elseif code == 429 then
+                -- A different UA is not permission to retry a rate-limited request.
+                return false, code, body, headers
+            elseif code == 403 then
                 if attempts == 1 then
-                    RateLimit.wait(RateLimit.hostFromUrl(url), (opts.delay_ms or RateLimit.default_delay_ms) * 2)
+                    RateLimit.wait(RateLimit.hostFromUrl(url), delay_ms * 2)
                 else
                     return false, code, body, headers
                 end
