@@ -51,10 +51,17 @@ local names = { "ui/widget/infomessage", "ui/network/manager", "apps/reader/read
     "ui/trapper", "ui/uimanager", "gettext", "booxbook.ui.catalog", "booxbook.sources.feeds" }
 local saved = {}
 for _, name in ipairs(names) do saved[name] = package.loaded[name] end
+package.loaded["booxbook.network"] = nil
+package.loaded["booxbook.ui.news"] = nil
 local shown, opened, notices, queue = {}, {}, {}, {}
 local wifi, cleared, stack_cleared = 0, 0, false
+local online = true
 package.loaded["ui/widget/infomessage"] = { new = function(_, value) return value end }
-package.loaded["ui/network/manager"] = { beforeWifiAction = function(_, fn) wifi = wifi + 1; fn() end }
+package.loaded["ui/network/manager"] = {
+    isOnline = function() return online end,
+    isConnected = function() return online end,
+    beforeWifiAction = function(_, fn) wifi = wifi + 1; fn() end,
+}
 package.loaded["apps/reader/readerui"] = { showReader = function(_, value)
     assert(stack_cleared, "menus must not cover the reader")
     opened[#opened + 1] = value
@@ -111,16 +118,18 @@ assert(shown[3].items[2].keep_menu_open, "article selection owns menu lifecycle"
 shown[3].items[2].callback()
 tick()
 assert(#requests == 2 and requests[2] == items[2].link and #writes == 1 and #opened == 1)
-assert(wifi == 2 and cleared == 2, "list and article guarded by Wi-Fi and progress cleanup")
+assert(wifi == 0 and cleared == 2, "already-online skips Wi-Fi prompt but still clears progress")
 menu[2].callback()
 tick()
 assert(shown[#shown].items[1].text == "Other paper" and #shown[#shown].items == 1,
     "foreign group excludes Vietnamese publishers")
 assert(#requests == 2, "regional navigation does not prefetch feeds")
+online = false
 Http.get = function() error("network unavailable") end
 News.showFeed(feed)
 tick()
-assert(#notices == 1 and cleared == 3, "exceptions clear progress and display an error")
+assert(wifi == 1 and #notices == 1 and cleared == 3, "offline path may prompt then still clear progress")
+online = true
 Html.writeFile = function() return false, "disk full" end
 Http.get = function() return false, 503 end
 News.openArticle(feed, items[1])
@@ -137,6 +146,8 @@ Settings.set("feed_enabled_online", nil)
 Settings.set("custom_rss_feeds", custom)
 Http.get, Html.writeFile, Settings.downloadDir, Settings.ensureDir = unpack(original)
 for _, name in ipairs(names) do package.loaded[name] = saved[name] end
+package.loaded["booxbook.network"] = nil
+package.loaded["booxbook.ui.news"] = nil
 
 -- Real local I/O plus a disk-full double: never destroy an existing article on failure.
 local temp_path = os.tmpname()

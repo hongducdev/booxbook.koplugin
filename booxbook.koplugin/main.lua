@@ -1,6 +1,5 @@
 local Dispatcher = require("dispatcher")
 local InfoMessage = require("ui/widget/infomessage")
-local NetworkMgr = require("ui/network/manager")
 local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local _ = require("gettext")
@@ -9,8 +8,10 @@ local Catalog = require("booxbook.ui.catalog")
 local Epub = require("booxbook.epub")
 local Html = require("booxbook.html")
 local Http = require("booxbook.http")
+local Network = require("booxbook.network")
 local Settings = require("booxbook.store.settings")
 local News = require("booxbook.ui.news")
+local Novels = require("booxbook.ui.novels")
 
 local BooxBook = WidgetContainer:extend{
     name = "booxbook",
@@ -60,6 +61,7 @@ end
 function BooxBook:showMainMenu()
     Catalog.show{
         title = _("BooxBook"),
+        subtitle = Network.statusText(),
         items = {
             {
                 text = _("Báo"),
@@ -72,7 +74,14 @@ function BooxBook:showMainMenu()
             },
             {
                 text = _("Truyện"),
-                callback = comingSoon,
+                keep_menu_open = true,
+                callback = function()
+                    UIManager:nextTick(function()
+                        Catalog.show{ title = _("Truyện"), items = {
+                            { text = "DocLN", keep_menu_open = true, callback = Novels.openSource },
+                        } }
+                    end)
+                end,
             },
             {
                 text = _("Thư viện"),
@@ -182,7 +191,7 @@ function BooxBook:editCookie(source_id, title)
 end
 
 function BooxBook:runSelfTest()
-    NetworkMgr:beforeWifiAction(function()
+    Network.whenOnline(function()
         self:performSelfTest()
     end)
 end

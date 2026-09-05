@@ -34,11 +34,49 @@ function Catalog.clearStack()
     end
 end
 
+local function pushOnStack(widget)
+    local prev = Catalog._stack[#Catalog._stack]
+    if prev then
+        UIManager:close(prev)
+    end
+    Catalog._stack[#Catalog._stack + 1] = widget
+    UIManager:show(widget)
+    return widget
+end
+
+function Catalog.pop(widget)
+    if not widget then return end
+    -- Avoid re-entrant close/show when TitleBar X and UIManager both unwind the same widget.
+    if widget._booxbook_popping then return end
+    widget._booxbook_popping = true
+    UIManager:close(widget)
+    if Catalog._stack[#Catalog._stack] == widget then
+        table.remove(Catalog._stack)
+    else
+        for i = #Catalog._stack, 1, -1 do
+            if Catalog._stack[i] == widget then
+                table.remove(Catalog._stack, i)
+                break
+            end
+        end
+    end
+    local prev = Catalog._stack[#Catalog._stack]
+    if prev then
+        UIManager:show(prev)
+    end
+end
+
+-- Register any fullscreen widget (e.g. novel cover grid) on the same parent stack.
+function Catalog.push(widget)
+    return pushOnStack(widget)
+end
+
 function Catalog.show(opts)
     opts = opts or {}
     local menu
     menu = CatalogMenu:new{
         title = opts.title or _("Danh sách"),
+        subtitle = opts.subtitle,
         item_table = opts.items or {},
         width = Screen:getWidth(),
         height = Screen:getHeight(),
@@ -46,29 +84,13 @@ function Catalog.show(opts)
         is_popout = false,
         covers_fullscreen = true,
         close_callback = function()
-            UIManager:close(menu)
-            -- pop this menu off stack
-            if Catalog._stack[#Catalog._stack] == menu then
-                table.remove(Catalog._stack)
-            end
-            -- restore previous menu if any
-            local prev = Catalog._stack[#Catalog._stack]
-            if prev then
-                UIManager:show(prev)
-            end
+            Catalog.pop(menu)
             if opts.on_close then
                 opts.on_close()
             end
         end,
     }
-    -- hide current top menu (don't destroy it, keep on stack)
-    local prev = Catalog._stack[#Catalog._stack]
-    if prev then
-        UIManager:close(prev)
-    end
-    Catalog._stack[#Catalog._stack + 1] = menu
-    UIManager:show(menu)
-    return menu
+    return pushOnStack(menu)
 end
 
 function Catalog.promptText(opts)

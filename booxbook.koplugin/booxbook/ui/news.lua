@@ -1,11 +1,11 @@
 local InfoMessage = require("ui/widget/infomessage")
-local NetworkMgr = require("ui/network/manager")
 local ReaderUI = require("apps/reader/readerui")
 local Trapper = require("ui/trapper")
 local UIManager = require("ui/uimanager")
 local _ = require("gettext")
 
 local Catalog = require("booxbook.ui.catalog")
+local Network = require("booxbook.network")
 local Publishers = require("booxbook.sources.feeds")
 local Rss = require("booxbook.sources.rss")
 local Settings = require("booxbook.store.settings")
@@ -66,7 +66,7 @@ end
 local function onlineAction(message, action, on_success)
     -- Let the selecting menu finish updating before showing progress or another screen.
     UIManager:nextTick(function()
-        NetworkMgr:beforeWifiAction(function()
+        Network.whenOnline(function()
             Trapper:wrap(function()
                 Trapper:info(message)
                 local ok, result, err = pcall(action)

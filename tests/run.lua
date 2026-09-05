@@ -115,7 +115,7 @@ assert_eq(Html.escape("<a>"), "&lt;a&gt;", "escape")
 local wrapped = Html.wrapDocument("T", "<p>x</p>")
 assert_true(wrapped:find('charset="utf-8"', 1, true), "wrap charset")
 
-Source.register({ id = "docln", name = "DocLN" })
+assert_eq(Source.get("docln").kind, "novel", "DocLN adapter registered")
 assert_eq(Source.get("docln").name, "DocLN", "source get")
 assert_eq(#Source.list(), 2, "source list")
 assert_eq(Source.get("rss").kind, "news", "rss adapter registered")
@@ -222,6 +222,7 @@ local module_names = {
     "booxbook.http",
     "booxbook.store.settings",
     "booxbook.ui.news",
+    "booxbook.ui.novels",
 }
 local saved_modules = {}
 for _, name in ipairs(module_names) do
@@ -240,6 +241,10 @@ package.loaded["ui/widget/container/widgetcontainer"] = {
     extend = function(_, value) return value end,
 }
 package.loaded["gettext"] = function(value) return value end
+package.loaded["booxbook.network"] = {
+    whenOnline = function(callback) callback() end,
+    statusText = function() return "Đã kết nối mạng" end,
+}
 package.loaded["booxbook.ui.catalog"] = {
     clearStack = function()
         menu_events[#menu_events + 1] = "clear"
@@ -255,6 +260,8 @@ package.loaded["booxbook.http"] = {}
 package.loaded["booxbook.store.settings"] = {}
 package.loaded["booxbook.ui.news"] = { menu = function() return { { text = "Publisher" } } end }
 
+package.loaded["booxbook.ui.novels"] = { openSource = function() end, promptSearch = function() end }
+
 local BooxBook = dofile(plugin_root .. "/main.lua")
 local menu_items = {}
 BooxBook:addToMainMenu(menu_items)
@@ -269,6 +276,7 @@ assert_eq(table.concat(menu_events, ","), "close,nextTick", "Tools closes before
 assert_true(type(scheduled) == "function", "fullscreen work is deferred")
 scheduled()
 assert_eq(table.concat(menu_events, ","), "close,nextTick,clear,show", "fullscreen menu resets and opens in order")
+assert_eq(shown_menu.subtitle, "Đã kết nối mạng", "main menu shows network status under title")
 assert_eq(shown_menu.items[1].keep_menu_open, true, "news navigation keeps its parent menu")
 shown_menu.items[1].callback()
 assert_eq(shown_menu.title, "BooxBook", "news screen is deferred")
@@ -278,6 +286,9 @@ assert_eq(shown_menu.title, "Báo", "news screen opens after selection")
 for _, name in ipairs(module_names) do
     package.loaded[name] = saved_modules[name]
 end
+package.loaded["booxbook.network"] = nil
+package.loaded["booxbook.ui.news"] = nil
+package.loaded["booxbook.ui.novels"] = nil
 local catalog_events = {}
 local catalog_module_names = {
     "ui/widget/confirmbox",
@@ -337,6 +348,11 @@ end }
 assert_eq(#Catalog._stack, 2, "child navigation preserves parent")
 Catalog._stack[2].close_callback()
 assert_eq(Catalog._stack[1], catalog, "back restores the same parent")
+local pushed = { name = "grid" }
+Catalog.push(pushed)
+assert_eq(#Catalog._stack, 2, "push stacks custom widgets with menus")
+Catalog.pop(pushed)
+assert_eq(Catalog._stack[1], catalog, "pop restores parent after grid")
 catalog:onMenuSelect{ keep_menu_open = true, select_enabled = false,
     callback = function() error("disabled item selected") end }
 Catalog.clearStack()
@@ -348,6 +364,9 @@ dofile("tests/news-online.lua")
 dofile("tests/news-categories.lua")
 dofile("tests/news-images.lua")
 dofile("tests/news-http.lua")
+dofile("tests/docln.lua")
+dofile("tests/docln-ui.lua")
+dofile("tests/network.lua")
 
 if failures > 0 then
     io.stderr:write(tostring(failures) .. " test(s) failed\n")

@@ -10,7 +10,8 @@ local function chapterItems(volume, on_chapter)
     for i, chapter in ipairs(volume.chapters or {}) do
         items[#items + 1] = {
             text = chapter.title or (_("Chương") .. " " .. i),
-            mandatory = tostring(i),
+            mandatory = tostring(chapter.index or i),
+            keep_menu_open = true,
             callback = function()
                 if on_chapter then
                     on_chapter(chapter, i)
@@ -31,7 +32,10 @@ function SeriesUI.show(series, opts)
             select_enabled = false,
         }
     end
-    for _, volume in ipairs(series.volumes or {}) do
+    if opts.on_range and #(series.chapters or {}) > 0 then
+        items[#items + 1] = { text = _("Tải khoảng chương"), keep_menu_open = true, callback = opts.on_range }
+    end
+    for position, volume in ipairs(series.volumes or {}) do
         items[#items + 1] = {
             text = volume.title or _("Tập"),
             sub_item_table = chapterItems(volume, opts.on_chapter),
@@ -50,20 +54,24 @@ function SeriesUI.show(series, opts)
 end
 
 function SeriesUI.askRange(max_chapter, on_submit)
-    max_chapter = tonumber(max_chapter) or 1
+    max_chapter = tonumber(max_chapter) or 0
+    if max_chapter < 1 then return end
     Catalog.promptText({
         title = _("Tải từ chương (1–") .. tostring(max_chapter) .. ")",
         input = "1",
         on_submit = function(from_text)
-            local from = tonumber(from_text) or 1
+            local from = tonumber(from_text)
+            if not from or from % 1 ~= 0 or from < 1 or from > max_chapter then
+                UIManager:show(InfoMessage:new{ text = _("Số chương không hợp lệ.") }); return
+            end
             Catalog.promptText({
                 title = _("Đến chương"),
                 input = tostring(math.min(from + 19, max_chapter)),
                 on_submit = function(to_text)
-                    local to = tonumber(to_text) or from
-                    if from < 1 then from = 1 end
-                    if to > max_chapter then to = max_chapter end
-                    if to < from then to = from end
+                    local to = tonumber(to_text)
+                    if not to or to % 1 ~= 0 or to < from or to > max_chapter then
+                        UIManager:show(InfoMessage:new{ text = _("Số chương không hợp lệ.") }); return
+                    end
                     if on_submit then
                         on_submit(from, to)
                     end

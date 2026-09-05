@@ -1,4 +1,38 @@
+local has_util, Util = pcall(require, "util")
 local Html = {}
+
+local function utf8(code)
+    if not code or code < 0 or code > 0x10FFFF or (code >= 0xD800 and code <= 0xDFFF) then
+        return nil
+    elseif code < 0x80 then
+        return string.char(code)
+    elseif code < 0x800 then
+        return string.char(0xC0 + math.floor(code / 0x40), 0x80 + code % 0x40)
+    elseif code < 0x10000 then
+        return string.char(0xE0 + math.floor(code / 0x1000), 0x80 + math.floor(code / 0x40) % 0x40, 0x80 + code % 0x40)
+    end
+    return string.char(0xF0 + math.floor(code / 0x40000), 0x80 + math.floor(code / 0x1000) % 0x40,
+        0x80 + math.floor(code / 0x40) % 0x40, 0x80 + code % 0x40)
+end
+
+function Html.decode(text)
+    text = tostring(text or ""):gsub("<!%[CDATA%[(.-)%]%]>", "%1")
+    if has_util and Util.htmlEntitiesToUtf8 then
+        return Util.htmlEntitiesToUtf8(text)
+    end
+    text = text:gsub("&#x([%da-fA-F]+);", function(value)
+        local code = tonumber(value, 16)
+        return utf8(code) or "&#x" .. value .. ";"
+    end)
+    text = text:gsub("&#(%d+);", function(value)
+        local code = tonumber(value)
+        return utf8(code) or "&#" .. value .. ";"
+    end)
+    return text:gsub("&lt;", "<"):gsub("&gt;", ">"):gsub("&quot;", '"')
+        :gsub("&apos;", "'"):gsub("&amp;", "&")
+end
+
+
 
 local ALLOWED_TAGS = {
     p = true, br = true, h1 = true, h2 = true, h3 = true,
@@ -123,56 +157,39 @@ local function classListContains(attrs, class_name)
     return false
 end
 
---- Tiny CSS helper: `#id`, `.class`, `tag`. Returns inner HTML of first match.
-function Html.select(html, selector)
-    html = html or ""
-    selector = selector or ""
-    local inner
-
-    if selector:sub(1, 1) == "#" then
-        local id = selector:sub(2)
-        findTagOpen(html, function(_, attrs, s, e)
-            if attrValue(attrs, "[Ii][Dd]") == id then
-                local tag = html:match("<%s*([%w:-]+)", s)
-                inner = select(1, extractElement(html, s, e, lower(tag)))
-                return true
-            end
-            return false
+-- Tiny selectors for the known site markup; return non-overlapping elements.
+function Html.elements(html, selector, first_only)
+    html = (html or ""):gsub("<!%-%-.-%-%->", "")
+    local result, pos = {}, 1
+    while true do
+        local start, finish, tag = findTagOpen(html:sub(pos), function(name, attrs)
+            if selector:sub(1, 1) == "#" then return attrValue(attrs, "[Ii][Dd]") == selector:sub(2) end
+            if selector:sub(1, 1) == "." then return classListContains(attrs, selector:sub(2)) end
+            return name == selector
         end)
-        return inner
+        if not start then break end
+        start, finish = start + pos - 1, finish + pos - 1
+        local inner, outer = extractElement(html, start, finish, tag)
+        result[#result + 1] = { inner = inner, outer = outer,
+            attrs = html:sub(start, finish):match("<%s*[%w:-]+(.-)>"), tag = tag }
+        if first_only then break end
+        pos = start + #outer
     end
-
-    if selector:sub(1, 1) == "." then
-        local class_name = selector:sub(2)
-        findTagOpen(html, function(tag, attrs, s, e)
-            if classListContains(attrs, class_name) then
-                inner = select(1, extractElement(html, s, e, tag))
-                return true
-            end
-            return false
-        end)
-        return inner
-    end
-
-    local tag = lower(selector)
-    findTagOpen(html, function(name, _, s, e)
-        if name == tag then
-            inner = select(1, extractElement(html, s, e, tag))
-            return true
-        end
-        return false
-    end)
-    return inner
+    return result
 end
 
 function Html.selectAllInner(html, selector)
-    -- Phase 1: first match only helper reused later; keep API stable.
-    local first = Html.select(html, selector)
-    if first then
-        return { first }
-    end
-    return {}
+    local result = {}
+    for _, element in ipairs(Html.elements(html, selector)) do result[#result + 1] = element.inner end
+    return result
 end
+
+function Html.select(html, selector)
+    local first = Html.elements(html, selector, true)[1]
+    return first and first.inner
+end
+
+Html.attr = attrValue
 
 function Html.escape(text)
     text = tostring(text or "")

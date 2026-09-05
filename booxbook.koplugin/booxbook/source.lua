@@ -37,4 +37,6 @@ end
 
 Source.register(require("booxbook.sources.rss"))
 
+Source.register(require("booxbook.sources.docln"))
+
 return Source
