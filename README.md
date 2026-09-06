@@ -2,6 +2,8 @@
 
 Plugin [KOReader](https://github.com/koreader/koreader) để đọc báo (RSS Việt Nam và nước ngoài) và truyện chữ từ DocLN, Wattpad, Sangtacviet. Tải về HTML trên máy, đọc bằng KOReader.
 
+**Phiên bản hiện tại: 0.0.1** (`hongducdev/booxbook.koplugin`).
+
 Dùng như trình đọc RSS / trình duyệt cá nhân. Không phát tán nội dung đã tải. Không vượt VIP, paywall hay captcha.
 
 Giấy phép: [AGPL-3.0-or-later](./LICENSE).
@@ -19,6 +21,8 @@ Giấy phép: [AGPL-3.0-or-later](./LICENSE).
 3. Bật plugin: **Tools → More tools → Plugin management → BooxBook**.
 
 4. Chạm **Tools → BooxBook** để mở giao diện toàn màn hình.
+
+5. Sau lần cài đầu, có thể cập nhật khi có GitHub Release mới: **BooxBook → Cài đặt → Cập nhật từ GitHub** (cần Wi-Fi). Dữ liệu đã tải trong `koreader/booxbook/` và cookie không bị xóa. Khởi động lại KOReader sau khi cài.
 
 ## Đọc báo RSS
 
@@ -69,6 +73,7 @@ Cần Wi-Fi. Plugin gọi `example.com` (kèm header Referer), ghi `_selftest.ht
 ## Cài đặt
 
 - Cookie từng nguồn: dán session từ trình duyệt. Cookie không được in ra log.
+- **Cập nhật từ GitHub**: kiểm tra bản mới nhất tại [Releases](https://github.com/hongducdev/booxbook.koplugin/releases), tải `booxbook.koplugin.zip` rồi đổi thư mục plugin. Chỉ cài khi có Release kèm file zip đó; không tự kiểm tra lúc mở plugin.
 - Sangtacviet **tắt mặc định** (chưa xác nhận cảnh báo). Mục **Truyện → Sangtacviet** vẫn hiện; lần đầu chạm sẽ hỏi trước khi dùng. Có thể tắt lại trong Cài đặt.
 - Nội dung 18+: tắt mặc định. **Tải ảnh minh họa**: bật mặc định; nếu trước đây đã tắt, bật lại trong Cài đặt. Mở lại bài từ danh mục online để cập nhật bài cũ với tiêu đề/ảnh.
 - Chỉ bài được chọn mới lưu HTML tại `koreader/booxbook/news/<feed-id>/` để KOReader mở; không tải hàng loạt. Mở từ danh sách online sẽ lấy lại nội dung bài đó.

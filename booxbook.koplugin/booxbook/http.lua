@@ -167,6 +167,25 @@ local function requestOnce(opts)
 
     logger().dbg("BooxBook HTTP", method, opts.url, redactHeaders(headers))
 
+    local max_body = opts.max_body or Http.MAX_BODY
+    local dest_file = opts.dest_file
+    local fh, fh_err
+    if dest_file then
+        fh, fh_err = io.open(dest_file, "wb")
+        if not fh then
+            return nil, fh_err or "cannot write", nil, nil
+        end
+    end
+    local function closeDest(keep)
+        if fh then
+            pcall(function() fh:close() end)
+            fh = nil
+        end
+        if dest_file and not keep then
+            os.remove(dest_file)
+        end
+    end
+
     local socketutil = setTimeout(opts.timeout, opts.maxtime)
     local request = {
         url = opts.url,
@@ -175,8 +194,13 @@ local function requestOnce(opts)
         sink = function(chunk, err)
             if chunk then
                 received = received + #chunk
-                if received > Http.MAX_BODY then return nil, "body too large" end
-                chunks[#chunks + 1] = chunk
+                if received > max_body then return nil, "body too large" end
+                if fh then
+                    local written, write_err = fh:write(chunk)
+                    if not written then return nil, write_err or "write failed" end
+                else
+                    chunks[#chunks + 1] = chunk
+                end
             end
             if err then return nil, err end
             return 1
@@ -193,13 +217,18 @@ local function requestOnce(opts)
     resetTimeout(socketutil)
 
     if not ok then
+        closeDest(false)
         return nil, tostring(code), nil, nil
     end
 
-    local payload = table.concat(chunks)
-    if #payload > Http.MAX_BODY then
-        return nil, "body too large", response_headers, payload:sub(1, Http.MAX_BODY)
+    local payload = dest_file and "" or table.concat(chunks)
+    if received > max_body then
+        closeDest(false)
+        return nil, "body too large", response_headers, dest_file and "" or payload:sub(1, max_body)
     end
+    -- Redirect hops reopen dest_file with "wb"; keep the path. Drop 4xx/5xx files.
+    local keep = type(code) == "number" and code >= 200 and code < 400
+    closeDest(keep)
     return code, status, response_headers, payload
 end
 
@@ -272,6 +301,8 @@ function Http.request(opts)
             body = opts.body,
             timeout = opts.timeout,
             maxtime = opts.maxtime,
+            dest_file = opts.dest_file,
+            max_body = opts.max_body,
         })
         if type(code) == "number" then
             if code == 301 or code == 302 or code == 303 or code == 307 or code == 308 then
@@ -333,6 +364,24 @@ function Http.post(url, body, opts)
     opts.method = "POST"
     opts.body = body
     return Http.request(opts)
+end
+
+function Http.downloadToFile(url, dest, opts)
+    local request = {}
+    for key, value in pairs(opts or {}) do
+        request[key] = value
+    end
+    request.url = url
+    request.method = "GET"
+    request.dest_file = dest
+    request.max_body = request.max_body or (30 * 1024 * 1024)
+    request.timeout = request.timeout or 60
+    request.maxtime = request.maxtime or 180
+    local ok, code, body, headers, jar = Http.request(request)
+    if not ok and dest then
+        os.remove(dest)
+    end
+    return ok, code, body, headers, jar
 end
 
 return Http

@@ -12,6 +12,7 @@ local Network = require("booxbook.network")
 local Settings = require("booxbook.store.settings")
 local News = require("booxbook.ui.news")
 local Novels = require("booxbook.ui.novels")
+local Update = require("booxbook.update")
 
 local BooxBook = WidgetContainer:extend{
     name = "booxbook",
@@ -124,6 +125,16 @@ end
 
 function BooxBook:settingsMenu()
     return {
+        {
+            text = _("Phiên bản") .. " " .. Update.currentVersion(),
+            select_enabled = false,
+        },
+        {
+            text = _("Cập nhật từ GitHub"),
+            callback = function()
+                Update.checkAndPrompt()
+            end,
+        },
         {
             text = _("Kiểm tra cài đặt"),
             callback = function()

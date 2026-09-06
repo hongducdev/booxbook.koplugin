@@ -356,6 +356,7 @@ dofile("tests/catalog-ui.lua")
 dofile("tests/novel-offline.lua")
 dofile("tests/docln-ui.lua")
 dofile("tests/network.lua")
+dofile("tests/update.lua")
 
 if failures > 0 then
     io.stderr:write(tostring(failures) .. " test(s) failed\n")

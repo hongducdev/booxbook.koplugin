@@ -1,0 +1,29 @@
+name: Release plugin zip
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check _meta.lua version matches tag
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          grep -q "version = \"${TAG}\"" booxbook.koplugin/_meta.lua
+      - name: Pack plugin
+        run: zip -r booxbook.koplugin.zip booxbook.koplugin
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          gh release create "${GITHUB_REF_NAME}" booxbook.koplugin.zip
+          --title "${GITHUB_REF_NAME}"
+          --generate-notes
+          --fail-on-missing-files

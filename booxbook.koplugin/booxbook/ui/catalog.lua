@@ -87,11 +87,12 @@ function Catalog.promptText(opts)
     return dialog
 end
 
-function Catalog.confirm(text, on_ok)
+function Catalog.confirm(text, on_ok, opts)
+    opts = opts or {}
     UIManager:show(ConfirmBox:new{
         text = text,
-        ok_text = _("Đồng ý"),
-        cancel_text = _("Hủy"),
+        ok_text = opts.ok_text or _("Đồng ý"),
+        cancel_text = opts.cancel_text or _("Hủy"),
         ok_callback = on_ok,
     })
 end
