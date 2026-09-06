@@ -10,7 +10,7 @@ local ids, urls, by_url, publisher_ids = {}, {}, {}, {}
 local regions = { vietnam = 0, world = 0 }
 local total = 0
 local audited = {}
-for line in io.lines("plans/reports/260904-all-feeds-audit.md") do
+for line in io.lines("tests/fixtures/feeds-audit.md") do
     local id, count, status, url = line:match("^| [^|]+ | ([^|]+) | (%d+) | ([^|]+) | ([^|]+) |")
     if id then audited[url] = { id = id, count = tonumber(count), status = status } end
 end
