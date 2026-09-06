@@ -8,6 +8,10 @@ local Catalog = require("booxbook.ui.catalog")
 local Network = require("booxbook.network")
 local Publishers = require("booxbook.sources.feeds")
 local Rss = require("booxbook.sources.rss")
+local function CoverGrid()
+    return require("booxbook.ui.cover-grid")
+end
+
 local Settings = require("booxbook.store.settings")
 
 local News = {}
@@ -62,6 +66,19 @@ function News.addCustomFeed()
         end,
     }
 end
+local function feedSourceId(feed)
+    local value = tostring(feed and (feed.id or feed.title or feed.url) or "rss")
+    value = value:gsub("[^%w%._%-]+", "-"):gsub("^-+", ""):gsub("-+$", "")
+    if value == "" then value = "rss" end
+    return "rss-" .. value
+end
+
+local function articlePageCount(total)
+    local page_size = CoverGrid().PAGE_SIZE
+    local count = math.ceil((tonumber(total) or 0) / page_size)
+    return math.max(1, count)
+end
+
 
 local function onlineAction(message, action, on_success)
     -- Let the selecting menu finish updating before showing progress or another screen.
@@ -94,16 +111,57 @@ function News.showFeed(feed)
     onlineAction(_("Đang lấy danh sách: ") .. feed.title, function()
         return Rss.list(feed, Settings.get("news_limit") or 10)
     end, function(articles)
-        local items = {}
-        for _, article in ipairs(articles) do
-            local current = article
-            items[#items + 1] = {
-                text = current.title,
-                keep_menu_open = true,
-                callback = function() News.openArticle(feed, current) end,
+        local grid
+        local offset = 1
+        local page_size = CoverGrid().PAGE_SIZE
+        local page_count = articlePageCount(#articles)
+
+        local function payload()
+            return {
+                title = feed.title,
+                items = articles,
+                has_more = false,
+                site_page = 1,
+                page_count = page_count,
+                offset = offset,
             }
         end
-        Catalog.show{ title = feed.title, items = items }
+
+        local function refresh()
+            if grid and not grid._closed then
+                grid:setPage(payload())
+            end
+        end
+
+        local function nextPage()
+            if grid and grid._closed then return end
+            if offset + page_size <= #articles then
+                offset = offset + page_size
+                refresh()
+                return
+            end
+            notify(_("Hết danh sách."))
+        end
+
+        local function prevPage()
+            if grid and grid._closed then return end
+            if offset > 1 then
+                offset = math.max(1, offset - page_size)
+                refresh()
+                return
+            end
+            notify(_("Đang ở trang đầu."))
+        end
+
+        local opts = payload()
+        opts.source_id = feedSourceId(feed)
+        opts.base_url = feed.url
+        opts.cover_referer = feed.url
+        opts.on_select = function(item) News.openArticle(feed, item) end
+        opts.on_next = nextPage
+        opts.on_prev = prevPage
+        opts.on_close = function() grid = nil end
+        grid = CoverGrid().show(opts)
     end)
 end
 

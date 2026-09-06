@@ -289,12 +289,9 @@ end
 package.loaded["booxbook.network"] = nil
 package.loaded["booxbook.ui.news"] = nil
 package.loaded["booxbook.ui.novels"] = nil
-local catalog_events = {}
 local catalog_module_names = {
     "ui/widget/confirmbox",
     "ui/widget/inputdialog",
-    "ui/widget/menu",
-    "device",
     "ui/uimanager",
     "gettext",
 }
@@ -302,69 +299,33 @@ local saved_catalog_modules = {}
 for _, name in ipairs(catalog_module_names) do
     saved_catalog_modules[name] = package.loaded[name]
 end
-
-local BaseMenu = {}
-function BaseMenu:extend(value)
-    return setmetatable(value, { __index = self })
-end
-function BaseMenu:new(value)
-    return setmetatable(value, { __index = self })
-end
-function BaseMenu:onMenuChoice(item)
-    if item.callback then
-        item.callback()
-    end
-end
-function BaseMenu:onMenuSelect(item)
-    self:onMenuChoice(item)
-    if self.close_callback then
-        self.close_callback()
-    end
-
-end
-function BaseMenu:updateItems()
-    catalog_events[#catalog_events + 1] = "update"
-end
-package.loaded["ui/widget/menu"] = BaseMenu
 package.loaded["ui/widget/confirmbox"] = {}
 package.loaded["ui/widget/inputdialog"] = {}
-package.loaded["device"] = { screen = {
-    getWidth = function() return 600 end,
-    getHeight = function() return 800 end,
-} }
 package.loaded["gettext"] = function(value) return value end
 package.loaded["ui/uimanager"] = { show = function() end, close = function() end }
 local Catalog = dofile(plugin_root .. "/booxbook/ui/catalog.lua")
-local catalog = Catalog.show{ items = {} }
-catalog:onMenuSelect{
-    keep_menu_open = true,
-    callback = function() catalog_events[#catalog_events + 1] = "toggle" end,
-}
-assert_eq(table.concat(catalog_events, ","), "toggle", "navigation must not refresh the menu after callback")
-assert_eq(#Catalog._stack, 1, "toggle keeps catalog on stack")
-catalog:onMenuSelect{ keep_menu_open = true, callback = function()
-    Catalog.show{ title = "Child", items = {} }
-end }
-assert_eq(#Catalog._stack, 2, "child navigation preserves parent")
-Catalog._stack[2].close_callback()
-assert_eq(Catalog._stack[1], catalog, "back restores the same parent")
+package.loaded["booxbook.ui.catalog"] = Catalog
+local parent = { name = "menu" }
+Catalog.push(parent)
+assert_eq(#Catalog._stack, 1, "push keeps the parent catalog")
 local pushed = { name = "grid" }
 Catalog.push(pushed)
-assert_eq(#Catalog._stack, 2, "push stacks custom widgets with menus")
+assert_eq(#Catalog._stack, 2, "push stacks custom widgets with lists")
 Catalog.pop(pushed)
-assert_eq(Catalog._stack[1], catalog, "pop restores parent after grid")
-catalog:onMenuSelect{ keep_menu_open = true, select_enabled = false,
-    callback = function() error("disabled item selected") end }
+assert_eq(Catalog._stack[1], parent, "pop restores parent after grid")
 Catalog.clearStack()
+assert_eq(#Catalog._stack, 0, "clearStack empties retained widgets")
 for _, name in ipairs(catalog_module_names) do
     package.loaded[name] = saved_catalog_modules[name]
 end
+package.loaded["booxbook.ui.catalog"] = nil
 
 dofile("tests/news-online.lua")
 dofile("tests/news-categories.lua")
 dofile("tests/news-images.lua")
 dofile("tests/news-http.lua")
 dofile("tests/docln.lua")
+dofile("tests/catalog-ui.lua")
 dofile("tests/docln-ui.lua")
 dofile("tests/network.lua")
 

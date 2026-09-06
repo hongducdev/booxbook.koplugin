@@ -8,6 +8,7 @@ local Docln = require("booxbook.sources.docln")
 local Download = require("booxbook.novel-download")
 local Network = require("booxbook.network")
 local SeriesUI = require("booxbook.ui.series")
+local Settings = require("booxbook.store.settings")
 
 local Novels = {}
 local busy = false
@@ -23,8 +24,8 @@ local session = {
     grid = nil,
 }
 
-local function NovelGrid()
-    return require("booxbook.ui.novel-grid")
+local function CoverGrid()
+    return require("booxbook.ui.cover-grid")
 end
 
 local function notify(text)
@@ -76,23 +77,32 @@ local function applyPage(result, site_page, offset)
     session.offset = offset or 1
     session.items = result.items or {}
     session.has_more = not not result.has_more
+    local home = Settings.get("docln_home") or "https://docln.net"
     local payload = {
         title = gridTitle(),
         items = session.items,
         has_more = session.has_more,
         site_page = session.site_page,
         offset = session.offset,
+        source_id = "docln",
+        base_url = home,
+        cover_referer = home .. "/",
+        cover_cookies = Settings.cookie("docln"),
     }
     dropClosedGrid()
     if session.grid and not session.grid._closed then
         session.grid:setPage(payload)
     else
-        session.grid = NovelGrid().show{
+        session.grid = CoverGrid().show{
             title = payload.title,
             items = payload.items,
             has_more = payload.has_more,
             site_page = payload.site_page,
             offset = payload.offset,
+            source_id = payload.source_id,
+            base_url = payload.base_url,
+            cover_referer = payload.cover_referer,
+            cover_cookies = payload.cover_cookies,
             on_select = function(item) Novels.showSeries(item) end,
             on_search = function() Novels.promptSearch() end,
             on_next = function() Novels.nextPage() end,

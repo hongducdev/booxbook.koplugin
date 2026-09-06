@@ -1,7 +1,7 @@
 -- Exercise real menu callbacks with KOReader widgets replaced at the UI boundary.
 local names = { 'ui/widget/infomessage', 'ui/network/manager', 'apps/reader/readerui',
     'ui/trapper', 'ui/uimanager', 'gettext', 'booxbook.ui.catalog', 'booxbook.ui.series',
-    'booxbook.ui.novel-grid' }
+    'booxbook.ui.cover-grid' }
 local saved = {}
 for _, name in ipairs(names) do saved[name] = package.loaded[name] end
 local Docln = require('booxbook.sources.docln')
@@ -27,7 +27,7 @@ package.loaded['booxbook.ui.catalog'] = { show = function(value) shown = value e
     promptText = function(value) prompt = value end, clearStack = function() end,
     confirm = function(_, callback) confirm = callback end, push = function() end, pop = function() end }
 package.loaded['booxbook.ui.series'] = nil
-package.loaded['booxbook.ui.novel-grid'] = {
+package.loaded['booxbook.ui.cover-grid'] = {
     PAGE_SIZE = 6,
     show = function(opts)
         grid = {
@@ -58,6 +58,8 @@ end
 Novels.openSource(); assert(wifi == 0, 'network must be deferred beyond menu selection')
 drain()
 assert(wifi == 0 and grid and #grid.opts.items == 7 and grid.opts.offset == 1)
+assert(grid.opts.source_id == 'docln' and grid.opts.cover_referer == grid.opts.base_url .. '/',
+    'DocLN grid supplies source cover context')
 assert(grid.opts.title:find('Mới cập nhật', 1, true))
 
 -- Local pagination keeps one HTTP page and advances six cards at a time.
@@ -123,15 +125,15 @@ Docln.browse = function(kind, page)
     return { items = sevenItems(), has_more = true }
 end
 local reopen_count = 0
-local old_show = package.loaded['booxbook.ui.novel-grid'].show
-package.loaded['booxbook.ui.novel-grid'].show = function(opts)
+local old_show = package.loaded['booxbook.ui.cover-grid'].show
+package.loaded['booxbook.ui.cover-grid'].show = function(opts)
     reopen_count = reopen_count + 1
     return old_show(opts)
 end
 Novels.openSource(); drain()
 assert(reopen_count >= 1 and grid and grid ~= closed_grid and not grid._closed and #grid.opts.items == 7,
     're-open after X must show a new live grid')
-package.loaded['booxbook.ui.novel-grid'].show = old_show
+package.loaded['booxbook.ui.cover-grid'].show = old_show
 
 online = false
 Docln.search = function() return { items = { { title = 'Off', url = '/truyen/2' } }, has_more = false } end
@@ -139,18 +141,148 @@ wifi = 0
 Novels.search('offline', 1); drain()
 assert(wifi == 1, 'offline DocLN search may prompt for Wi-Fi')
 online = true
+-- Shared cover grid UI boundary: no search icon without search, footer back is a safe close.
+local grid_stub_names = {
+    'ffi/blitbuffer', 'ui/widget/container/centercontainer', 'device', 'ui/font',
+    'ui/widget/container/framecontainer', 'ui/geometry', 'ui/gesturerange',
+    'ui/widget/horizontalgroup', 'ui/widget/horizontalspan', 'ui/widget/container/inputcontainer',
+    'ui/size', 'ui/widget/textboxwidget', 'ui/widget/titlebar', 'ui/uimanager',
+    'ui/widget/verticalgroup', 'ui/widget/verticalspan', 'booxbook.ui.catalog',
+    'booxbook.covers', 'booxbook.store.settings', 'booxbook.ui.cover-grid',
+    'booxbook.ui.paged-screen', 'ui/widget/container/bottomcontainer', 'ui/widget/overlapgroup', 'ui/widget/container/widgetcontainer',
+}
+local grid_saved = {}
+for _, name in ipairs(grid_stub_names) do
+    grid_saved[name] = package.loaded[name]
+end
+package.loaded['booxbook.ui.cover-grid'] = nil
+package.loaded['booxbook.ui.paged-screen'] = nil
+package.loaded['ffi/blitbuffer'] = { COLOR_WHITE = 0, COLOR_BLACK = 1, COLOR_DARK_GRAY = 2 }
+local function passthroughNew(_, value)
+    value = value or {}
+    value.dimen = value.dimen or { intersectWith = function() return false end }
+    function value:free()
+        if self._freed then return end
+        self._freed = true
+        for _, child in ipairs(self) do
+            if type(child) == 'table' and child.free then child:free() end
+        end
+    end
+    return value
+end
+package.loaded['ui/widget/container/centercontainer'] = { new = passthroughNew }
+package.loaded['ui/widget/container/framecontainer'] = { new = passthroughNew }
+package.loaded['ui/widget/horizontalgroup'] = { new = passthroughNew }
+package.loaded['ui/widget/horizontalspan'] = { new = passthroughNew }
+package.loaded['ui/widget/textboxwidget'] = { new = passthroughNew }
+package.loaded['ui/widget/verticalgroup'] = { new = passthroughNew }
+package.loaded['ui/widget/verticalspan'] = { new = passthroughNew }
+package.loaded['ui/widget/container/bottomcontainer'] = { new = passthroughNew }
+package.loaded['ui/widget/overlapgroup'] = { new = passthroughNew }
+package.loaded['ui/widget/container/widgetcontainer'] = { new = passthroughNew }
+package.loaded['device'] = {
+    screen = { getWidth = function() return 600 end, getHeight = function() return 800 end,
+        scaleBySize = function(_, value) return value end },
+    hasKeys = function() return false end,
+    input = { group = { Back = 'Back' } },
+}
+package.loaded['ui/font'] = { getFace = function() return { size = 10 } end }
+package.loaded['ui/geometry'] = { new = function(_, value)
+    value = value or {}
+    value.intersectWith = value.intersectWith or function() return false end
+    return value
+end }
+package.loaded['ui/gesturerange'] = { new = passthroughNew }
+local Input = { paintTo = function() end }
+function Input:extend(value)
+    setmetatable(value, { __index = self })
+    value.__index = value
+    function value:new(opts)
+        local obj = setmetatable(opts or {}, value)
+        if obj.init then obj:init() end
+        return obj
+    end
+    return value
+end
+package.loaded['ui/widget/container/inputcontainer'] = Input
+package.loaded['ui/size'] = { padding = { small = 2, large = 4 }, border = { thin = 1 }, item = { height_default = 20 } }
+local titlebars = {}
+package.loaded['ui/widget/titlebar'] = { new = function(_, value)
+    value.getHeight = function() return 30 end
+    value.free = function(self)
+        if self._tb_freed then error('TitleBar double-free') end
+        self._tb_freed = true
+    end
+    titlebars[#titlebars + 1] = value
+    return value
+end }
+package.loaded['ui/uimanager'] = { nextTick = function() end, setDirty = function() end }
+local pushed, popped, closed = 0, 0, 0
+package.loaded['booxbook.ui.catalog'] = {
+    push = function() pushed = pushed + 1 end,
+    pop = function() popped = popped + 1 end,
+}
+package.loaded['booxbook.covers'] = { find = function() return nil end, fetch = function() return nil end }
+package.loaded['booxbook.store.settings'] = { includeImages = function() return false end }
+local CoverGridReal = dofile('booxbook.koplugin/booxbook/ui/cover-grid.lua')
+local grid_no_search = CoverGridReal.show{ title = 'Tin', items = {}, covers_enabled = false,
+    on_close = function() closed = closed + 1 end }
+assert(pushed == 1 and titlebars[1].left_icon == nil, 'cover grid hides search icon without search callback')
+assert(grid_no_search.nav_dimens[1].action == 'back' and grid_no_search.nav_dimens[2].action == 'prev'
+    and grid_no_search.nav_dimens[4].action == 'next', 'cover grid footer keeps back separate from page controls')
+grid_no_search.nav_dimens[1].widget.dimen.hit = true
+grid_no_search:onTap(nil, { pos = { intersectWith = function(_, dimen) return dimen and dimen.hit end } })
+grid_no_search:onClose()
+assert(closed == 1 and popped == 1, 'footer back and repeated close share one safe close path')
+local searched = CoverGridReal.show{ title = 'DocLN', items = {}, covers_enabled = false, on_search = function() end }
+assert(titlebars[#titlebars].left_icon == 'appbar.search', 'cover grid shows search icon when supplied')
+titlebars[#titlebars].close_callback()
+searched:onClose()
+assert(popped == 2, 'titlebar X and repeated close share one safe close path')
+local x_closed = 0
+local x_grid = CoverGridReal.show{ title = 'X', items = {}, covers_enabled = false,
+    on_search = function() end,
+    on_close = function() x_closed = x_closed + 1 end }
+local x_popped = popped
+local x_tap = { pos = {
+    x = 595, y = 5,
+    intersectWith = function() return false end,
+} }
+assert(x_grid:onTap(nil, x_tap) == true)
+assert(x_closed == 1 and popped == x_popped + 1,
+    'titlebar X tap must close the grid without leaking to the parent catalog')
+assert(x_grid:onTap(nil, x_tap) == true)
+assert(x_closed == 1, 'repeated titlebar X after close is ignored')
+-- Search/setPage rebuilds the page tree but reuses TitleBar. Freeing the old
+-- root must not free TitleBar: a later X would native-crash on double-free.
+local search_grid = CoverGridReal.show{
+    title = 'DocLN',
+    items = { { title = 'One', url = '/truyen/1' } },
+    covers_enabled = false,
+    on_search = function() end,
+}
+local search_tb = search_grid.title_bar
+search_grid:setPage({
+    title = 'DocLN — query',
+    items = { { title = 'Hit', url = '/truyen/2' } },
+})
+assert(search_grid.title_bar == search_tb, 'search keeps the same TitleBar')
+assert(not search_tb._tb_freed, 'rebuild after search must not free reused TitleBar')
+search_tb.close_callback()
+assert(search_grid._closed)
+if search_grid[1] and search_grid[1].free then search_grid[1]:free() end
+assert(search_tb._tb_freed, 'UIManager close may free TitleBar once')
+for _, name in ipairs(grid_stub_names) do package.loaded[name] = grid_saved[name] end
+
 
 -- Catalog.pop must be re-entrant-safe (TitleBar X + UIManager close).
 local catalog_saved = {}
-for _, name in ipairs({
-    'ui/widget/confirmbox', 'ui/widget/inputdialog', 'ui/widget/menu', 'device', 'ui/uimanager', 'gettext',
-}) do
+local catalog_stub_names = {
+    'ui/widget/confirmbox', 'ui/widget/inputdialog', 'device', 'ui/uimanager', 'gettext',
+}
+for _, name in ipairs(catalog_stub_names) do
     catalog_saved[name] = package.loaded[name]
 end
-local BaseMenu = {}
-function BaseMenu:extend(value) return setmetatable(value, { __index = self }) end
-function BaseMenu:new(value) return setmetatable(value, { __index = self }) end
-package.loaded['ui/widget/menu'] = BaseMenu
 package.loaded['ui/widget/confirmbox'] = {}
 package.loaded['ui/widget/inputdialog'] = {}
 package.loaded['device'] = { screen = { getWidth = function() return 600 end, getHeight = function() return 800 end } }
@@ -171,31 +303,49 @@ package.loaded['ui/uimanager'] = {
 }
 package.loaded['booxbook.ui.catalog'] = nil
 local CatalogReal = dofile('booxbook.koplugin/booxbook/ui/catalog.lua')
+-- Closing a covered parent releases TextBoxWidget buffers in real KOReader.
+-- Exercise stack navigation with a resource that cannot be painted after close.
+local manager = package.loaded['ui/uimanager']
+local old_manager_show, old_manager_close = manager.show, manager.close
+local windows = {}
+manager.show = function(_, widget)
+    assert(widget.buffer, 'cannot paint a closed parent: text buffer was freed')
+    windows[#windows + 1] = widget
+end
+manager.close = function(_, widget)
+    widget.buffer = nil
+    for i = #windows, 1, -1 do
+        if windows[i] == widget then table.remove(windows, i) end
+    end
+end
+CatalogReal._stack = {}
+local menu_parent = { buffer = true }
+local browse_grid = { buffer = true }
+local toc = { buffer = true }
+CatalogReal.push(menu_parent)
+CatalogReal.push(browse_grid)
+CatalogReal.push(toc)
+CatalogReal.pop(toc)
+assert(windows[#windows] == browse_grid and browse_grid.buffer,
+    'return from TOC preserves the live grid')
+CatalogReal.pop(browse_grid)
+assert(#windows == 1 and windows[1] == menu_parent and menu_parent.buffer,
+    'closing browse grid reveals one live parent')
+local search_grid = { buffer = true }
+CatalogReal.push(search_grid)
+CatalogReal.pop(search_grid)
+assert(#windows == 1 and windows[1] == menu_parent and menu_parent.buffer,
+    'closing search grid after reopening preserves the parent')
+CatalogReal.clearStack()
+assert(#windows == 0 and not menu_parent.buffer, 'clearStack closes all retained parents')
+manager.show, manager.close = old_manager_show, old_manager_close
 CatalogReal._stack = { parent, child }
 CatalogReal.pop(child)
-assert(closes == 1 and shows == 1 and #CatalogReal._stack == 1)
+assert(closes == 1 and shows == 0 and #CatalogReal._stack == 1)
 CatalogReal.pop(child)
-assert(closes == 1 and shows == 1, 'second pop of same widget is ignored')
+assert(closes == 1 and shows == 0, 'second pop of same widget is ignored')
 
-local cleared_session = 0
-local function onClose(self)
-    if self._closed then return true end
-    self._closed = true
-    self._cover_job = false
-    self.dimen = nil
-    local on_close = self.on_close
-    self.on_close = nil
-    if on_close then on_close() end
-    CatalogReal.pop(self)
-    return true
-end
-fake = { _closed = false, _cover_job = true, dimen = { w = 1 },
-    on_close = function() cleared_session = cleared_session + 1 end }
-CatalogReal._stack = { parent, fake }
-assert(onClose(fake) == true and cleared_session == 1 and fake.dimen == nil and not fake._cover_job,
-    'on_close must run before UIManager:close/free')
-assert(onClose(fake) == true and cleared_session == 1, 'second close must be a no-op')
-for name, value in pairs(catalog_saved) do package.loaded[name] = value end
+for _, name in ipairs(catalog_stub_names) do package.loaded[name] = catalog_saved[name] end
 
 Docln.search, Docln.getSeries, Docln.browse, Download.range = old[1], old[2], old[3], old[4]
 for _, name in ipairs(names) do package.loaded[name] = saved[name] end

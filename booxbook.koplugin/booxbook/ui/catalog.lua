@@ -1,31 +1,24 @@
 local ConfirmBox = require("ui/widget/confirmbox")
 local InputDialog = require("ui/widget/inputdialog")
-local Menu = require("ui/widget/menu")
-local Screen = require("device").screen
 local UIManager = require("ui/uimanager")
 local _ = require("gettext")
 
 local Catalog = {}
-local CatalogMenu = Menu:extend{}
 
-function CatalogMenu:onMenuSelect(item)
-    if item.sub_item_table == nil and item.keep_menu_open then
-        if item.select_enabled == false then
-            return true
-        end
-        if item.select_enabled_func and not item.select_enabled_func() then
-            return true
-        end
-        self:onMenuChoice(item)
-        -- Navigation may close/hide this widget. Do not rebuild it after the callback.
-        return true
-    end
-    return Menu.onMenuSelect(self, item)
-end
-
-
--- Stack of open full-screen menus; back closes top and restores previous
+-- Keep parents on UIManager's stack: CloseWidget frees their rendering resources.
 Catalog._stack = {}
+local function removeFromStack(widget)
+    if Catalog._stack[#Catalog._stack] == widget then
+        table.remove(Catalog._stack)
+        return
+    end
+    for i = #Catalog._stack, 1, -1 do
+        if Catalog._stack[i] == widget then
+            table.remove(Catalog._stack, i)
+            return
+        end
+    end
+end
 
 function Catalog.clearStack()
     for i = #Catalog._stack, 1, -1 do
@@ -35,10 +28,7 @@ function Catalog.clearStack()
 end
 
 local function pushOnStack(widget)
-    local prev = Catalog._stack[#Catalog._stack]
-    if prev then
-        UIManager:close(prev)
-    end
+    -- The fullscreen child covers its parent without destroying it.
     Catalog._stack[#Catalog._stack + 1] = widget
     UIManager:show(widget)
     return widget
@@ -46,24 +36,11 @@ end
 
 function Catalog.pop(widget)
     if not widget then return end
-    -- Avoid re-entrant close/show when TitleBar X and UIManager both unwind the same widget.
+    -- Avoid re-entrant close when TitleBar X and UIManager unwind the same widget.
     if widget._booxbook_popping then return end
     widget._booxbook_popping = true
     UIManager:close(widget)
-    if Catalog._stack[#Catalog._stack] == widget then
-        table.remove(Catalog._stack)
-    else
-        for i = #Catalog._stack, 1, -1 do
-            if Catalog._stack[i] == widget then
-                table.remove(Catalog._stack, i)
-                break
-            end
-        end
-    end
-    local prev = Catalog._stack[#Catalog._stack]
-    if prev then
-        UIManager:show(prev)
-    end
+    removeFromStack(widget)
 end
 
 -- Register any fullscreen widget (e.g. novel cover grid) on the same parent stack.
@@ -72,25 +49,7 @@ function Catalog.push(widget)
 end
 
 function Catalog.show(opts)
-    opts = opts or {}
-    local menu
-    menu = CatalogMenu:new{
-        title = opts.title or _("Danh sách"),
-        subtitle = opts.subtitle,
-        item_table = opts.items or {},
-        width = Screen:getWidth(),
-        height = Screen:getHeight(),
-        is_borderless = true,
-        is_popout = false,
-        covers_fullscreen = true,
-        close_callback = function()
-            Catalog.pop(menu)
-            if opts.on_close then
-                opts.on_close()
-            end
-        end,
-    }
-    return pushOnStack(menu)
+    return require("booxbook.ui.item-list").show(opts)
 end
 
 function Catalog.promptText(opts)

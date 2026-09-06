@@ -25,6 +25,48 @@ local function atomLink(block)
     return decode(attrs:match('href%s*=%s*"([^"]+)"') or attrs:match("href%s*=%s*'([^']+)'") or "")
 end
 
+local function attrValue(attrs, name)
+    return decode((attrs or ""):match(name .. '%s*=%s*"([^"]+)"')
+        or (attrs or ""):match(name .. "%s*=%s*'([^']+)'")
+        or "")
+end
+
+local function tagAttrs(block, name)
+    return block:match("<" .. name .. "%s+([^>]*)/?>") or block:match("<" .. name .. "%s+([^>]*)>") or ""
+end
+
+local function thumbnail(block)
+    local url = attrValue(tagAttrs(block, "media:thumbnail"), "url")
+    if url ~= "" then return url end
+    local media_attrs = tagAttrs(block, "media:content")
+    if media_attrs ~= "" then
+        local medium = attrValue(media_attrs, "medium")
+        local content_type = attrValue(media_attrs, "type")
+        url = attrValue(media_attrs, "url")
+        if url ~= "" and (medium == "image" or content_type:match("^image/")
+            or (medium == "" and content_type == "")) then
+            return url
+        end
+    end
+    local enclosure_attrs = tagAttrs(block, "enclosure")
+    if enclosure_attrs ~= "" then
+        local content_type = attrValue(enclosure_attrs, "type")
+        url = attrValue(enclosure_attrs, "url")
+        if url ~= "" and (content_type:match("^image/") or url:match("%.jpe?g") or url:match("%.png") or url:match("%.webp") or url:match("%.gif")) then
+            return url
+        end
+    end
+    url = attrValue(tagAttrs(block, "itunes:image"), "href")
+    if url ~= "" then return url end
+    return ""
+end
+
+local function firstImage(html)
+    local attrs = tostring(html or ""):match("<%s*[Ii][Mm][Gg]%s+([^>]*)>") or ""
+    return attrValue(attrs, "src")
+end
+
+
 function Rss.parse(xml)
     xml = tostring(xml or ""):gsub("^\239\187\191", "")
     local tag = xml:find("<entry[%s>]", 1) and "entry" or "item"
@@ -35,6 +77,7 @@ function Rss.parse(xml)
             link = tag == "entry" and atomLink(block) or plain(field(block, "link")),
             summary = field(block, "content:encoded"),
             date = field(block, tag == "entry" and "updated" or "pubDate"),
+            cover = thumbnail(block),
         }
         if item.summary == "" then
             item.summary = field(block, tag == "entry" and "content" or "description")
@@ -44,6 +87,9 @@ function Rss.parse(xml)
         end
         if item.date == "" and tag == "entry" then
             item.date = field(block, "published")
+        end
+        if item.cover == "" then
+            item.cover = firstImage(item.summary)
         end
         if item.title ~= "" and item.link:match("^https?://") then
             items[#items + 1] = item
