@@ -245,6 +245,8 @@ function ItemList.show(opts)
         subtitle = opts.subtitle,
         items = opts.items or {},
         on_search = opts.on_search,
+        left_icon = opts.left_icon,
+        on_left_icon = opts.on_left_icon,
         on_close = opts.on_close,
     }
     Catalog.push(list)

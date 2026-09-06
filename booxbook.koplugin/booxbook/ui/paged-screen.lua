@@ -117,6 +117,12 @@ function PagedScreen:init()
             if self._closed then return end
             self.on_search()
         end
+    elseif self.left_icon and self.on_left_icon then
+        titlebar_opts.left_icon = self.left_icon
+        titlebar_opts.left_icon_tap_callback = function()
+            if self._closed then return end
+            self.on_left_icon()
+        end
     end
     self.title_bar = TitleBar:new(titlebar_opts)
     self:rebuild()
@@ -427,8 +433,12 @@ function PagedScreen:onTap(_, ges)
         if x and dimen and x >= x0 + dimen.w - edge then
             return self:onClose()
         end
-        if x and self.on_search and x <= x0 + edge then
-            self.on_search()
+        if x and x <= x0 + edge then
+            if self.on_search then
+                self.on_search()
+            elseif self.on_left_icon then
+                self.on_left_icon()
+            end
         end
         return true
     end

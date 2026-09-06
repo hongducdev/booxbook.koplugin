@@ -36,9 +36,9 @@ Giấy phép: [AGPL-3.0-or-later](./LICENSE).
 ## Đọc truyện DocLN
 
 - **Truyện → DocLN**: nhập từ khóa; chọn truyện để xem các tập và chương. Có **Trang tiếp** khi còn kết quả.
-- **Tải khoảng chương**: nhập vị trí đầu/cuối trong mục lục (đánh số liên tục qua các tập). Chạm một chương để chỉ tải chương đó; chọn chương trong kết quả tải để mở bằng KOReader.
+- **Tải chương** (icon menu góc trái thanh tiêu đề mục lục): **Tải khoảng chương** (nhập từ–đến) hoặc **Tải toàn bộ chương** (xác nhận rồi tải 1…N). **Chương đã tải (offline)** nằm trong danh sách mục lục: mở HTML đã lưu từ `index.json`, không cần mạng. Chạm một chương để chỉ tải chương đó; chọn chương trong kết quả tải để mở bằng KOReader.
 - Mỗi lượt mặc định gợi ý tối đa 20 chương; hơn 50 chương cần xác nhận. Tải tuần tự, cách nhau ít nhất 1,5 giây; HTTP 429 dừng lượt tải.
-- Lưu HTML từng chương và `index.json` tại `koreader/booxbook/novels/docln/<loại-truyện-id>/`. Tên file dùng ID chương ổn định. Đọc lại offline bằng trình quản lý file KOReader.
+- Lưu HTML từng chương và `index.json` tại `koreader/booxbook/novels/docln/<loại-truyện-id>/`. Tên file dùng ID chương ổn định. Đọc lại offline từ mục lục truyện hoặc trình quản lý file KOReader.
 - Tự chuyển giữa `docln.net`, `ln.hako.vn`, `docln.sbs` khi lỗi mạng/trang; nhớ tên miền hoạt động. Dùng **Cookie DocLN** đã có trong Cài đặt nếu cần.
 - Ẩn kết quả được đánh dấu 18+ khi thiết lập tắt; kiểm tra lại trên trang truyện. Chương khóa/404/không có chữ hiển thị lý do bỏ qua; lỗi mạng hoặc ghi file giữ lại các chương đã lưu.
 - Hỗ trợ nội dung công khai được đóng gói trong HTML theo cách của [Nekori LNHako](https://github.com/Yuneko-dev/Nekori-plugins/tree/c29b05de71bf71e5321d6488014d027d7b2f68cb/plugins/vietnamese/LNHako). [Thông báo MIT](booxbook.koplugin/THIRD-PARTY-NOTICES.md). Xuất EPUB và tải ảnh chương để Phase 6.
@@ -48,7 +48,7 @@ Giấy phép: [AGPL-3.0-or-later](./LICENSE).
 - Danh sách duyệt và kết quả tìm kiếm hiển thị grid 2×3 bìa/tên truyện như DocLN. Nút Trước/Sau chuyển màn hình rồi lấy trang API tiếp theo; bìa chỉ tải khi xuất hiện trên màn hình, lỗi ảnh vẫn đọc được tên truyện.
 
 - **Truyện → Wattpad**: duyệt Nổi bật / Đề cử / Mới (tiếng Việt). Chạm kính lúp trên thanh tiêu đề để tìm kiếm hoặc nhập URL `/story/<id>`; nút này cũng có ở danh sách kết quả, giống DocLN. Khi API danh sách lỗi vẫn có thể nhập URL; Đề cử có thể rỗng.
-- Mục lục, tải một chương / khoảng chương và mở bằng KOReader dùng chung luồng DocLN. Lưu HTML + `index.json` tại `koreader/booxbook/novels/wattpad/<id>/`.
+- Mục lục dùng chung DocLN: icon menu góc trái → khoảng / toàn bộ; **Chương đã tải (offline)** trong danh sách. Lưu HTML + `index.json` tại `koreader/booxbook/novels/wattpad/<id>/`.
 - Dùng **Cookie Wattpad** đã lưu; không đăng nhập bằng mật khẩu hay mở khóa chương trả phí. Ẩn truyện 18+ hoặc chưa rõ phân loại khi thiết lập 18+ tắt. Bỏ qua bản nháp, chương xóa/khóa/trống; HTTP 403/429 dừng lượt tải.
 - Giãn cách ít nhất 1,6 giây; tự giải nén gzip bằng zlib của KOReader. Chỉ lưu chữ; ảnh và EPUB để Phase 6. Đã kiểm tra API/chương thật trên máy phát triển; hiển thị trên Boox chưa kiểm tra.
 
@@ -57,7 +57,7 @@ Giấy phép: [AGPL-3.0-or-later](./LICENSE).
 - **Truyện → Sangtacviet** luôn hiện trong menu. Lần đầu chạm sẽ hỏi xác nhận (cảnh báo dịch máy); sau đó mở grid. Tắt lại bằng **Cài đặt → Bật Sangtacviet**.
 - Duyệt **Mới cập nhật** / **Lượt xem** dạng grid bìa; kính lúp nhận từ khóa hoặc URL `/truyen/{host}/{sty}/{bookid}/`.
 - Tải chương qua AJAX (`sajax=readchapter`) kèm Referer + cookie phiên; giãn cách ≥ 2 giây. Bỏ qua VIP; captcha / rate-limit / chương trống sau lỗi dừng cả lượt tải.
-- ID truyện là `{host}-{bookid}` (cùng bookid có thể trùng giữa nguồn gốc). Lưu HTML tại `koreader/booxbook/novels/sangtacviet/{host}-{bookid}/`. Chương id dài (fanqie) giữ dạng chuỗi, không `tonumber`.
+- ID truyện là `{host}-{bookid}` (cùng bookid có thể trùng giữa nguồn gốc). Lưu HTML tại `koreader/booxbook/novels/sangtacviet/{host}-{bookid}/`. Chương id dài (fanqie) giữ dạng chuỗi, không `tonumber`. Icon menu trên mục lục mở **Tải khoảng / toàn bộ** như DocLN; tải toàn bộ có thể chậm vì giãn cách ≥ 2 giây và dừng khi captcha/rate-limit.
 - Chỉ dùng cá nhân; nhiều bản dịch máy. Không vượt captcha/VIP. Bảng glyph PUA (sangtac/dich) theo [Nekori SangTacViet](https://github.com/Yuneko-dev/Nekori-plugins/tree/master/plugins/vietnamese/SangTacViet) — [MIT](booxbook.koplugin/THIRD-PARTY-NOTICES.md).
 
 ## Kiểm tra cài đặt

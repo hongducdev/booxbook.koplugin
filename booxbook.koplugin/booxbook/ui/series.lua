@@ -32,8 +32,8 @@ function SeriesUI.show(series, opts)
             select_enabled = false,
         }
     end
-    if opts.on_range and #(series.chapters or {}) > 0 then
-        items[#items + 1] = { text = _("Tải khoảng chương"), keep_menu_open = true, callback = opts.on_range }
+    if opts.on_offline and #(series.chapters or {}) > 0 then
+        items[#items + 1] = { text = _("Chương đã tải (offline)"), keep_menu_open = true, callback = opts.on_offline }
     end
     for position, volume in ipairs(series.volumes or {}) do
         items[#items + 1] = {
@@ -47,9 +47,35 @@ function SeriesUI.show(series, opts)
         })
         return
     end
+    local on_left_icon
+    if #(series.chapters or {}) > 0 and (opts.on_range or opts.on_download_all) then
+        on_left_icon = function()
+            local actions = {}
+            if opts.on_range then
+                actions[#actions + 1] = {
+                    text = _("Tải khoảng chương"),
+                    keep_menu_open = true,
+                    callback = opts.on_range,
+                }
+            end
+            if opts.on_download_all then
+                actions[#actions + 1] = {
+                    text = _("Tải toàn bộ chương"),
+                    keep_menu_open = true,
+                    callback = opts.on_download_all,
+                }
+            end
+            Catalog.show({
+                title = _("Tải chương"),
+                items = actions,
+            })
+        end
+    end
     Catalog.show({
         title = series.title or _("Truyện"),
         items = items,
+        left_icon = on_left_icon and "appbar.menu" or nil,
+        on_left_icon = on_left_icon,
     })
 end
 

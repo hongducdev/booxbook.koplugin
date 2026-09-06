@@ -18,10 +18,10 @@ local function chapterFileName(chapter_id)
     return "ch-" .. safe .. ".html"
 end
 
-function Download.range(series, first, last, confirmed, progress)
-    local path, id = Parser.path(series.url)
+local function seriesLocation(series)
+    series = series or {}
     local source_id = series.source_id or "docln"
-    local adapter = Docln
+    local path, id, adapter
     if source_id == "wattpad" then
         id = Wattpad.refId(series.url, true)
         path, adapter = id, Wattpad
@@ -29,7 +29,59 @@ function Download.range(series, first, last, confirmed, progress)
         local parts = Sangtacviet.parseRef(series.url or series)
         id = parts and Sangtacviet.seriesId(parts) or series.id
         path, adapter = id, Sangtacviet
-    elseif source_id ~= "docln" then return nil, _("Nguồn truyện không hợp lệ.") end
+    elseif source_id == "docln" then
+        path, id = Parser.path(series.url)
+        adapter = Docln
+    else
+        return nil, nil, nil, _("Nguồn truyện không hợp lệ.")
+    end
+    return source_id, id, path, adapter
+end
+
+function Download.savedList(series)
+    series = series or {}
+    local source_id, id, _path, err = seriesLocation(series)
+    if not source_id then return nil, err end
+    if not id or (series.id and id ~= series.id) then
+        return nil, _("Không xác định được thư mục truyện.")
+    end
+    local json_ok, Json = pcall(require, "json")
+    if not json_ok then return nil, _("Không có thư viện JSON của KOReader.") end
+    local dir = Settings.downloadDir() .. "/novels/" .. source_id .. "/" .. id
+    local index_path = dir .. "/index.json"
+    local file, read_err, read_code = io.open(index_path, "rb")
+    if not file then
+        if not read_code or read_code == 2 then return {} end
+        return nil, read_err
+    end
+    local content = file:read("*a")
+    file:close()
+    local ok, saved = pcall(Json.decode, content)
+    if not ok or type(saved) ~= "table" or type(saved.chapters) ~= "table" then
+        return nil, _("index.json bị lỗi.")
+    end
+    local list = {}
+    for chapter_id, entry in pairs(saved.chapters) do
+        if type(entry) == "table" and type(entry.file) == "string" and entry.file ~= "" then
+            list[#list + 1] = {
+                title = entry.title or tostring(chapter_id),
+                path = dir .. "/" .. entry.file,
+                number = entry.number,
+                id = chapter_id,
+            }
+        end
+    end
+    table.sort(list, function(a, b)
+        local na, nb = tonumber(a.number) or 0, tonumber(b.number) or 0
+        if na ~= nb then return na < nb end
+        return tostring(a.id) < tostring(b.id)
+    end)
+    return list
+end
+
+function Download.range(series, first, last, confirmed, progress)
+    local source_id, id, path, adapter = seriesLocation(series)
+    if not source_id then return nil, adapter end
     if not path or id ~= series.id or type(first) ~= "number" or type(last) ~= "number"
         or first % 1 ~= 0 or last % 1 ~= 0 or first < 1 or last < first or last > #series.chapters then
         return nil, _("Khoảng chương không hợp lệ.")

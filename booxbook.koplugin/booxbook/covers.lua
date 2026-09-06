@@ -56,9 +56,10 @@ function Covers.fetch(source_id, url, opts)
     local ok, _, body = Http.get(url, {
         referer = opts.referer,
         cookies = opts.cookies,
-        delay_ms = opts.delay_ms or 0,
-        timeout = opts.timeout or 5,
-        maxtime = opts.maxtime or 8,
+        -- Covers are decorative; never apply novel chapter pacing to the UI thread.
+        delay_ms = math.min(tonumber(opts.delay_ms) or 0, 200),
+        timeout = opts.timeout or 3,
+        maxtime = opts.maxtime or 5,
         headers = { accept = "image/jpeg,image/png,image/gif,image/webp" },
     })
     if not ok or type(body) ~= "string" or #body == 0 or #body > Covers.MAX_BYTES then

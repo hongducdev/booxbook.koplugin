@@ -353,6 +353,7 @@ dofile("tests/wattpad-ui.lua")
 dofile("tests/sangtacviet.lua")
 dofile("tests/sangtacviet-ui.lua")
 dofile("tests/catalog-ui.lua")
+dofile("tests/novel-offline.lua")
 dofile("tests/docln-ui.lua")
 dofile("tests/network.lua")
 

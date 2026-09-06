@@ -127,6 +127,14 @@ Http.get = function(url, options)
 end
 local cover_path = assert(Covers.fetch('docln', 'https://docln.net/img/a.jpg', { referer = 'https://docln.net/' }))
 assert(cover_path:find('%.jpg$') and #cover_writes == 1)
+-- Chapter pacing must not freeze cover fetches on the UI thread.
+local seen_delay
+Http.get = function(url, options)
+    seen_delay = options.delay_ms
+    return true, 200, '\255\216\255' .. string.rep('z', 20)
+end
+assert(Covers.fetch('docln', 'https://docln.net/img/paced.jpg', { referer = 'https://docln.net/', delay_ms = 2000 }))
+assert(seen_delay ~= nil and seen_delay <= 200, 'cover delay capped for UI safety')
 Http.get = function() return true, 200, 'not-an-image' end
 assert(not Covers.fetch('docln', 'https://docln.net/img/bad.bin', { referer = 'https://docln.net/' }))
 Http.get = function() return true, 200, '\255\216\255' .. string.rep('y', Covers.MAX_BYTES) end

@@ -154,13 +154,49 @@ function Novels.download(series, first, last, confirmed)
     end)
 end
 
+function Novels.showOffline(series)
+    local list, err = Download.savedList(series)
+    if not list then
+        notify(tostring(err or _("Không đọc được danh sách offline.")))
+        return
+    end
+    if #list == 0 then
+        notify(_("Chưa có chương đã tải."))
+        return
+    end
+    local items = {}
+    for _, saved in ipairs(list) do
+        local current = saved
+        items[#items + 1] = {
+            text = current.title,
+            mandatory = current.number and tostring(current.number) or nil,
+            keep_menu_open = true,
+            callback = function()
+                UIManager:nextTick(function()
+                    Catalog.clearStack()
+                    ReaderUI:showReader(current.path)
+                end)
+            end,
+        }
+    end
+    Catalog.show{ title = _("Chương đã tải (offline)"), items = items }
+end
+
 function Novels.showSeries(ref, adapter)
     online(_("Đang lấy mục lục…"), function() return (adapter or Docln).getSeries(ref) end, function(series)
+        local total = #(series.chapters or {})
         SeriesUI.show(series, {
             on_chapter = function(chapter) Novels.download(series, chapter.index, chapter.index) end,
             on_range = function()
-                SeriesUI.askRange(#series.chapters, function(first, last) Novels.download(series, first, last) end)
+                SeriesUI.askRange(total, function(first, last) Novels.download(series, first, last) end)
             end,
+            on_download_all = function()
+                Catalog.confirm(
+                    string.format(_("Tải toàn bộ %d chương? Có thể mất nhiều thời gian (rate-limit / captcha)."), total),
+                    function() Novels.download(series, 1, total) end
+                )
+            end,
+            on_offline = function() Novels.showOffline(series) end,
         })
     end)
 end

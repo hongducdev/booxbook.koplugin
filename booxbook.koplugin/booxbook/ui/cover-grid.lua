@@ -1,7 +1,6 @@
 -- Six cover/title cards per screen for source browse/search/news (2×3).
 local Blitbuffer = require("ffi/blitbuffer")
 local CenterContainer = require("ui/widget/container/centercontainer")
-local Device = require("device")
 local Font = require("ui/font")
 local FrameContainer = require("ui/widget/container/framecontainer")
 local Geom = require("ui/geometry")
@@ -19,7 +18,6 @@ local Http = require("booxbook.http")
 local PagedScreen = require("booxbook.ui.paged-screen")
 local Settings = require("booxbook.store.settings")
 
-local Screen = Device.screen
 local unpack = rawget(table, "unpack") or unpack
 local ImageWidget
 do
@@ -34,6 +32,23 @@ local CoverGrid = PagedScreen:extend{
 }
 
 CoverGrid.PAGE_SIZE = CoverGrid.COLS * CoverGrid.ROWS
+
+-- Split usable length into `count` cell sizes so gaps stay identical and leftover
+-- pixels are distributed one pixel at a time (no ragged right/bottom edge).
+function CoverGrid._cellSizes(total, count, gap)
+    count = math.max(1, tonumber(count) or 1)
+    gap = math.max(0, tonumber(gap) or 0)
+    total = math.max(0, tonumber(total) or 0)
+    local gaps = gap * (count - 1)
+    local usable = math.max(0, total - gaps)
+    local base = math.floor(usable / count)
+    local extra = usable - base * count
+    local sizes = {}
+    for i = 1, count do
+        sizes[i] = math.max(1, base + (i <= extra and 1 or 0))
+    end
+    return sizes
+end
 
 function CoverGrid:init()
     self.items = self.items or {}
@@ -91,7 +106,10 @@ function CoverGrid:_queueCoverFetch()
         local ok, path = pcall(Covers.fetch, self.source_id, pending, {
             referer = self.cover_referer,
             cookies = self.cover_cookies,
-            delay_ms = self.cover_delay_ms or 0,
+            -- Cover CDNs must not inherit chapter pacing (1.5–2s); that freezes the UI.
+            delay_ms = math.min(tonumber(self.cover_delay_ms) or 0, 200),
+            timeout = 3,
+            maxtime = 5,
         })
         if self._closed or not self.dimen then return end
         if not ok or not path then
@@ -115,15 +133,14 @@ function CoverGrid:_titleBox(text, width, face, height)
 end
 
 function CoverGrid:_makeCard(item, width, height)
-    local face = Font:getFace("xx_smallinfofont")
+    local border = Size.border.thin or 1
     local pad = Size.padding.small
-    local title_h = math.floor(face.size * 2.6)
-    local min_cover = Screen:scaleBySize(80)
-    if Size.item and Size.item.height_default then
-        min_cover = math.max(min_cover, Size.item.height_default)
-    end
-    local cover_h = math.max(min_cover, height - title_h - pad * 3)
-    local inner_w = width - pad * 2
+    local inner_w = math.max(1, width - border * 2 - pad * 2)
+    local inner_h = math.max(1, height - border * 2 - pad * 2)
+    local face = Font:getFace("xx_smallinfofont")
+    local title_h = math.min(math.floor(face.size * 2.6), math.max(1, math.floor(inner_h * 0.35)))
+    local span = Size.padding.small
+    local cover_h = math.max(1, inner_h - title_h - span)
     local stack = {}
     local cover_path = self:_coverPath(item)
     local used_image = false
@@ -143,26 +160,33 @@ function CoverGrid:_makeCard(item, width, height)
                 dimen = Geom:new{ w = inner_w, h = cover_h },
                 image,
             }
-            stack[#stack + 1] = VerticalSpan:new{ width = Size.padding.small }
+            stack[#stack + 1] = VerticalSpan:new{ width = span }
             stack[#stack + 1] = self:_titleBox(item.title, inner_w, face, title_h)
         end
     end
-    if not used_image then
-        stack[#stack + 1] = CenterContainer:new{
-            dimen = Geom:new{ w = inner_w, h = cover_h + title_h },
-            self:_titleBox(item and item.title or "", inner_w, Font:getFace("smallinfofont"), cover_h + title_h),
+    local content
+    if used_image then
+        content = VerticalGroup:new{
+            align = "center",
+            unpack(stack),
         }
+    else
+        -- Same outer box as image cards so gutters between borders stay even.
+        content = self:_titleBox(item and item.title or "", inner_w, Font:getFace("smallinfofont"), inner_h)
     end
-    return FrameContainer:new{
-        bordersize = Size.border.thin,
+    local frame = FrameContainer:new{
+        bordersize = border,
         padding = pad,
         margin = 0,
         background = Blitbuffer.COLOR_WHITE,
-        VerticalGroup:new{
-            align = "center",
-            unpack(stack),
+        CenterContainer:new{
+            dimen = Geom:new{ w = inner_w, h = inner_h },
+            content,
         },
     }
+    -- Pin painted size to the cell so CenterContainer siblings share identical frames.
+    frame.dimen = Geom:new{ w = width, h = height }
+    return frame
 end
 
 function CoverGrid:navState()
@@ -175,28 +199,30 @@ end
 
 function CoverGrid:buildBody(body_w, body_h)
     local gap = Size.padding.small
-    local cell_w = math.floor((body_w - gap * (self.COLS - 1)) / self.COLS)
-    local cell_h = math.floor((body_h - gap * (self.ROWS - 1)) / self.ROWS)
+    local col_w = CoverGrid._cellSizes(body_w, self.COLS, gap)
+    local row_h = CoverGrid._cellSizes(body_h, self.ROWS, gap)
     local slice = self:_visibleSlice()
     local rows = {}
     self.item_dimens = {}
     local index = 0
     for row = 1, self.ROWS do
         local cols = {}
+        local cell_h = row_h[row]
         for col = 1, self.COLS do
             index = index + 1
+            local cell_w = col_w[col]
             local item = slice[index]
             local card
             if item then
                 card = self:_makeCard(item, cell_w, cell_h)
                 self.item_dimens[#self.item_dimens + 1] = { item = item, widget = card }
             else
-                card = HorizontalSpan:new{ width = cell_w }
+                card = CenterContainer:new{
+                    dimen = Geom:new{ w = cell_w, h = cell_h },
+                    HorizontalSpan:new{ width = cell_w },
+                }
             end
-            cols[#cols + 1] = CenterContainer:new{
-                dimen = Geom:new{ w = cell_w, h = cell_h },
-                card,
-            }
+            cols[#cols + 1] = card
             if col < self.COLS then
                 cols[#cols + 1] = HorizontalSpan:new{ width = gap }
             end
@@ -207,7 +233,7 @@ function CoverGrid:buildBody(body_w, body_h)
         end
     end
     return VerticalGroup:new{
-        align = "center",
+        align = "left",
         unpack(rows),
     }
 end

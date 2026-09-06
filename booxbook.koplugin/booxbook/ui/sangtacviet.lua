@@ -62,7 +62,7 @@ function UI.list(kind, query, page, grid, last_screen)
                 local payload = { title = title,
                     items = items, offset = offset, site_page = page, has_more = result.has_more,
                     source_id = "sangtacviet", base_url = base,
-                    cover_referer = base .. "/", cover_delay_ms = 2000,
+                    cover_referer = base .. "/", cover_delay_ms = 0,
                     on_search = UI.promptSearch, on_select = showSeries }
                 if grid then grid:setPage(payload) else grid = CoverGrid.show(payload) end
                 local function turn(direction)

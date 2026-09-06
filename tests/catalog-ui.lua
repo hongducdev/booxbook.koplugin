@@ -109,6 +109,14 @@ assert(list.nav_dimens[1].action == 'back' and list.nav_dimens[2].action == 'pre
     and list.nav_dimens[4].action == 'next',
     'catalog footer matches cover-grid back/prev/page/next')
 assert(titlebars[1].left_icon == nil, 'catalog lists have no search icon by default')
+local download_list = Catalog.show{
+    title = 'Series',
+    items = { { text = 'Vol' } },
+    left_icon = 'appbar.menu',
+    on_left_icon = function() end,
+}
+assert(titlebars[#titlebars].left_icon == 'appbar.menu', 'series details can put a menu icon on the title bar')
+Catalog.pop(download_list)
 assert(list._body_h == 400 - 30 - 44 - 4, 'body slot fills the screen so the footer stays at the bottom')
 assert(list._body_slot and list._body_slot.dimen.h == list._body_h,
     'short lists still reserve the full canvas height under the title bar')
@@ -149,6 +157,17 @@ assert(list:onTap(nil, x_tap) == true)
 assert(closed_parent == 1 and list._closed, 'TitleBar X closes the list without Menu onCloseAllMenus')
 assert(list:onTap(nil, x_tap) == true)
 assert(closed_parent == 1, 'repeated TitleBar X after close is ignored')
+
+local menu_taps = 0
+local menu_list = Catalog.show{
+    title = 'Menu icon',
+    items = { { text = 'Row' } },
+    left_icon = 'appbar.menu',
+    on_left_icon = function() menu_taps = menu_taps + 1 end,
+}
+assert(menu_list:onTap(nil, { pos = { x = 10, y = 5, intersectWith = function() return false end } }) == true)
+assert(menu_taps == 1, 'left title-bar edge invokes on_left_icon')
+Catalog.pop(menu_list)
 
 local nested_closed = 0
 local nested = Catalog.show{
