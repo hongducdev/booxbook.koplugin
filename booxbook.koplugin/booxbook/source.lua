@@ -39,5 +39,6 @@ Source.register(require("booxbook.sources.rss"))
 
 Source.register(require("booxbook.sources.docln"))
 Source.register(require("booxbook.sources.wattpad"))
+Source.register(require("booxbook.sources.sangtacviet"))
 
 return Source

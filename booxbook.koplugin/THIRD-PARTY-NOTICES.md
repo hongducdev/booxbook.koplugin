@@ -9,6 +9,11 @@ Wattpad endpoint selection and metadata mapping also reference
 [Nekori Wattpad](https://github.com/Yuneko-dev/Nekori-plugins/blob/master/plugins/vietnamese/Wattpad/index.ts).
 The Lua adapter uses BooxBook's own validation, download, and UI code.
 
+Sangtacviet Private-Use glyph substitution (242 entries) and chapter-session
+notes are ported from
+[Nekori SangTacViet](https://github.com/Yuneko-dev/Nekori-plugins/blob/master/plugins/vietnamese/SangTacViet/index.ts).
+BooxBook does not include Nekori's name engine, WebView helpers, or captcha UI.
+
 MIT License
 
 Copyright (c) 2021 Rajarshee Chatterjee

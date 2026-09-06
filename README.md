@@ -52,6 +52,14 @@ Giấy phép: [AGPL-3.0-or-later](./LICENSE).
 - Dùng **Cookie Wattpad** đã lưu; không đăng nhập bằng mật khẩu hay mở khóa chương trả phí. Ẩn truyện 18+ hoặc chưa rõ phân loại khi thiết lập 18+ tắt. Bỏ qua bản nháp, chương xóa/khóa/trống; HTTP 403/429 dừng lượt tải.
 - Giãn cách ít nhất 1,6 giây; tự giải nén gzip bằng zlib của KOReader. Chỉ lưu chữ; ảnh và EPUB để Phase 6. Đã kiểm tra API/chương thật trên máy phát triển; hiển thị trên Boox chưa kiểm tra.
 
+## Đọc truyện Sangtacviet
+
+- **Truyện → Sangtacviet** luôn hiện trong menu. Lần đầu chạm sẽ hỏi xác nhận (cảnh báo dịch máy); sau đó mở grid. Tắt lại bằng **Cài đặt → Bật Sangtacviet**.
+- Duyệt **Mới cập nhật** / **Lượt xem** dạng grid bìa; kính lúp nhận từ khóa hoặc URL `/truyen/{host}/{sty}/{bookid}/`.
+- Tải chương qua AJAX (`sajax=readchapter`) kèm Referer + cookie phiên; giãn cách ≥ 2 giây. Bỏ qua VIP; captcha / rate-limit / chương trống sau lỗi dừng cả lượt tải.
+- ID truyện là `{host}-{bookid}` (cùng bookid có thể trùng giữa nguồn gốc). Lưu HTML tại `koreader/booxbook/novels/sangtacviet/{host}-{bookid}/`. Chương id dài (fanqie) giữ dạng chuỗi, không `tonumber`.
+- Chỉ dùng cá nhân; nhiều bản dịch máy. Không vượt captcha/VIP. Bảng glyph PUA (sangtac/dich) theo [Nekori SangTacViet](https://github.com/Yuneko-dev/Nekori-plugins/tree/master/plugins/vietnamese/SangTacViet) — [MIT](booxbook.koplugin/THIRD-PARTY-NOTICES.md).
+
 ## Kiểm tra cài đặt
 
 **BooxBook → Cài đặt → Kiểm tra cài đặt**
@@ -61,7 +69,7 @@ Cần Wi-Fi. Plugin gọi `example.com` (kèm header Referer), ghi `_selftest.ht
 ## Cài đặt
 
 - Cookie từng nguồn: dán session từ trình duyệt. Cookie không được in ra log.
-- Sangtacviet **tắt mặc định**. Bật trong Cài đặt sau hộp cảnh báo.
+- Sangtacviet **tắt mặc định** (chưa xác nhận cảnh báo). Mục **Truyện → Sangtacviet** vẫn hiện; lần đầu chạm sẽ hỏi trước khi dùng. Có thể tắt lại trong Cài đặt.
 - Nội dung 18+: tắt mặc định. **Tải ảnh minh họa**: bật mặc định; nếu trước đây đã tắt, bật lại trong Cài đặt. Mở lại bài từ danh mục online để cập nhật bài cũ với tiêu đề/ảnh.
 - Chỉ bài được chọn mới lưu HTML tại `koreader/booxbook/news/<feed-id>/` để KOReader mở; không tải hàng loạt. Mở từ danh sách online sẽ lấy lại nội dung bài đó.
 - RSS tùy chỉnh chỉ đọc nội dung/tóm tắt trong feed, không tự lấy toàn văn website.

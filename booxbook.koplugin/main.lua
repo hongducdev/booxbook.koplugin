@@ -77,11 +77,33 @@ function BooxBook:showMainMenu()
                 keep_menu_open = true,
                 callback = function()
                     UIManager:nextTick(function()
+                        local function openSangtacviet()
+                            require("booxbook.ui.sangtacviet").openSource()
+                        end
                         Catalog.show{ title = _("Truyện"), items = {
                             { text = "DocLN", keep_menu_open = true, callback = Novels.openSource },
                             { text = "Wattpad", keep_menu_open = true, callback = function()
                                 require("booxbook.ui.wattpad").openSource()
                             end },
+                            {
+                                text = "Sangtacviet",
+                                keep_menu_open = true,
+                                callback = function()
+                                    if Settings.sangtacvietEnabled() then
+                                        openSangtacviet()
+                                        return
+                                    end
+                                    -- Discoverable from Truyện; still requires the first-run warning.
+                                    Catalog.confirm(
+                                        _("Sangtacviet chứa nhiều bản dịch máy. Chỉ tải trang bạn đã đọc được trên trình duyệt, không phát tán file. Bật nguồn này?"),
+                                        function()
+                                            Settings.set("stv_warning_accepted", true)
+                                            Settings.setSangtacvietEnabled(true)
+                                            openSangtacviet()
+                                        end
+                                    )
+                                end,
+                            },
                         } }
                     end)
                 end,

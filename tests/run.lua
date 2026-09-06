@@ -117,7 +117,7 @@ assert_true(wrapped:find('charset="utf-8"', 1, true), "wrap charset")
 
 assert_eq(Source.get("docln").kind, "novel", "DocLN adapter registered")
 assert_eq(Source.get("docln").name, "DocLN", "source get")
-assert_eq(#Source.list(), 3, "source list")
+assert_eq(#Source.list(), 4, "source list")
 assert_eq(Source.get("wattpad").kind, "novel", "Wattpad adapter registered")
 assert_eq(Source.get("rss").kind, "news", "rss adapter registered")
 
@@ -284,6 +284,28 @@ assert_eq(shown_menu.title, "BooxBook", "news screen is deferred")
 scheduled()
 assert_eq(shown_menu.title, "Báo", "news screen opens after selection")
 
+-- Truyện always lists Sangtacviet (first open still gated by ConfirmBox).
+package.loaded["booxbook.store.settings"] = {
+    sangtacvietEnabled = function() return false end,
+    setSangtacvietEnabled = function() end,
+    set = function() end,
+}
+BooxBook = dofile(plugin_root .. "/main.lua")
+menu_items = {}
+BooxBook:addToMainMenu(menu_items)
+menu_items.booxbook.callback({ closeMenu = function() end })
+scheduled()
+local truyen
+for _, item in ipairs(shown_menu.items) do
+    if item.text == "Truyện" then truyen = item; break end
+end
+assert_true(truyen ~= nil, "Truyện menu entry exists")
+truyen.callback()
+scheduled()
+assert_eq(shown_menu.title, "Truyện", "Truyện catalog opens")
+assert_eq(#shown_menu.items, 3, "Truyện lists DocLN, Wattpad, Sangtacviet")
+assert_eq(shown_menu.items[3].text, "Sangtacviet", "Sangtacviet is discoverable when disabled")
+
 for _, name in ipairs(module_names) do
     package.loaded[name] = saved_modules[name]
 end
@@ -328,6 +350,8 @@ dofile("tests/news-http.lua")
 dofile("tests/docln.lua")
 dofile("tests/wattpad.lua")
 dofile("tests/wattpad-ui.lua")
+dofile("tests/sangtacviet.lua")
+dofile("tests/sangtacviet-ui.lua")
 dofile("tests/catalog-ui.lua")
 dofile("tests/docln-ui.lua")
 dofile("tests/network.lua")

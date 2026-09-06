@@ -10,6 +10,7 @@ local DEFAULTS = {
     stv_cookie = "",
     stv_enabled = false,
     stv_warning_accepted = false,
+    stv_home = "https://sangtacviet.com",
     custom_rss_feeds = {},
     news_limit = 10,
 }

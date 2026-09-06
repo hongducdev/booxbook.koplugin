@@ -1,11 +1,22 @@
 local Docln = require("booxbook.sources.docln")
 local Wattpad = require("booxbook.sources.wattpad")
+local Sangtacviet = require("booxbook.sources.sangtacviet")
 local Html = require("booxbook.html")
 local Parser = require("booxbook.sources.docln-parser")
 local Settings = require("booxbook.store.settings")
 local has_gettext, gettext = pcall(require, "gettext")
 local _ = has_gettext and gettext or function(text) return text end
 local Download = {}
+
+local function chapterFileName(chapter_id)
+    -- Keep short numeric ids zero-padded; never tonumber long fanqie ids.
+    if chapter_id:match("^%d+$") and #chapter_id <= 12 then
+        return string.format("ch-%012d.html", tonumber(chapter_id))
+    end
+    local safe = chapter_id:gsub("[^%w%-_]", "_")
+    if safe == "" or #safe > 64 then return nil end
+    return "ch-" .. safe .. ".html"
+end
 
 function Download.range(series, first, last, confirmed, progress)
     local path, id = Parser.path(series.url)
@@ -14,6 +25,10 @@ function Download.range(series, first, last, confirmed, progress)
     if source_id == "wattpad" then
         id = Wattpad.refId(series.url, true)
         path, adapter = id, Wattpad
+    elseif source_id == "sangtacviet" then
+        local parts = Sangtacviet.parseRef(series.url or series)
+        id = parts and Sangtacviet.seriesId(parts) or series.id
+        path, adapter = id, Sangtacviet
     elseif source_id ~= "docln" then return nil, _("Nguồn truyện không hợp lệ.") end
     if not path or id ~= series.id or type(first) ~= "number" or type(last) ~= "number"
         or first % 1 ~= 0 or last % 1 ~= 0 or first < 1 or last < first or last > #series.chapters then
@@ -44,11 +59,17 @@ function Download.range(series, first, last, confirmed, progress)
         end
         local chapter_path, chapter_series = Parser.path(chapter)
         local chapter_id = chapter_path and chapter_path:match("/c(%d+)")
+        local max_id_len = 12
         if source_id == "wattpad" then
             chapter_id = Wattpad.refId(chapter, false)
             chapter_series = chapter.series_id
+        elseif source_id == "sangtacviet" then
+            local parts = Sangtacviet.parseRef(chapter)
+            chapter_id = parts and parts.chapter_id or chapter.chapter_id or chapter.id
+            chapter_series = chapter.series_id or (parts and Sangtacviet.seriesId(parts))
+            max_id_len = 32
         end
-        if chapter_series ~= id or not chapter_id or #chapter_id > 12 then
+        if chapter_series ~= id or not chapter_id or #chapter_id > max_id_len then
             result.error = _("Đường dẫn chương không thuộc truyện này."); break
         end
         local content, err = adapter.getChapter(chapter)
@@ -60,7 +81,8 @@ function Download.range(series, first, last, confirmed, progress)
             -- A later locked response must not remove a previously downloaded chapter.
             if index.chapters[chapter_id] then entry = index.chapters[chapter_id] end
         else
-            entry.file = string.format("ch-%012d.html", tonumber(chapter_id))
+            entry.file = chapterFileName(chapter_id)
+            if not entry.file then result.error = _("ID chương không hợp lệ."); break end
             local target = dir .. "/" .. entry.file
             local document = Html.wrapDocument(chapter.title, "<h1>" .. Html.escape(chapter.title) .. "</h1>" .. content.html)
             local ok, write_err = Html.writeFile(target, document)
