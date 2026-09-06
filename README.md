@@ -2,7 +2,7 @@
 
 Plugin [KOReader](https://github.com/koreader/koreader) để đọc báo RSS và truyện chữ trên máy đọc sách (Onyx Boox và thiết bị khác). Tải HTML về máy, đọc offline trong KOReader.
 
-**Phiên bản:** 0.0.1 (`hongducdev/booxbook.koplugin`) · giấy phép [AGPL-3.0-or-later](./LICENSE)
+**Phiên bản:** 0.0.2 (`hongducdev/booxbook.koplugin`) · giấy phép [AGPL-3.0-or-later](./LICENSE)
 
 Dùng như trình đọc RSS / thư viện cá nhân. Không phát tán nội dung đã tải. Không vượt VIP, paywall hay captcha.
 
@@ -12,7 +12,7 @@ Dùng như trình đọc RSS / thư viện cá nhân. Không phát tán nội du
 |---|---|---|
 | **Báo** | 17 tờ, 633 kênh RSS | 9 báo Việt, 8 nguồn nước ngoài; thêm RSS tùy chỉnh |
 | **Truyện** | DocLN, Wattpad, Sangtacviet | Tìm / duyệt, tải chương, đọc lại offline |
-| **Thư viện** | — | Chưa có |
+| **Thư viện** | File đã tải | Mở thư mục tải bằng trình quản lý file KOReader; nhấn giữ để thao tác |
 
 Cách dùng chi tiết: [hướng dẫn](docs/usage.md). Phạm vi RSS: [danh mục báo](docs/news-categories.md).
 
@@ -30,6 +30,9 @@ Cập nhật khi có [Release](https://github.com/hongducdev/booxbook.koplugin/r
 - Cookie từng nguồn: dán session từ trình duyệt. Cookie không được in ra log.
 - Sangtacviet tắt mặc định; lần đầu mở sẽ hỏi xác nhận. Có thể tắt lại trong Cài đặt.
 - Nội dung 18+: tắt mặc định. **Tải ảnh minh họa**: bật mặc định.
+- **Lưu truyện thành EPUB**: tắt mặc định. Mỗi khoảng chương tải xong có EPUB với mục lục; áp dụng cả ba nguồn.
+- **Giữ bản HTML khi lưu EPUB**: bật mặc định. Tắt để chỉ giữ EPUB sau khi xuất và cập nhật danh sách thành công; lỗi vẫn giữ HTML để phục hồi.
+- **Tự xóa HTML báo sau khi đọc xong**: tắt mặc định. Xóa khi đóng bài đã đánh dấu đã đọc, hoặc vừa tới cuối và vẫn ở cuối; quay lại giữa bài thì giữ.
 - **Kiểm tra cài đặt** (cần Wi-Fi): gọi `example.com`, ghi `_selftest.html` (có chữ `Tiếng Việt`) và thử EPUB vào `koreader/booxbook/`.
 
 ## Phát triển

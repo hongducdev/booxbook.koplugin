@@ -200,6 +200,9 @@ Settings.bind(nil)
 Settings.load()
 assert_eq(Settings.sangtacvietEnabled(), false, "stv default off")
 assert_eq(Settings.includeImages(), true, "images default on")
+assert_eq(Settings.get("novel_epub"), false, "EPUB defaults off")
+assert_eq(Settings.get("novel_keep_html"), true, "HTML retention defaults on")
+assert_eq(Settings.get("news_delete_finished"), false, "news cleanup defaults off")
 Settings.set("custom_rss_feeds", { "https://example.com/feed.xml" })
 assert_eq(Settings.get("custom_rss_feeds")[1], "https://example.com/feed.xml", "custom rss round trip")
 Settings.setCookie("wattpad", "secret")
@@ -277,10 +280,70 @@ assert_eq(table.concat(menu_events, ","), "close,nextTick", "Tools closes before
 assert_true(type(scheduled) == "function", "fullscreen work is deferred")
 scheduled()
 assert_eq(table.concat(menu_events, ","), "close,nextTick,clear,show", "fullscreen menu resets and opens in order")
-assert_eq(shown_menu.subtitle, "v0.0.1 · Đã kết nối mạng", "home TitleBar shows the plugin version")
+assert_eq(shown_menu.subtitle, "v0.0.2 · Đã kết nối mạng", "home TitleBar shows the plugin version")
 assert_eq(shown_menu.left_icon, "info", "home TitleBar has an update icon")
 assert_true(type(shown_menu.on_left_icon) == "function", "home TitleBar update icon is tappable")
 assert_eq(shown_menu.items[4].text, "Cập nhật", "home list has an update action")
+local library = shown_menu.items[3]
+local old_fm = package.loaded["apps/filemanager/filemanager"]
+local old_reader = package.loaded["apps/reader/readerui"]
+local library_path, reader_closed
+local fm = { showFiles = function(_, path) library_path = path end }
+local reader = {}
+package.loaded["apps/filemanager/filemanager"] = fm
+package.loaded["apps/reader/readerui"] = reader
+local menu_settings = package.loaded["booxbook.store.settings"]
+menu_settings.downloadDir = function() return "/downloads" end
+menu_settings.ensureDir = function() return true end
+local retention_settings = { novel_epub = false, novel_keep_html = true, news_delete_finished = false }
+menu_settings.get = function(key) return retention_settings[key] end
+menu_settings.set = function(key, value) retention_settings[key] = value end
+local toggle_count = 0
+for _, item in ipairs(BooxBook:settingsMenu()) do
+    if item.text == "Lưu truyện thành EPUB" or item.text == "Giữ bản HTML khi lưu EPUB"
+        or item.text == "Tự xóa HTML báo sau khi đọc xong" then
+        toggle_count = toggle_count + 1
+        local before = item.checked_func()
+        if item.select_enabled_func then
+            assert_eq(item.select_enabled_func(), false, "retention requires EPUB")
+            retention_settings.novel_epub = true
+            assert_eq(item.select_enabled_func(), true, "retention available with EPUB")
+        end
+        item.callback()
+        assert_eq(item.checked_func(), not before, "retention toggle changes setting")
+        item.callback()
+        assert_eq(item.checked_func(), before, "retention toggle restores setting")
+    end
+end
+assert_eq(toggle_count, 3, "all three retention settings are visible")
+local old_cleanup = package.loaded["booxbook.news-cleanup"]
+local closed_news
+package.loaded["booxbook.news-cleanup"] = { afterClose = function(ui, finished_path)
+    closed_news = { ui, finished_path }
+end }
+BooxBook.ui = { document = { file = "/downloads/news/feed/article.html" } }
+BooxBook:onEndOfBook()
+BooxBook:onCloseDocument()
+assert_eq(closed_news[2], BooxBook.ui.document.file, "reader lifecycle passes finished article")
+assert_eq(BooxBook.finished_news_path, nil, "finished state reset after close")
+BooxBook.ui = nil
+package.loaded["booxbook.news-cleanup"] = old_cleanup
+library.callback()
+assert_eq(library_path, nil, "library navigation deferred")
+scheduled()
+assert_eq(library_path, "/downloads", "library opens actual download folder")
+fm.instance = { file_chooser = { changeToPath = function(_, path) library_path = path end } }
+fm.showFiles = function() error("must reuse existing manager") end
+library_path = nil
+library.callback(); scheduled()
+assert_eq(library_path, "/downloads", "existing file manager reused")
+fm.instance = nil
+fm.showFiles = function(_, path) assert(reader_closed); library_path = path end
+reader.instance = { onClose = function() reader_closed = true end }
+library.callback(); scheduled()
+assert_true(reader_closed, "reader closed normally before library to save reading state")
+package.loaded["apps/filemanager/filemanager"] = old_fm
+package.loaded["apps/reader/readerui"] = old_reader
 assert_eq(shown_menu.items[1].keep_menu_open, true, "news navigation keeps its parent menu")
 shown_menu.items[1].callback()
 assert_eq(shown_menu.title, "BooxBook", "news screen is deferred")
@@ -357,6 +420,8 @@ dofile("tests/sangtacviet.lua")
 dofile("tests/sangtacviet-ui.lua")
 dofile("tests/catalog-ui.lua")
 dofile("tests/novel-offline.lua")
+dofile("tests/epub.lua")
+dofile("tests/news-cleanup.lua")
 dofile("tests/docln-ui.lua")
 dofile("tests/network.lua")
 dofile("tests/update.lua")

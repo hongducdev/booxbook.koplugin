@@ -1,13 +1,13 @@
 # Kiến trúc hệ thống
 
-Plugin KOReader `booxbook.koplugin` cho Onyx Boox và thiết bị khác: RSS/Atom lưu HTML cục bộ; adapter truyện DocLN, Wattpad, Sangtacviet. Thư viện tổng hợp vẫn là bước sau.
+Plugin KOReader `booxbook.koplugin` cho Onyx Boox và thiết bị khác: RSS/Atom lưu HTML cục bộ; adapter truyện DocLN, Wattpad, Sangtacviet. Thư viện mở thư mục tải bằng trình quản lý file KOReader.
 
 Trình đọc cá nhân. Không vượt VIP / paywall / captcha.
 
 ## Luồng
 
 ```
-main.lua  →  booxbook.ui (Báo + Truyện / Thư viện stub / Cài đặt / Cập nhật)
+main.lua  →  booxbook.ui (Báo + Truyện / Thư viện file / Cài đặt / Cập nhật)
               ↓
          booxbook.http + cookie + booxbook.rate_limit
               ↓
@@ -71,9 +71,28 @@ Mỗi adapter trả:
 - Hành động online hoãn sau khi chọn menu, có Wi-Fi và Trapper. Ghi HTML qua file tạm rồi rename.
 - Cổng mạng (`booxbook.network.whenOnline`): nếu đã online/connected thì chạy ngay; chỉ gọi `beforeWifiAction` khi cả hai false.
 - Sangtacviet tắt (`stv_enabled = false`) đến khi xác nhận cảnh báo. 18+ tắt; ảnh bật (`adult_content`, `include_images`).
-- Truyện: **một HTML mỗi chương**. EPUB dùng cho selftest / bước sau.
+- Truyện: **một HTML mỗi chương**. Bật `novel_epub` để tạo thêm EPUB theo khoảng chương sau lượt tải thành công. Bộ ghi đọc từng HTML, giữ thứ tự/mục lục, kiểm tra lỗi ghi, mở lại archive trước khi rename; nếu rename fail vì file đích đã có thì xóa đích rồi thử lại.
 
 ## DocLN
+
+`novel-export.lua` xử lý đóng gói và giữ/xóa HTML. Khi `novel_keep_html=false`,
+ghi tham chiếu EPUB vào index trước khi xóa HTML; lỗi xóa dừng ngay và trả
+những HTML còn lại vào index. Offline deduplicate theo path; tên file chỉ nhận
+`tên.ext`, từ chối `.` / `..` / `../`.
+`news-cleanup.lua` nhận CloseDocument từ plugin, đợi tick sau mới gọi native
+FileManager:deleteFile. Chỉ nhận HTML dưới news sau kiểm tra realpath; yêu cầu
+`news_delete_finished=true` và (`summary.status=complete` hoặc EndOfBook mà
+`percent_finished` vẫn ≥ 0.99).
+
+Thư viện dùng `FileManager.instance.file_chooser:changeToPath` hoặc
+`FileManager:showFiles` sau khi đóng Catalog và ReaderUI đang mở. Không sao chép
+logic xóa/đổi tên/di chuyển hay trạng thái đọc vào plugin. Tham chiếu API:
+[FileManager](https://github.com/koreader/koreader/blob/master/frontend/apps/filemanager/filemanager.lua),
+[ReaderUI](https://github.com/koreader/koreader/blob/master/frontend/apps/reader/readerui.lua),
+[archiver](https://github.com/koreader/koreader-base/blob/master/ffi/archiver.lua).
+Lưu ý: `archiver.Writer:close()` hiện không trả mã lỗi native;
+plugin kiểm tra lỗi ghi, mở lại archive bằng Reader trước khi rename, và
+thử replace khi FAT từ chối đè file đích.
 
 `Truyện → DocLN → grid 2×3 (Mới cập nhật) → tập/chương → khoảng → HTML → ReaderUI`.
 

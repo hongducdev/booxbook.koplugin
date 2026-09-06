@@ -29,6 +29,7 @@ function BooxBook:onDispatcherRegisterActions()
 end
 
 function BooxBook:init()
+    self.finished_news_path = nil
     Settings.load()
     self:onDispatcherRegisterActions()
     self.ui.menu:registerToMainMenu(self)
@@ -36,10 +37,6 @@ end
 
 local function notify(text)
     UIManager:show(InfoMessage:new{ text = text })
-end
-
-local function comingSoon()
-    notify(_("Chức năng sẽ có ở bước sau."))
 end
 
 function BooxBook:addToMainMenu(menu_items)
@@ -116,7 +113,8 @@ function BooxBook:showMainMenu()
             },
             {
                 text = _("Thư viện"),
-                callback = comingSoon,
+                keep_menu_open = true,
+                callback = function() self:showLibrary() end,
             },
             {
                 text = _("Cập nhật"),
@@ -132,6 +130,34 @@ function BooxBook:showMainMenu()
             },
         },
     }
+end
+
+function BooxBook:onEndOfBook()
+    self.finished_news_path = self.ui.document and self.ui.document.file
+end
+
+function BooxBook:onCloseDocument()
+    require("booxbook.news-cleanup").afterClose(self.ui, self.finished_news_path)
+    self.finished_news_path = nil
+end
+
+function BooxBook:showLibrary()
+    UIManager:nextTick(function()
+        local dir = Settings.downloadDir()
+        if not Settings.ensureDir(dir) then
+            notify(_("Không mở được thư mục tải."))
+            return
+        end
+        local FileManager = require("apps/filemanager/filemanager")
+        local ReaderUI = require("apps/reader/readerui")
+        Catalog.clearStack()
+        if ReaderUI.instance then ReaderUI.instance:onClose() end
+        if FileManager.instance then
+            FileManager.instance.file_chooser:changeToPath(dir)
+        else
+            FileManager:showFiles(dir)
+        end
+    end)
 end
 
 function BooxBook:settingsMenu()
@@ -150,6 +176,28 @@ function BooxBook:settingsMenu()
             text = _("Kiểm tra cài đặt"),
             callback = function()
                 self:runSelfTest()
+            end,
+        },
+        {
+            text = _("Lưu truyện thành EPUB"),
+            checked_func = function() return Settings.get("novel_epub") == true end,
+            callback = function()
+                Settings.set("novel_epub", Settings.get("novel_epub") ~= true)
+            end,
+        },
+        {
+            text = _("Giữ bản HTML khi lưu EPUB"),
+            select_enabled_func = function() return Settings.get("novel_epub") == true end,
+            checked_func = function() return Settings.get("novel_keep_html") ~= false end,
+            callback = function()
+                Settings.set("novel_keep_html", Settings.get("novel_keep_html") == false)
+            end,
+        },
+        {
+            text = _("Tự xóa HTML báo sau khi đọc xong"),
+            checked_func = function() return Settings.get("news_delete_finished") == true end,
+            callback = function()
+                Settings.set("news_delete_finished", Settings.get("news_delete_finished") ~= true)
             end,
         },
         {

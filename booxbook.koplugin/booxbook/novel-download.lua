@@ -2,6 +2,7 @@ local Docln = require("booxbook.sources.docln")
 local Wattpad = require("booxbook.sources.wattpad")
 local Sangtacviet = require("booxbook.sources.sangtacviet")
 local Html = require("booxbook.html")
+local Export = require("booxbook.novel-export")
 local Parser = require("booxbook.sources.docln-parser")
 local Settings = require("booxbook.store.settings")
 local has_gettext, gettext = pcall(require, "gettext")
@@ -62,9 +63,10 @@ function Download.savedList(series)
     end
     local list = {}
     for chapter_id, entry in pairs(saved.chapters) do
-        if type(entry) == "table" and type(entry.file) == "string" and entry.file ~= "" then
+        if type(entry) == "table" and type(entry.file) == "string"
+            and entry.file:match("^[%w_%-]+%.[%w]+$") then
             list[#list + 1] = {
-                title = entry.title or tostring(chapter_id),
+                title = entry.export_title or entry.title or tostring(chapter_id),
                 path = dir .. "/" .. entry.file,
                 number = entry.number,
                 id = chapter_id,
@@ -76,7 +78,13 @@ function Download.savedList(series)
         if na ~= nb then return na < nb end
         return tostring(a.id) < tostring(b.id)
     end)
-    return list
+    local unique, seen = {}, {}
+    for _, entry in ipairs(list) do
+        if not seen[entry.path] then
+            unique[#unique + 1], seen[entry.path] = entry, true
+        end
+    end
+    return unique
 end
 
 function Download.range(series, first, last, confirmed, progress)
@@ -139,7 +147,7 @@ function Download.range(series, first, last, confirmed, progress)
             local document = Html.wrapDocument(chapter.title, "<h1>" .. Html.escape(chapter.title) .. "</h1>" .. content.html)
             local ok, write_err = Html.writeFile(target, document)
             if not ok then result.error = write_err; break end
-            result.saved[#result.saved + 1] = { title = chapter.title, path = target }
+            result.saved[#result.saved + 1] = { title = chapter.title, path = target, id = chapter_id }
         end
         index.chapters[chapter_id] = entry
         local encoded_ok, encoded = pcall(Json.encode, index)
@@ -147,6 +155,7 @@ function Download.range(series, first, last, confirmed, progress)
         local ok, write_err = Html.writeFile(index_path, encoded)
         if not ok then result.error = write_err; break end
     end
+    Export.finish(series, dir, first, last, index, result, Json)
     return result
 end
 

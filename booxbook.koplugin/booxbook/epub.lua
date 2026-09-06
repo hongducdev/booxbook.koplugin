@@ -14,7 +14,7 @@ local function chapterXHTML(title, body)
     return Html.wrapDocument(title, Html.sanitize(body or ""))
 end
 
-local function buildOpf(title, chapters)
+local function buildOpf(title, chapters, uid)
     local items = {}
     local spines = {}
     for i = 1, #chapters do
@@ -30,7 +30,7 @@ local function buildOpf(title, chapters)
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:title>%s</dc:title>
     <dc:language>vi</dc:language>
-    <dc:identifier id="BookId">booxbook-%s</dc:identifier>
+    <dc:identifier id="BookId">%s</dc:identifier>
     <dc:creator>BooxBook</dc:creator>
   </metadata>
   <manifest>
@@ -41,10 +41,10 @@ local function buildOpf(title, chapters)
     %s
   </spine>
 </package>
-]], Html.escape(title), tostring(os.time()), table.concat(items, "\n    "), table.concat(spines, "\n    "))
+]], Html.escape(title), Html.escape(uid), table.concat(items, "\n    "), table.concat(spines, "\n    "))
 end
 
-local function buildNcx(title, chapters)
+local function buildNcx(title, chapters, uid)
     local points = {}
     for i = 1, #chapters do
         points[#points + 1] = string.format([[
@@ -56,14 +56,14 @@ local function buildNcx(title, chapters)
     return string.format([[<?xml version="1.0" encoding="UTF-8"?>
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
   <head>
-    <meta name="dtb:uid" content="booxbook"/>
+    <meta name="dtb:uid" content="%s"/>
   </head>
   <docTitle><text>%s</text></docTitle>
   <navMap>
 %s
   </navMap>
 </ncx>
-]], Html.escape(title), table.concat(points, "\n"))
+]], Html.escape(uid), Html.escape(title), table.concat(points, "\n"))
 end
 
 local function openWriter(path)
@@ -78,7 +78,33 @@ local function openWriter(path)
     return epub
 end
 
---- chapters = { { title=, html= }, ... }
+-- Writer:close() always returns nil and clears err; reopen to catch a truncated zip.
+local function verifyArchive(path, expected)
+    local ok, Archiver = pcall(require, "ffi/archiver")
+    if not ok or not Archiver or not Archiver.Reader then
+        return false, "no archive reader"
+    end
+    local reader = Archiver.Reader:new{}
+    if not reader:open(path) then
+        return false, reader.err or "archive verify open failed"
+    end
+    local count = 0
+    local walked, walk_err = pcall(function()
+        for _ in reader:iterate() do
+            count = count + 1
+        end
+    end)
+    pcall(function() reader:close() end)
+    if not walked then
+        return false, walk_err or "archive verify failed"
+    end
+    if count < expected then
+        return false, "archive incomplete"
+    end
+    return true
+end
+
+--- chapters = { { title=, html= or path= }, ... }; paths contain downloaded HTML.
 function Epub.write(path, book)
     book = book or {}
     local title = book.title or "BooxBook"
@@ -88,27 +114,65 @@ function Epub.write(path, book)
     end
 
     local tmp = path .. ".tmp"
-    local epub, err = openWriter(tmp)
-    if not epub then
-        return false, err
+    local opened, epub, err = pcall(openWriter, tmp)
+    if not opened or not epub then
+        os.remove(tmp)
+        return false, opened and err or epub
     end
 
-    local mtime = os.time()
-    epub:setZipCompression("store")
-    epub:addFileFromMemory("mimetype", "application/epub+zip", mtime)
-    epub:setZipCompression("deflate")
-    epub:addFileFromMemory("META-INF/container.xml", CONTAINER_XML, mtime)
-    epub:addFileFromMemory("OEBPS/content.opf", buildOpf(title, chapters), mtime)
-    epub:addFileFromMemory("OEBPS/toc.ncx", buildNcx(title, chapters), mtime)
-    for i, chapter in ipairs(chapters) do
-        local name = string.format("OEBPS/chapter-%03d.xhtml", i)
-        epub:addFileFromMemory(name, chapterXHTML(chapter.title or title, chapter.html), mtime)
+    local mtime, uid = os.time(), "booxbook-" .. title
+    local ok, write_err = pcall(function()
+        local function check(success)
+            if not success then error(epub.err or "archive write failed", 0) end
+        end
+        local function add(name, content)
+            check(epub:addFileFromMemory(name, content, mtime))
+        end
+        check(epub:setZipCompression("store"))
+        add("mimetype", "application/epub+zip")
+        check(epub:setZipCompression("deflate"))
+        add("META-INF/container.xml", CONTAINER_XML)
+        add("OEBPS/content.opf", buildOpf(title, chapters, uid))
+        add("OEBPS/toc.ncx", buildNcx(title, chapters, uid))
+        for i, chapter in ipairs(chapters) do
+            local body = chapter.html
+            if chapter.path then
+                local file, read_err = io.open(chapter.path, "rb")
+                if not file then error(read_err, 0) end
+                local document, document_err = file:read("*a")
+                file:close()
+                if not document then error(document_err or "chapter read failed", 0) end
+                body = document:match("<body[^>]*>(.-)</body>")
+                if not body then error("chapter body missing", 0) end
+            end
+            add(string.format("OEBPS/chapter-%03d.xhtml", i), chapterXHTML(chapter.title or title, body))
+        end
+    end)
+    -- KOReader's close returns nil on success; preserve any exposed error/exception.
+    local closed, close_result = pcall(epub.close, epub)
+    if not ok or not closed or close_result == false or epub.err then
+        os.remove(tmp)
+        return false, not ok and write_err or epub.err or close_result or "archive close failed"
     end
-    epub:close()
 
-    os.remove(path)
+    local verified, verify_err = verifyArchive(tmp, 4 + #chapters)
+    if not verified then
+        os.remove(tmp)
+        return false, verify_err
+    end
+
     local renamed, rename_err = os.rename(tmp, path)
     if not renamed then
+        -- POSIX rename replaces; FAT/exFAT often fails with EEXIST.
+        local leftover = io.open(tmp, "rb")
+        if leftover then
+            leftover:close()
+            os.remove(path)
+            renamed, rename_err = os.rename(tmp, path)
+        end
+    end
+    if not renamed then
+        os.remove(tmp)
         return false, rename_err or "rename failed"
     end
     return true

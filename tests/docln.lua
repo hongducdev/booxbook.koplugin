@@ -158,6 +158,64 @@ local downloaded = assert(Download.range(series, 1, 3))
 assert(#downloaded.saved == 2 and #downloaded.skipped == 1 and #writes == 5)
 assert(writes[1][2]:find('charset="utf-8"', 1, true) and writes[1][2]:find('Tiếng Việt', 1, true))
 assert(index.chapters['11'].file ~= index.chapters['13'].file and index.chapters['12'].skipped)
+local Epub = require('booxbook.epub')
+local old_epub_write, exports = Epub.write, 0
+Settings.set('novel_epub', true)
+Epub.write = function(path, book)
+    exports = exports + 1
+    assert(path:find('/chapters-1-3.epub', 1, true))
+    assert(#book.chapters == 2 and book.chapters[1].path:match('%.html$'))
+    return true
+end
+local epub_result = assert(Download.range(series, 1, 3))
+assert(#epub_result.saved == 3 and epub_result.saved[1].path:match('%.epub$'))
+local interrupted = Download.range(series, 1, 3, false, function(n) return n < 2 end)
+assert(interrupted.error and #interrupted.saved == 1 and exports == 1)
+Epub.write = function() return false, 'archive failed' end
+Settings.set('novel_keep_html', false)
+local failed_epub = Download.range(series, 1, 3)
+assert(failed_epub.error:find('archive failed', 1, true) and #failed_epub.saved == 2)
+Epub.write = function() error('no EPUB for all-skipped range') end
+assert(#Download.range(series, 2, 2).saved == 0)
+Epub.write = function() return true end
+local old_remove, deleted = os.remove, {}
+os.remove = function(path)
+    assert(index.chapters['11'].file == 'chapters-1-3.epub', 'index committed before HTML deletion')
+    assert(path:match('ch%-%d+%.html$'), 'only this download HTML is removed')
+    deleted[#deleted + 1] = path
+    return true
+end
+local only_epub = Download.range(series, 1, 3)
+assert(not only_epub.error and #only_epub.saved == 1 and #deleted == 2)
+assert(index.chapters['13'].file == 'chapters-1-3.epub')
+os.remove = function() return nil, 'permission denied' end
+local cleanup_failure = Download.range(series, 1, 3)
+assert(cleanup_failure.error and #cleanup_failure.saved == 3)
+assert(index.chapters['11'].file:match('%.html$') and index.chapters['13'].file:match('%.html$'))
+local deletes = 0
+os.remove = function(path)
+    deletes = deletes + 1
+    if deletes == 1 then return true end
+    return nil, 'permission denied'
+end
+local partial_cleanup = Download.range(series, 1, 3)
+assert(partial_cleanup.error and #partial_cleanup.saved == 2 and deletes == 2)
+assert(index.chapters['11'].file == 'chapters-1-3.epub')
+assert(index.chapters['13'].file:match('%.html$'), 'remaining HTML is restored in index')
+local previous_write = Html.writeFile
+Html.writeFile = function(path, content)
+    if path:match('index.json$') and index.chapters['11'].file:match('%.epub$') then
+        return false, 'index write failed'
+    end
+    return previous_write(path, content)
+end
+os.remove = function() error('never delete HTML before committing EPUB index') end
+local index_failure = Download.range(series, 1, 3)
+assert(index_failure.error:find('index write failed', 1, true) and #index_failure.saved == 3)
+Html.writeFile, os.remove = previous_write, old_remove
+Settings.set('novel_keep_html', true)
+Epub.write = old_epub_write
+Settings.set('novel_epub', false)
 assert(not Download.range(series, 4, 4))
 assert(not Download.range(series, 1.5, 2))
 local many = { url = series.url, id = series.id, chapters = {} }

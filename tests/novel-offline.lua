@@ -72,6 +72,17 @@ assert(#list == 2, "skipped chapters without file are omitted")
 assert(list[1].title == "One" and list[1].number == 1)
 assert(list[2].title == "Three" and list[2].number == 3)
 assert(list[1].path:find("ch-000000000011.html", 1, true))
+package.loaded.json.decode = function()
+    return { chapters = {
+        ["11"] = { file = "chapters-1-3.epub", export_title = "Book (EPUB)", number = 1 },
+        ["13"] = { file = "chapters-1-3.epub", export_title = "Book (EPUB)", number = 3 },
+        ["14"] = { file = "../../outside.html", number = 4 },
+        ["15"] = { file = "..", number = 5 },
+        ["16"] = { file = ".", number = 6 },
+    } }
+end
+list = assert(Download.savedList({ source_id = "docln", id = "truyen-1", url = "/truyen/1" }))
+assert(#list == 1 and list[1].title == "Book (EPUB)" and list[1].number == 1)
 
 io.open = function()
     return { read = function() return "{bad" end, close = function() end }

@@ -24,7 +24,9 @@ booxbook.koplugin/
     network.lua             cổng Wi-Fi
     html.lua                sanitize + select
     gzip.lua                giải nén zlib (Wattpad)
-    epub.lua                EPUB tùy chọn
+    epub.lua                EPUB tùy chọn (verify archive + rename)
+    novel-export.lua        đóng gói EPUB, giữ/xóa HTML
+    news-cleanup.lua        xóa HTML báo đã đọc xong
     article-images.lua      ảnh bài báo khi mở bài
     covers.lua              cache bìa grid
     source.lua              registry adapter

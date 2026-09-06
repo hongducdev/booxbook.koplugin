@@ -25,7 +25,7 @@ Màn hình chính hiện phiên bản ngay dưới tiêu đề. Điều hướng
 - Lưu HTML từng chương và `index.json` tại `koreader/booxbook/novels/docln/<loại-truyện-id>/`. Tên file dùng ID chương ổn định. Đọc lại offline từ mục lục truyện hoặc trình quản lý file KOReader.
 - Tự chuyển giữa `docln.net`, `ln.hako.vn`, `docln.sbs` khi lỗi mạng/trang; nhớ tên miền hoạt động. Dùng **Cookie DocLN** đã có trong Cài đặt nếu cần.
 - Ẩn kết quả được đánh dấu 18+ khi thiết lập tắt; kiểm tra lại trên trang truyện. Chương khóa/404/không có chữ hiển thị lý do bỏ qua; lỗi mạng hoặc ghi file giữ lại các chương đã lưu.
-- Hỗ trợ nội dung công khai được đóng gói trong HTML theo cách của [Nekori LNHako](https://github.com/Yuneko-dev/Nekori-plugins/tree/c29b05de71bf71e5321d6488014d027d7b2f68cb/plugins/vietnamese/LNHako). [Thông báo MIT](../booxbook.koplugin/THIRD-PARTY-NOTICES.md). Xuất EPUB và tải ảnh chương để bước sau.
+- Hỗ trợ nội dung công khai được đóng gói trong HTML theo cách của [Nekori LNHako](https://github.com/Yuneko-dev/Nekori-plugins/tree/c29b05de71bf71e5321d6488014d027d7b2f68cb/plugins/vietnamese/LNHako). [Thông báo MIT](../booxbook.koplugin/THIRD-PARTY-NOTICES.md). EPUB tùy chọn trong Cài đặt; tải ảnh chương để bước sau.
 
 ## Wattpad
 
@@ -33,7 +33,7 @@ Màn hình chính hiện phiên bản ngay dưới tiêu đề. Điều hướng
 - **Truyện → Wattpad**: duyệt Nổi bật / Đề cử / Mới (tiếng Việt). Chạm kính lúp trên thanh tiêu đề để tìm kiếm hoặc nhập URL `/story/<id>`; nút này cũng có ở danh sách kết quả, giống DocLN. Khi API danh sách lỗi vẫn có thể nhập URL; Đề cử có thể rỗng.
 - Mục lục dùng chung DocLN: icon menu góc trái → khoảng / toàn bộ; **Chương đã tải (offline)** trong danh sách. Lưu HTML + `index.json` tại `koreader/booxbook/novels/wattpad/<id>/`.
 - Dùng **Cookie Wattpad** đã lưu; không đăng nhập bằng mật khẩu hay mở khóa chương trả phí. Ẩn truyện 18+ hoặc chưa rõ phân loại khi thiết lập 18+ tắt. Bỏ qua bản nháp, chương xóa/khóa/trống; HTTP 403/429 dừng lượt tải.
-- Giãn cách ít nhất 1,6 giây; tự giải nén gzip bằng zlib của KOReader. Chỉ lưu chữ; ảnh và EPUB để bước sau.
+- Giãn cách ít nhất 1,6 giây; tự giải nén gzip bằng zlib của KOReader. Chỉ lưu chữ; EPUB tùy chọn trong Cài đặt, ảnh để bước sau.
 
 ## Sangtacviet
 
@@ -42,6 +42,39 @@ Màn hình chính hiện phiên bản ngay dưới tiêu đề. Điều hướng
 - Tải chương qua AJAX (`sajax=readchapter`) kèm Referer + cookie phiên; giãn cách ≥ 2 giây. Bỏ qua VIP; captcha / rate-limit / chương trống sau lỗi dừng cả lượt tải.
 - ID truyện là `{host}-{bookid}` (cùng bookid có thể trùng giữa nguồn gốc). Lưu HTML tại `koreader/booxbook/novels/sangtacviet/{host}-{bookid}/`. Chương id dài (fanqie) giữ dạng chuỗi, không `tonumber`. Icon menu trên mục lục mở **Tải khoảng / toàn bộ** như DocLN; tải toàn bộ có thể chậm vì giãn cách ≥ 2 giây và dừng khi captcha/rate-limit.
 - Chỉ dùng cá nhân; nhiều bản dịch máy. Không vượt captcha/VIP. Bảng glyph PUA (sangtac/dich) theo [Nekori SangTacViet](https://github.com/Yuneko-dev/Nekori-plugins/tree/master/plugins/vietnamese/SangTacViet) — [MIT](../booxbook.koplugin/THIRD-PARTY-NOTICES.md).
+
+## EPUB và Thư viện
+
+- Bật **Cài đặt → Lưu truyện thành EPUB**. Mặc định vẫn là HTML.
+- Áp dụng DocLN, Wattpad và Sangtacviet: mỗi khoảng tải xong có file
+  `chapters-<từ>-<đến>.epub` trong thư mục truyện, chứa các chương tải được theo
+  thứ tự và mục lục. Tải toàn bộ tạo một EPUB cho khoảng đó. Chương khóa bị bỏ qua.
+- Chọn dòng **(EPUB)** ở đầu kết quả để đọc. **Giữ bản HTML khi lưu EPUB** bật
+  mặc định: mục **Chương đã tải (offline)** tiếp tục mở từng HTML. Tắt công tắc
+  này để xóa HTML của lượt tải sau khi EPUB và `index.json` đã ghi thành công;
+  danh sách offline khi đó mở EPUB, mỗi file chỉ hiện một lần. Công tắc chỉ áp
+  dụng khi EPUB bật; không quét xóa các HTML đã tải từ trước.
+- Nếu lượt tải bị gián đoạn, chưa tạo EPUB; các HTML đã ghi vẫn dùng được. Nếu
+  xuất EPUB lỗi, thông báo lỗi và giữ HTML cùng EPUB cũ. Tải lại cùng khoảng thành
+  công sẽ thay EPUB của khoảng đó; các khoảng khác có file riêng.
+- **Thư viện** ở màn hình chính mở thư mục `koreader/booxbook/` bằng trình quản lý
+  file KOReader, không cần mạng. Vào `news/` để tìm báo, `novels/<nguồn>/<id>/`
+  để tìm truyện. Danh sách phản ánh file thực trên máy, kể cả tải từ trước.
+- Chạm file để đọc; nhấn giữ để đổi tên, xóa, sao chép, di chuyển, xem thông tin,
+  thêm bộ sưu tập hoặc đổi trạng thái đọc theo KOReader. Khi mở từ sách đang đọc,
+  KOReader đóng sách và lưu trạng thái trước khi chuyển sang Thư viện.
+- Đổi tên/di chuyển/xóa HTML bằng KOReader không sửa `index.json` của truyện;
+  khi đó mở file ở vị trí mới qua Thư viện thay vì danh sách chương offline cũ.
+
+## Tự xóa báo đã đọc
+
+- Bật **Cài đặt → Tự xóa HTML báo sau khi đọc xong** (mặc định tắt).
+- Khi đóng bài: xóa nếu đã đánh dấu **Đã đọc**, hoặc nếu vừa tới cuối bài
+  và vẫn đang ở cuối (không xóa nếu lật tới cuối rồi chọn về đầu / đọc tiếp).
+- Áp dụng cả khi mở bài từ Báo, Tin đã tải hoặc Thư viện. Chỉ xóa HTML trong
+  `booxbook/news/<nguồn>/`, không xóa truyện hay file ngoài thư mục này.
+- KOReader cập nhật lịch sử, bộ sưu tập và metadata khi xóa. Ảnh tải kèm vẫn giữ.
+- Không quét xóa báo cũ hàng loạt. Có thể tải lại bài từ danh sách online.
 
 ## Dữ liệu trên máy
 
