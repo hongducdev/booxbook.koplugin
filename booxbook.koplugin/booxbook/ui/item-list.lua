@@ -248,6 +248,8 @@ function ItemList.show(opts)
         left_icon = opts.left_icon,
         on_left_icon = opts.on_left_icon,
         on_close = opts.on_close,
+        footer_slots = opts.footer_slots,
+        on_footer = opts.on_footer,
     }
     Catalog.push(list)
     return list

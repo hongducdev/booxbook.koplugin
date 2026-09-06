@@ -190,35 +190,48 @@ function PagedScreen:_pageLabel(page_no)
     return tostring(page_no)
 end
 
+function PagedScreen:_footerSlots()
+    if type(self.footer_slots) == "table" and #self.footer_slots > 0 then
+        return self.footer_slots
+    end
+    local state = self:navState() or {}
+    return {
+        { text = _("Quay lại"), action = "back", enabled = true },
+        { text = _("Trước"), action = "prev", enabled = not not state.can_prev },
+        { text = self:_pageLabel(state.page_no or 1), action = nil, enabled = false },
+        { text = _("Sau"), action = "next", enabled = not not state.can_next },
+    }
+end
+
 function PagedScreen:_makeFooter(nav_h)
     local gap = Size.padding.small
-    local state = self:navState() or {}
-    local can_prev = not not state.can_prev
-    local can_next = not not state.can_next
-    local page_no = state.page_no or 1
-    local label_w = math.floor((self.dimen.w - gap * 5) / 4)
+    local slots = self:_footerSlots()
+    local count = math.max(#slots, 1)
+    local label_w = math.floor((self.dimen.w - gap * (count + 1)) / count)
         - Size.padding.small * 2 - Size.border.thin * 2
-    local back = self:_navLabel(_("Quay lại"), true, label_w)
-    local prev = self:_navLabel(_("Trước"), can_prev, label_w)
-    local mid = self:_navLabel(self:_pageLabel(page_no), false, label_w)
-    local nextb = self:_navLabel(_("Sau"), can_next, label_w)
-    self.nav_dimens = {
-        { widget = back, action = "back", enabled = true },
-        { widget = prev, action = "prev", enabled = can_prev },
-        { widget = mid, action = nil, enabled = false },
-        { widget = nextb, action = "next", enabled = can_next },
-    }
+    local widgets = {}
+    self.nav_dimens = {}
+    for index, slot in ipairs(slots) do
+        local enabled = slot.action ~= nil
+        if slot.enabled == false then
+            enabled = false
+        elseif slot.enabled == true then
+            enabled = true
+        end
+        local widget = self:_navLabel(slot.text or "", enabled, label_w)
+        self.nav_dimens[#self.nav_dimens + 1] = {
+            widget = widget,
+            action = slot.action,
+            enabled = enabled,
+        }
+        if index > 1 then
+            widgets[#widgets + 1] = HorizontalSpan:new{ width = gap }
+        end
+        widgets[#widgets + 1] = widget
+    end
     return CenterContainer:new{
         dimen = Geom:new{ w = self.dimen.w, h = nav_h },
-        HorizontalGroup:new{
-            back,
-            HorizontalSpan:new{ width = gap },
-            prev,
-            HorizontalSpan:new{ width = gap },
-            mid,
-            HorizontalSpan:new{ width = gap },
-            nextb,
-        },
+        HorizontalGroup:new{ unpack(widgets) },
     }
 end
 
@@ -374,7 +387,8 @@ function PagedScreen:_footerActionAt(pos)
     end
     if not self:_inFooterBand(pos) then return nil end
     local gap = Size.padding.small
-    local slot = math.max(1, math.floor((self.dimen.w - gap * 5) / 4))
+    local count = math.max(#self.nav_dimens, 1)
+    local slot = math.max(1, math.floor((self.dimen.w - gap * (count + 1)) / count))
     local x0 = self.dimen.x or 0
     local x = pos.x
     if x == nil then return nil end
@@ -391,6 +405,9 @@ function PagedScreen:_runNavAction(action)
     if action == "back" then return self:onClose() end
     if action == "next" then return self:onNextPage() end
     if action == "prev" then return self:onPrevPage() end
+    if type(self.on_footer) == "function" then
+        self.on_footer(action)
+    end
     return true
 end
 

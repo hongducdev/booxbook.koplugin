@@ -60,9 +60,14 @@ function BooxBook:addToMainMenu(menu_items)
 end
 
 function BooxBook:showMainMenu()
+    local version = Update.currentVersion()
     Catalog.show{
         title = _("BooxBook"),
-        subtitle = Network.statusText(),
+        subtitle = "v" .. version .. " · " .. Network.statusText(),
+        left_icon = "info",
+        on_left_icon = function()
+            Update.checkAndPrompt()
+        end,
         items = {
             {
                 text = _("Báo"),
@@ -112,6 +117,12 @@ function BooxBook:showMainMenu()
             {
                 text = _("Thư viện"),
                 callback = comingSoon,
+            },
+            {
+                text = _("Cập nhật"),
+                callback = function()
+                    Update.checkAndPrompt()
+                end,
             },
             {
                 text = _("Cài đặt"),

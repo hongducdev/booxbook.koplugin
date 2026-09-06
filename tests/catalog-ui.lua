@@ -108,6 +108,27 @@ local list = Catalog.show{
 assert(list.nav_dimens[1].action == 'back' and list.nav_dimens[2].action == 'prev'
     and list.nav_dimens[4].action == 'next',
     'catalog footer matches cover-grid back/prev/page/next')
+local updated = 0
+local home = Catalog.show{
+    title = 'Home',
+    items = { { text = 'News' } },
+    footer_slots = {
+        { text = 'Quay lại', action = 'back', enabled = true },
+        { text = 'v0.0.1', action = nil, enabled = false },
+        { text = 'Cập nhật', action = 'update', enabled = true },
+        { text = '1/1', action = nil, enabled = false },
+    },
+    on_footer = function(action)
+        if action == 'update' then updated = updated + 1 end
+    end,
+}
+assert(home.nav_dimens[2].action == nil and home.nav_dimens[2].enabled == false,
+    'home footer version slot is visible but not tappable')
+assert(home.nav_dimens[3].action == 'update' and home.nav_dimens[3].enabled,
+    'home footer Cập nhật is tappable')
+home:_runNavAction('update')
+assert(updated == 1, 'home footer Cập nhật runs on_footer')
+Catalog.pop(home)
 assert(titlebars[1].left_icon == nil, 'catalog lists have no search icon by default')
 local download_list = Catalog.show{
     title = 'Series',
