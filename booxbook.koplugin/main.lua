@@ -79,6 +79,9 @@ function BooxBook:showMainMenu()
                     UIManager:nextTick(function()
                         Catalog.show{ title = _("Truyện"), items = {
                             { text = "DocLN", keep_menu_open = true, callback = Novels.openSource },
+                            { text = "Wattpad", keep_menu_open = true, callback = function()
+                                require("booxbook.ui.wattpad").openSource()
+                            end },
                         } }
                     end)
                 end,

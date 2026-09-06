@@ -5,6 +5,10 @@ DocLN parsing and public HTML payload decoding are adapted from
 (`index.ts`, `utils.ts`). BooxBook uses its existing Lua networking and UI;
 it does not include Nekori's TypeScript dependencies.
 
+Wattpad endpoint selection and metadata mapping also reference
+[Nekori Wattpad](https://github.com/Yuneko-dev/Nekori-plugins/blob/master/plugins/vietnamese/Wattpad/index.ts).
+The Lua adapter uses BooxBook's own validation, download, and UI code.
+
 MIT License
 
 Copyright (c) 2021 Rajarshee Chatterjee

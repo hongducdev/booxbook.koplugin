@@ -43,6 +43,15 @@ Giấy phép: [AGPL-3.0-or-later](./LICENSE).
 - Ẩn kết quả được đánh dấu 18+ khi thiết lập tắt; kiểm tra lại trên trang truyện. Chương khóa/404/không có chữ hiển thị lý do bỏ qua; lỗi mạng hoặc ghi file giữ lại các chương đã lưu.
 - Hỗ trợ nội dung công khai được đóng gói trong HTML theo cách của [Nekori LNHako](https://github.com/Yuneko-dev/Nekori-plugins/tree/c29b05de71bf71e5321d6488014d027d7b2f68cb/plugins/vietnamese/LNHako). [Thông báo MIT](booxbook.koplugin/THIRD-PARTY-NOTICES.md). Xuất EPUB và tải ảnh chương để Phase 6.
 
+## Đọc truyện Wattpad
+
+- Danh sách duyệt và kết quả tìm kiếm hiển thị grid 2×3 bìa/tên truyện như DocLN. Nút Trước/Sau chuyển màn hình rồi lấy trang API tiếp theo; bìa chỉ tải khi xuất hiện trên màn hình, lỗi ảnh vẫn đọc được tên truyện.
+
+- **Truyện → Wattpad**: duyệt Nổi bật / Đề cử / Mới (tiếng Việt). Chạm kính lúp trên thanh tiêu đề để tìm kiếm hoặc nhập URL `/story/<id>`; nút này cũng có ở danh sách kết quả, giống DocLN. Khi API danh sách lỗi vẫn có thể nhập URL; Đề cử có thể rỗng.
+- Mục lục, tải một chương / khoảng chương và mở bằng KOReader dùng chung luồng DocLN. Lưu HTML + `index.json` tại `koreader/booxbook/novels/wattpad/<id>/`.
+- Dùng **Cookie Wattpad** đã lưu; không đăng nhập bằng mật khẩu hay mở khóa chương trả phí. Ẩn truyện 18+ hoặc chưa rõ phân loại khi thiết lập 18+ tắt. Bỏ qua bản nháp, chương xóa/khóa/trống; HTTP 403/429 dừng lượt tải.
+- Giãn cách ít nhất 1,6 giây; tự giải nén gzip bằng zlib của KOReader. Chỉ lưu chữ; ảnh và EPUB để Phase 6. Đã kiểm tra API/chương thật trên máy phát triển; hiển thị trên Boox chưa kiểm tra.
+
 ## Kiểm tra cài đặt
 
 **BooxBook → Cài đặt → Kiểm tra cài đặt**

@@ -1,4 +1,5 @@
 local Docln = require("booxbook.sources.docln")
+local Wattpad = require("booxbook.sources.wattpad")
 local Html = require("booxbook.html")
 local Parser = require("booxbook.sources.docln-parser")
 local Settings = require("booxbook.store.settings")
@@ -8,6 +9,12 @@ local Download = {}
 
 function Download.range(series, first, last, confirmed, progress)
     local path, id = Parser.path(series.url)
+    local source_id = series.source_id or "docln"
+    local adapter = Docln
+    if source_id == "wattpad" then
+        id = Wattpad.refId(series.url, true)
+        path, adapter = id, Wattpad
+    elseif source_id ~= "docln" then return nil, _("Nguồn truyện không hợp lệ.") end
     if not path or id ~= series.id or type(first) ~= "number" or type(last) ~= "number"
         or first % 1 ~= 0 or last % 1 ~= 0 or first < 1 or last < first or last > #series.chapters then
         return nil, _("Khoảng chương không hợp lệ.")
@@ -16,7 +23,7 @@ function Download.range(series, first, last, confirmed, progress)
     if series.adult and not Settings.adultContent() then return nil, _("Nội dung 18+ đang tắt.") end
     local json_ok, Json = pcall(require, "json")
     if not json_ok then return nil, _("Không có thư viện JSON của KOReader.") end
-    local dir = Settings.downloadDir() .. "/novels/docln/" .. id
+    local dir = Settings.downloadDir() .. "/novels/" .. source_id .. "/" .. id
     if not Settings.ensureDir(dir) then return nil, _("Không tạo được thư mục truyện.") end
     local index_path, index = dir .. "/index.json", { id = id, title = series.title, chapters = {} }
     local file, read_err, read_code = io.open(index_path, "rb")
@@ -37,10 +44,14 @@ function Download.range(series, first, last, confirmed, progress)
         end
         local chapter_path, chapter_series = Parser.path(chapter)
         local chapter_id = chapter_path and chapter_path:match("/c(%d+)")
+        if source_id == "wattpad" then
+            chapter_id = Wattpad.refId(chapter, false)
+            chapter_series = chapter.series_id
+        end
         if chapter_series ~= id or not chapter_id or #chapter_id > 12 then
             result.error = _("Đường dẫn chương không thuộc truyện này."); break
         end
-        local content, err = Docln.getChapter(chapter)
+        local content, err = adapter.getChapter(chapter)
         if not content then result.error = err; break end
         local entry = { title = chapter.title, url = chapter.url, number = number }
         if content.skipped then

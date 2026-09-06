@@ -154,8 +154,8 @@ function Novels.download(series, first, last, confirmed)
     end)
 end
 
-function Novels.showSeries(ref)
-    online(_("Đang lấy mục lục…"), function() return Docln.getSeries(ref) end, function(series)
+function Novels.showSeries(ref, adapter)
+    online(_("Đang lấy mục lục…"), function() return (adapter or Docln).getSeries(ref) end, function(series)
         SeriesUI.show(series, {
             on_chapter = function(chapter) Novels.download(series, chapter.index, chapter.index) end,
             on_range = function()
