@@ -17,3 +17,9 @@
       từ sách đang đọc sang Thư viện rồi mở lại; phát hành sau kiểm tra thiết bị.
 
 Chi tiết: [changelog](project-changelog.md), [hướng dẫn](usage.md).
+
+## Truyện Full — 2026-09-07
+
+- [x] Adapter HTML Nekori 1.0.7: duyệt/tìm, mục lục phân trang, `#chapter-c`.
+- [x] Menu, registry, tải HTML/EPUB/offline; skip chương trống; fail-closed listing.
+- [ ] Kiểm tra thao tác trên Boox/Kindle/Kobo thật.

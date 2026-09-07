@@ -43,6 +43,16 @@ Màn hình chính hiện phiên bản ngay dưới tiêu đề. Điều hướng
 - ID truyện là `{host}-{bookid}` (cùng bookid có thể trùng giữa nguồn gốc). Lưu HTML tại `koreader/booxbook/novels/sangtacviet/{host}-{bookid}/`. Chương id dài (fanqie) giữ dạng chuỗi, không `tonumber`. Icon menu trên mục lục mở **Tải khoảng / toàn bộ** như DocLN; tải toàn bộ có thể chậm vì giãn cách ≥ 2 giây và dừng khi captcha/rate-limit.
 - Chỉ dùng cá nhân; nhiều bản dịch máy. Không vượt captcha/VIP. Bảng glyph PUA (sangtac/dich) theo [Nekori SangTacViet](https://github.com/Yuneko-dev/Nekori-plugins/tree/master/plugins/vietnamese/SangTacViet) — [MIT](../booxbook.koplugin/THIRD-PARTY-NOTICES.md).
 
+## Truyện Full
+
+**Truyện → Truyện Full**: danh sách mới / lượt xem, tìm tên hoặc nhập URL
+`https://truyenfull.live/ten-truyen/`. Đọc HTML trực tiếp (`#chapter-c`); không
+cần mã hóa hay cookie. Mục lục lấy từng trang `/trang-N/` (khoảng 50 chương/trang)
+nên truyện dài có thể chờ vài phút. Tải khoảng/toàn bộ, HTML/EPUB và offline
+dùng cùng menu các nguồn khác. Lưu dưới `novels/truyenfull/<ten-truyen>/`.
+Chương trống hoặc khóa bỏ qua; lỗi mạng dừng và giữ file đã tải. Nguồn này
+chưa có bộ lọc độ tuổi.
+
 ## EPUB và Thư viện
 
 EPUB mới giữ tên truyện gốc và metadata nguồn có cung cấp (tác giả, mô tả,
@@ -52,7 +62,7 @@ lỗi hoặc định dạng chưa hỗ trợ thì giữ HTML và báo lỗi. EPU
 cần tải lại để nhận metadata và bìa mới.
 
 - Bật **Cài đặt → Lưu truyện thành EPUB**. Mặc định vẫn là HTML.
-- Áp dụng DocLN, Wattpad và Sangtacviet: mỗi khoảng tải xong có file
+- Áp dụng DocLN, Wattpad, Sangtacviet và Truyện Full: mỗi khoảng tải xong có file
   `chapters-<từ>-<đến>.epub` trong thư mục truyện, chứa các chương tải được theo
   thứ tự và mục lục. Tải toàn bộ tạo một EPUB cho khoảng đó. Chương khóa bị bỏ qua.
 - Chọn dòng **(EPUB)** ở đầu kết quả để đọc. **Giữ bản HTML khi lưu EPUB** bật

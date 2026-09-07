@@ -14,6 +14,11 @@ notes are ported from
 [Nekori SangTacViet](https://github.com/Yuneko-dev/Nekori-plugins/blob/master/plugins/vietnamese/SangTacViet/index.ts).
 BooxBook does not include Nekori's name engine, WebView helpers, or captcha UI.
 
+Truyện Full listing/search URLs, TOC pagination (`/trang-N/#list-chapter`) and
+`#chapter-c` mapping are adapted from
+[Nekori TruyenFull 1.0.7](https://github.com/Yuneko-dev/Nekori-plugins/blob/master/plugins/vietnamese/TruyenFull/index.ts).
+BooxBook uses its HTML/HTTP stack, not Cheerio or Nekori's filter chrome.
+
 MIT License
 
 Copyright (c) 2021 Rajarshee Chatterjee

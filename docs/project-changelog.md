@@ -1,5 +1,15 @@
 # Changelog
 
+## Chưa phát hành — Truyện Full
+
+- Thêm nguồn truyenfull.live (Nekori 1.0.7): mới cập nhật, lượt xem, tìm kiếm,
+  metadata, mục lục phân trang và HTML chương công khai. Không AES.
+- Nối menu, registry, tải HTML/EPUB/offline. Chương trống/khóa bỏ qua; lỗi mạng
+  dừng. Lưu `novels/truyenfull/<slug>/`.
+- Kiểm thử LuaJIT (URL, phân trang, skip/abort, download, UI). HTML thật 2026-09-07:
+  danh sách hot, tìm `dao`, Linh Vũ Thiên Hạ 50 chương trang 1 / 95 trang mục lục,
+  chương 1 `#chapter-c`. Chưa kiểm tra trực tiếp trên Boox.
+
 ## Chưa phát hành — metadata và bìa EPUB
 
 - Truyền metadata từ adapter đến OPF: tên gốc, tác giả, mô tả, thẻ, URL nguồn;

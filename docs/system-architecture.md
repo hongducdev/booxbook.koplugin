@@ -1,6 +1,6 @@
 # Kiến trúc hệ thống
 
-Plugin KOReader `booxbook.koplugin` cho Onyx Boox và thiết bị khác: RSS/Atom lưu HTML cục bộ; adapter truyện DocLN, Wattpad, Sangtacviet. Thư viện mở thư mục tải bằng trình quản lý file KOReader.
+Plugin KOReader `booxbook.koplugin` cho Onyx Boox và thiết bị khác: RSS/Atom lưu HTML cục bộ; adapter truyện DocLN, Wattpad, Sangtacviet, Truyện Full. Thư viện mở thư mục tải bằng trình quản lý file KOReader.
 
 Trình đọc cá nhân. Không vượt VIP / paywall / captcha.
 
@@ -13,7 +13,7 @@ main.lua  →  booxbook.ui (Báo + Truyện / Thư viện file / Cài đặt / C
               ↓
          booxbook.html → HTML bài/chương (mặc định) / booxbook.epub (tùy chọn)
               ↓
-         booxbook.source → rss / docln / wattpad / sangtacviet
+         booxbook.source → rss / docln / wattpad / sangtacviet / truyenfull
 ```
 
 Điểm vào mạng bọc `Network.whenOnline`. Selftest GET `https://example.com` kèm Referer, ghi `_selftest.html` (`Tiếng Việt`) và `_selftest.epub` dưới `koreader/booxbook/`.
@@ -107,6 +107,14 @@ Catalog `push` giữ widget cha dưới widget con. `pop` chỉ đóng widget đ
 ## Sangtacviet
 
 `ui/sangtacviet.lua` giống Wattpad (Mới cập nhật / Lượt xem + URL/tìm). Tải tắt đến ConfirmBox lần đầu. Probe `.com` → `.app` → `.xyz` → `.pro`, nhớ `stv_home`, prime `_ac`/`_gac`, đọc `sajax=readchapter` kèm Referer. VIP bỏ qua không request. Giãn cách sàn 2000ms. Glyph PUA chỉ host `sangtac`/`dich`. Đường lưu `{host}-{bookid}`; id chương dài giữ chuỗi.
+
+## Truyện Full HTML
+
+`sources/truyenfull.lua` lấy HTML qua HTTP chung (≥1600ms). Parser:
+`.truyen-title`, `data-image` (grid), `.book img`, `#list-chapter`, `#chapter-c`.
+Duyệt `/danh-sach/truyen-moi|truyen-hot/trang-N/`, tìm `/tim-kiem?tukhoa=`. TOC
+theo `/<slug>/trang-N/`, chống lặp, giới hạn 1000 trang; sắp theo số `chuong-N`.
+Chương trống/khóa bỏ qua (không dừng cả khoảng). Host chỉ `truyenfull.live`.
 
 ## Liên kết
 

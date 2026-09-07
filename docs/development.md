@@ -33,7 +33,7 @@ booxbook.koplugin/
     novel-download.lua      tải khoảng chương → HTML + index.json
     update.lua              kiểm tra / cài zip GitHub Release
     store/settings.lua      LuaSettings → settings/booxbook.lua
-    sources/                RSS + DocLN + Wattpad + Sangtacviet + feeds*
+    sources/                RSS + DocLN + Wattpad + Sangtacviet + Truyện Full + feeds*
     ui/                     catalog, danh sách, grid, news, novels
 ```
 

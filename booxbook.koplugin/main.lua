@@ -107,6 +107,9 @@ function BooxBook:showMainMenu()
                                     )
                                 end,
                             },
+                            { text = "Truyện Full", keep_menu_open = true, callback = function()
+                                require("booxbook.ui.truyenfull").openSource()
+                            end },
                         } }
                     end)
                 end,
