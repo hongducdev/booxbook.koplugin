@@ -62,7 +62,8 @@ function Covers.fetch(source_id, url, opts)
         maxtime = opts.maxtime or 5,
         headers = { accept = "image/jpeg,image/png,image/gif,image/webp" },
     })
-    if not ok or type(body) ~= "string" or #body == 0 or #body > Covers.MAX_BYTES then
+    local max_bytes = math.min(tonumber(opts.max_bytes) or Covers.MAX_BYTES, 2 * 1024 * 1024)
+    if not ok or type(body) ~= "string" or #body == 0 or #body > max_bytes then
         return nil
     end
     local ext = extension(body)

@@ -40,6 +40,10 @@ data = { id = "1134042", title = "Public", mature = false, parts = {
     { id = 3875397, title = "Chapter" }, { id = 2, title = "Draft", draft = true },
     { id = 3, title = "Deleted", deleted = true }, { id = 4, title = "Paid", paid = true } } }
 local series = assert(W.getSeries("1134042"))
+data.cover, data.description, data.tags = "https://img.example/cover.jpg", "Original summary", { "fantasy" }
+local metadata_series = assert(W.getSeries("1134042"))
+assert(metadata_series.cover == data.cover and metadata_series.description == data.description
+    and metadata_series.tags[1] == "fantasy")
 assert(#series.chapters == 2 and series.chapters[2].index == 2 and series.source_id == "wattpad")
 data.mature = true; assert(not W.getSeries("1134042")); data.mature = false
 local before = calls

@@ -1,4 +1,5 @@
 local Html = require("booxbook.html")
+local Metadata = require("booxbook.epub-metadata")
 
 local Epub = {}
 
@@ -14,9 +15,14 @@ local function chapterXHTML(title, body)
     return Html.wrapDocument(title, Html.sanitize(body or ""))
 end
 
-local function buildOpf(title, chapters, uid)
+local function buildOpf(title, chapters, uid, book, cover)
     local items = {}
     local spines = {}
+    if cover then
+        items[#items + 1] = '<item id="cover-image" href="' .. cover.name .. '" media-type="' .. cover.mime .. '"/>'
+        items[#items + 1] = '<item id="cover-page" href="cover.xhtml" media-type="application/xhtml+xml"/>'
+        spines[#spines + 1] = '<itemref idref="cover-page" linear="no"/>'
+    end
     for i = 1, #chapters do
         local id = string.format("chap-%03d", i)
         local href = string.format("chapter-%03d.xhtml", i)
@@ -29,9 +35,9 @@ local function buildOpf(title, chapters, uid)
 <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId" version="2.0">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:title>%s</dc:title>
-    <dc:language>vi</dc:language>
+    <dc:language>%s</dc:language>
     <dc:identifier id="BookId">%s</dc:identifier>
-    <dc:creator>BooxBook</dc:creator>
+    %s
   </metadata>
   <manifest>
     <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
@@ -40,8 +46,11 @@ local function buildOpf(title, chapters, uid)
   <spine toc="ncx">
     %s
   </spine>
+  %s
 </package>
-]], Html.escape(title), Html.escape(uid), table.concat(items, "\n    "), table.concat(spines, "\n    "))
+]], Html.escape(title), Html.escape(book.language or "vi"), Html.escape(uid), Metadata.xml(book),
+        table.concat(items, "\n    "), table.concat(spines, "\n    "),
+        cover and '<guide><reference type="cover" title="Cover" href="cover.xhtml"/></guide>' or "")
 end
 
 local function buildNcx(title, chapters, uid)
@@ -113,6 +122,16 @@ function Epub.write(path, book)
         return false, "no chapters"
     end
 
+    local cover, cover_err
+    if book.cover_path then
+        cover, cover_err = Metadata.cover(book.cover_path)
+        if not cover then return false, cover_err end
+    end
+    -- Metadata must describe only resources actually embedded in this archive.
+    local metadata = {}
+    for key, value in pairs(book) do metadata[key] = value end
+    metadata.cover_data = cover ~= nil
+
     local tmp = path .. ".tmp"
     local opened, epub, err = pcall(openWriter, tmp)
     if not opened or not epub then
@@ -120,7 +139,7 @@ function Epub.write(path, book)
         return false, opened and err or epub
     end
 
-    local mtime, uid = os.time(), "booxbook-" .. title
+    local mtime, uid = os.time(), book.identifier or ("booxbook-" .. title)
     local ok, write_err = pcall(function()
         local function check(success)
             if not success then error(epub.err or "archive write failed", 0) end
@@ -132,8 +151,13 @@ function Epub.write(path, book)
         add("mimetype", "application/epub+zip")
         check(epub:setZipCompression("deflate"))
         add("META-INF/container.xml", CONTAINER_XML)
-        add("OEBPS/content.opf", buildOpf(title, chapters, uid))
+        add("OEBPS/content.opf", buildOpf(title, chapters, uid, metadata, cover))
         add("OEBPS/toc.ncx", buildNcx(title, chapters, uid))
+        if cover then
+            add("OEBPS/" .. cover.name, cover.data)
+            add("OEBPS/cover.xhtml", Html.wrapDocument(title,
+                '<div><img src="' .. cover.name .. '" alt="' .. Html.escape(title) .. '"/></div>'))
+        end
         for i, chapter in ipairs(chapters) do
             local body = chapter.html
             if chapter.path then
@@ -155,7 +179,7 @@ function Epub.write(path, book)
         return false, not ok and write_err or epub.err or close_result or "archive close failed"
     end
 
-    local verified, verify_err = verifyArchive(tmp, 4 + #chapters)
+    local verified, verify_err = verifyArchive(tmp, 4 + #chapters + (cover and 2 or 0))
     if not verified then
         os.remove(tmp)
         return false, verify_err

@@ -31,6 +31,7 @@ Cập nhật khi có [Release](https://github.com/hongducdev/booxbook.koplugin/r
 - Sangtacviet tắt mặc định; lần đầu mở sẽ hỏi xác nhận. Có thể tắt lại trong Cài đặt.
 - Nội dung 18+: tắt mặc định. **Tải ảnh minh họa**: bật mặc định.
 - **Lưu truyện thành EPUB**: tắt mặc định. Mỗi khoảng chương tải xong có EPUB với mục lục; áp dụng cả ba nguồn.
+- EPUB giữ tên truyện gốc, tác giả, mô tả/thẻ nếu nguồn cung cấp, liên kết nguồn và ảnh bìa nhúng offline. Không dùng BooxBook làm tác giả.
 - **Giữ bản HTML khi lưu EPUB**: bật mặc định. Tắt để chỉ giữ EPUB sau khi xuất và cập nhật danh sách thành công; lỗi vẫn giữ HTML để phục hồi.
 - **Tự xóa HTML báo sau khi đọc xong**: tắt mặc định. Xóa khi đóng bài đã đánh dấu đã đọc, hoặc vừa tới cuối và vẫn ở cuối; quay lại giữa bài thì giữ.
 - **Kiểm tra cài đặt** (cần Wi-Fi): gọi `example.com`, ghi `_selftest.html` (có chữ `Tiếng Việt`) và thử EPUB vào `koreader/booxbook/`.

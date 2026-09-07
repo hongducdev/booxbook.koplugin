@@ -106,6 +106,9 @@ function Wattpad.getSeries(ref)
     end
     return { id = id, source_id = "wattpad", title = data.title, url = SITE .. "/story/" .. id,
         adult = adult(data), author = type(data.user) == "table" and data.user.name or nil,
+        cover = type(data.cover) == "string" and data.cover or nil,
+        description = type(data.description) == "string" and data.description or nil,
+        tags = type(data.tags) == "table" and data.tags or nil,
         chapters = chapters, volumes = { { title = _("Chương"), chapters = chapters } } }
 end
 

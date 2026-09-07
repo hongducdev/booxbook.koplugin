@@ -86,6 +86,29 @@ renamed = false
 local incomplete, incomplete_err = Epub.write("book.epub", book)
 assert(not incomplete and tostring(incomplete_err):find("incomplete", 1, true) and not renamed)
 verify_count = nil
+local cover_path = os.tmpname()
+local cover_file = assert(old_open(cover_path, "wb"))
+local cover_bytes = "\137PNG\13\10\26\10cover-payload"
+cover_file:write(cover_bytes); cover_file:close()
+book.author, book.description = "Tác giả & gốc", "Mô tả <gốc>"
+book.tags, book.language = { "Fantasy", "Đời thường" }, "vi"
+book.url, book.identifier = "https://example.org/book?a=1&b=2", "source-book-1"
+book.cover_path = cover_path
+assert(Epub.write("book.epub", book))
+local opf = entries["OEBPS/content.opf"]
+assert(opf:find('<dc:creator>Tác giả &amp; gốc</dc:creator>', 1, true))
+assert(opf:find('<dc:description>Mô tả &lt;gốc&gt;</dc:description>', 1, true))
+assert(opf:find('<dc:subject>Fantasy</dc:subject>', 1, true))
+assert(opf:find('<dc:source>https://example.org/book?a=1&amp;b=2</dc:source>', 1, true))
+assert(opf:find('<meta name="cover" content="cover-image"/>', 1, true))
+assert(opf:find('media-type="image/png"', 1, true) and opf:find('type="cover"', 1, true))
+assert(entries['OEBPS/cover.png'] == cover_bytes)
+assert(entries['OEBPS/cover.xhtml']:find('src="cover.png"', 1, true))
+assert(entries['OEBPS/toc.ncx']:find('content="source-book-1"', 1, true))
+cover_file = assert(old_open(cover_path, 'wb')); cover_file:write('<html>login</html>'); cover_file:close()
+assert(not Epub.write('book.epub', book), 'reject error pages masquerading as covers')
+old_remove(cover_path)
+book.cover_path = nil
 fail = "exists-once"
 renamed, dest_removed = false, false
 local tmp = assert(old_open("book.epub.tmp", "wb"))

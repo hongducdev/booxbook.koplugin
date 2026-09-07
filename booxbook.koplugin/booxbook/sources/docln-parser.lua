@@ -81,12 +81,16 @@ function Parser.series(html, path)
     local _, id = Parser.path(path)
     local series = { id = id, url = path, title = title, author = "", volumes = {}, chapters = {},
         cover = cover(Html.select(html, ".series-cover")),
+        description = Parser.text(Html.select(html, ".summary-content")), tags = {},
         adult = Parser.adult((Html.select(html, ".series-name-group") or "")
             .. (Html.select(html, ".series-gernes") or "") .. (Html.select(html, ".series-warning") or "")) }
     for _, block in ipairs(Html.selectAllInner(Html.select(html, ".series-information"), ".info-item")) do
         if Parser.text(Html.select(block, ".info-name")):lower():find("tác giả", 1, true) then
             series.author = Parser.text(Html.select(block, ".info-value"))
         end
+    end
+    for _, node in ipairs(Html.elements(Html.select(html, ".series-gernes"), "a")) do
+        series.tags[#series.tags + 1] = Parser.text(node.inner)
     end
     local seen = {}
     for _, block in ipairs(Html.selectAllInner(html, Parser.selectors.volumes)) do

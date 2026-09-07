@@ -45,6 +45,12 @@ Màn hình chính hiện phiên bản ngay dưới tiêu đề. Điều hướng
 
 ## EPUB và Thư viện
 
+EPUB mới giữ tên truyện gốc và metadata nguồn có cung cấp (tác giả, mô tả,
+thể loại/thẻ, URL nguồn). Ảnh bìa JPEG/PNG/GIF tối đa 2 MiB được nhúng vào file,
+có trang bìa để xem offline. Nguồn không có bìa thì không tạo bìa giả; tải bìa
+lỗi hoặc định dạng chưa hỗ trợ thì giữ HTML và báo lỗi. EPUB đã tải trước đây
+cần tải lại để nhận metadata và bìa mới.
+
 - Bật **Cài đặt → Lưu truyện thành EPUB**. Mặc định vẫn là HTML.
 - Áp dụng DocLN, Wattpad và Sangtacviet: mỗi khoảng tải xong có file
   `chapters-<từ>-<đến>.epub` trong thư mục truyện, chứa các chương tải được theo

@@ -169,6 +169,24 @@ Epub.write = function(path, book)
 end
 local epub_result = assert(Download.range(series, 1, 3))
 assert(#epub_result.saved == 3 and epub_result.saved[1].path:match('%.epub$'))
+local Covers = require('booxbook.covers')
+local old_fetch, old_cover, successful_write = Covers.fetch, series.cover, Epub.write
+series.cover = '/original-cover.jpg'
+Covers.fetch = function(source, url, opts)
+    assert(source == 'docln' and url:match('^https://.+/original%-cover.jpg$'))
+    assert(opts.referer:match('^https://') and opts.cookies == nil)
+    return '/cached/cover.jpg'
+end
+Epub.write = function(_, book)
+    assert(book.title == series.title and book.author == series.author)
+    assert(book.cover_path == '/cached/cover.jpg' and book.url:match('^https://'))
+    assert(book.identifier:find('#chapters-1-3', 1, true))
+    return true
+end
+assert(not Download.range(series, 1, 3).error)
+Covers.fetch = function() return nil end
+assert(Download.range(series, 1, 3).error, 'missing cover must not silently export a coverless EPUB')
+Covers.fetch, series.cover, Epub.write = old_fetch, old_cover, successful_write
 local interrupted = Download.range(series, 1, 3, false, function(n) return n < 2 end)
 assert(interrupted.error and #interrupted.saved == 1 and exports == 1)
 Epub.write = function() return false, 'archive failed' end

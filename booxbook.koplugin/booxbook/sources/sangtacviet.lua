@@ -504,6 +504,7 @@ function Sangtacviet.getSeries(ref)
             title = title,
             url = page_url,
             author = type(book.hauthor) == "string" and book.hauthor or nil,
+            description = type(book.info) == "string" and Html.decode(book.info:gsub("<[^>]+>", "")) or nil,
             cover = type(cover) == "string" and cover or nil,
             host = parts.host,
             bookid = parts.bookid,

@@ -1,6 +1,8 @@
 local Epub = require("booxbook.epub")
 local Html = require("booxbook.html")
 local Settings = require("booxbook.store.settings")
+local Covers = require("booxbook.covers")
+local Http = require("booxbook.http")
 local has_gettext, gettext = pcall(require, "gettext")
 local _ = has_gettext and gettext or function(text) return text end
 local Export = {}
@@ -10,7 +12,26 @@ function Export.finish(series, dir, first, last, index, result, Json)
     local title = string.format(_("%s — Chương %d–%d"), series.title or series.id, first, last)
     local filename = string.format("chapters-%d-%d.epub", first, last)
     local target = dir .. "/" .. filename
-    local ok, err = Epub.write(target, { title = title, chapters = result.saved })
+    local source_id = series.source_id or "docln"
+    local url = series.url
+    if source_id == "docln" then url = Http.resolveUrl(Settings.get("docln_home") or "https://docln.net", url) end
+    local cover_path
+    if type(series.cover) == "string" and series.cover ~= "" then
+        cover_path = Covers.fetch(source_id, Http.resolveUrl(url or "", series.cover), {
+            referer = url, max_bytes = 2 * 1024 * 1024,
+        })
+        if not cover_path then
+            result.error = _("Không tải được ảnh bìa; đã giữ HTML. Hãy thử tải lại.")
+            return
+        end
+    end
+    local ok, err = Epub.write(target, {
+        title = series.title or series.id, author = series.author, description = series.description,
+        tags = series.tags, language = series.language, publisher = series.publisher,
+        date = series.date, rights = series.rights, url = url, cover_path = cover_path,
+        identifier = (url or (source_id .. ":" .. tostring(series.id))) .. "#chapters-" .. first .. "-" .. last,
+        chapters = result.saved,
+    })
     if not ok then
         result.error = _("Không tạo được EPUB; đã giữ bản HTML: ") .. tostring(err)
         return
@@ -22,7 +43,7 @@ function Export.finish(series, dir, first, last, index, result, Json)
         return
     end
     -- Commit the new offline targets before deleting any HTML recovery files.
-    for _, saved in ipairs(html_files) do
+    for position, saved in ipairs(html_files) do
         local entry = index.chapters[saved.id]
         if not entry then
             table.insert(result.saved, 1, epub)
