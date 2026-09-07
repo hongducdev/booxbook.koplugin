@@ -17,13 +17,20 @@ local function call(method)
 end
 
 function Network.statusText()
+    -- isOnline can return true unconditionally on platforms without Wi-Fi toggling.
+    -- Android's isConnected queries the actual OS network state instead.
+    -- Kindle checks wlan0's operational state and assigned address.
+    local connected = call("isConnected")
+    if connected == false then
+        return _("Chưa kết nối mạng")
+    end
+    if connected ~= true then
+        return _("Chưa xác định trạng thái mạng")
+    end
     if call("isOnline") then
         return _("Đã kết nối mạng")
     end
-    if call("isConnected") then
-        return _("Có liên kết mạng (chưa chắc Internet)")
-    end
-    return _("Chưa kết nối mạng")
+    return _("Có liên kết mạng (chưa chắc Internet)")
 end
 
 function Network.whenOnline(callback)

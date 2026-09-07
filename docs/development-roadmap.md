@@ -1,5 +1,17 @@
 # Lộ trình phát triển
 
+## Truyện Tuổi Thơ CBZ — 2026-09-07
+
+- [x] Bản thử nhập URL tập, parser ảnh, tải tiếp và đóng gói CBZ.
+- [x] Menu, tiến độ/hủy, mở ReaderUI, giữ file tạm khi lỗi và đọc offline qua Thư viện.
+- [x] Kiểm thử LuaJIT: URL/redirect, ảnh thiếu, tải tiếp, hủy, lỗi archive, UI và hồi quy.
+- [x] Smoke test CBZ native với wrapper KOReader/libarchive Windows và hai WebP thật; parser tập mẫu đủ 205 trang.
+- [ ] Kiểm tra CBZ WebP và thao tác trên Boox thật trước khi phát hành.
+- [x] Duyệt grid/tìm kiếm phân trang, thông tin bộ và mục lục AJAX.
+- [x] Tải một/khoảng/toàn bộ tập, mở tập bất kỳ, danh sách offline và giữ CBZ cũ.
+- [x] Kiểm tra parser bằng HTML thật: hai trang danh sách, tìm có/trống/trang 2, mục lục 28 tập.
+- [x] CBZ WebP/fit-page trên điện thoại Samsung Android; Boox vẫn cần kiểm tra riêng.
+
 ## MeTruyenCV — 2026-09-07
 
 - [x] Sửa symbol crypto thiếu trên Android; dùng wrapper KOReader chung Linux,

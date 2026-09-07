@@ -30,6 +30,14 @@ shown.on_left_icon()
 assert(shown.title == "Tải chương")
 assert(shown.items[1].text == "Tải khoảng chương")
 assert(shown.items[2].text == "Tải toàn bộ chương")
+SeriesUI.show({ title = "Comic", chapters = chapters }, {
+    unit = "tập", Unit = "Tập", on_go = function() end,
+    on_range = function() end, on_download_all = function() end, on_offline = function() end,
+})
+assert(shown.items[1].text == "Mở tập bất kỳ" and shown.items[2].text == "Tập đã tải (offline)")
+shown.on_left_icon()
+assert(shown.title == "Tải tập" and shown.items[1].text == "Tải khoảng tập"
+    and shown.items[2].text == "Tải toàn bộ tập")
 
 local old_dir, old_open = Settings.downloadDir, io.open
 Settings.downloadDir = function() return "test-output" end

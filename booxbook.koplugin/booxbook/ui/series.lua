@@ -25,9 +25,14 @@ end
 function SeriesUI.show(series, opts)
     opts = opts or {}
     series = series or {}
+    local unit = opts.unit or _("chương")
+    local Unit = opts.Unit or _("Chương")
     local items = {}
+    if opts.on_info then
+        items[#items + 1] = { text = _("Thông tin truyện"), keep_menu_open = true, callback = opts.on_info }
+    end
     if opts.on_go and #(series.chapters or {}) > 0 then
-        items[#items + 1] = { text = _("Mở chương bất kỳ"), keep_menu_open = true, callback = function()
+        items[#items + 1] = { text = _("Mở ") .. unit .. _(" bất kỳ"), keep_menu_open = true, callback = function()
             Catalog.promptText{
                 title = _("Số thứ tự trong mục lục (1–") .. #series.chapters .. ")",
                 input = "1",
@@ -48,7 +53,7 @@ function SeriesUI.show(series, opts)
         }
     end
     if opts.on_offline and #(series.chapters or {}) > 0 then
-        items[#items + 1] = { text = _("Chương đã tải (offline)"), keep_menu_open = true, callback = opts.on_offline }
+        items[#items + 1] = { text = Unit .. _(" đã tải (offline)"), keep_menu_open = true, callback = opts.on_offline }
     end
     for position, volume in ipairs(series.volumes or {}) do
         items[#items + 1] = {
@@ -68,20 +73,20 @@ function SeriesUI.show(series, opts)
             local actions = {}
             if opts.on_range then
                 actions[#actions + 1] = {
-                    text = _("Tải khoảng chương"),
+                    text = _("Tải khoảng ") .. unit,
                     keep_menu_open = true,
                     callback = opts.on_range,
                 }
             end
             if opts.on_download_all then
                 actions[#actions + 1] = {
-                    text = _("Tải toàn bộ chương"),
+                    text = _("Tải toàn bộ ") .. unit,
                     keep_menu_open = true,
                     callback = opts.on_download_all,
                 }
             end
             Catalog.show({
-                title = _("Tải chương"),
+                title = _("Tải ") .. unit,
                 items = actions,
             })
         end

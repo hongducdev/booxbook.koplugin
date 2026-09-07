@@ -117,7 +117,8 @@ assert_true(wrapped:find('charset="utf-8"', 1, true), "wrap charset")
 
 assert_eq(Source.get("docln").kind, "novel", "DocLN adapter registered")
 assert_eq(Source.get("docln").name, "DocLN", "source get")
-assert_eq(#Source.list(), 7, "source list")
+assert_eq(#Source.list(), 8, "source list")
+assert_eq(Source.get("truyentuoitho").kind, "comic", "TruyenTuoiTho registered")
 assert_eq(Source.get("metruyencv").kind, "novel", "MeTruyenCV registered")
 assert_eq(Source.get("truyenfull").kind, "novel", "TruyenFull registered")
 assert_eq(Source.get("wattpad").kind, "novel", "Wattpad adapter registered")
@@ -229,6 +230,7 @@ local module_names = {
     "booxbook.store.settings",
     "booxbook.ui.news",
     "booxbook.ui.novels",
+    "ffi/util",
 }
 local saved_modules = {}
 for _, name in ipairs(module_names) do
@@ -267,6 +269,9 @@ package.loaded["booxbook.store.settings"] = {}
 package.loaded["booxbook.ui.news"] = { menu = function() return { { text = "Publisher" } } end }
 
 package.loaded["booxbook.ui.novels"] = { openSource = function() end, promptSearch = function() end }
+package.loaded["ffi/util"] = { realpath = function(path)
+    return path:gsub("^/sdcard/", "/storage/emulated/0/")
+end }
 
 local BooxBook = dofile(plugin_root .. "/main.lua")
 local menu_items = {}
@@ -282,7 +287,7 @@ assert_eq(table.concat(menu_events, ","), "close,nextTick", "Tools closes before
 assert_true(type(scheduled) == "function", "fullscreen work is deferred")
 scheduled()
 assert_eq(table.concat(menu_events, ","), "close,nextTick,clear,show", "fullscreen menu resets and opens in order")
-assert_eq(shown_menu.subtitle, "v0.0.4 · Đã kết nối mạng", "home TitleBar shows the plugin version")
+assert_eq(shown_menu.subtitle, "v0.0.5 · Đã kết nối mạng", "home TitleBar shows the plugin version")
 assert_eq(shown_menu.left_icon, "info", "home TitleBar has an update icon")
 assert_true(type(shown_menu.on_left_icon) == "function", "home TitleBar update icon is tappable")
 assert_eq(shown_menu.items[4].text, "Cập nhật", "home list has an update action")
@@ -297,6 +302,27 @@ package.loaded["apps/reader/readerui"] = reader
 local menu_settings = package.loaded["booxbook.store.settings"]
 menu_settings.downloadDir = function() return "/downloads" end
 menu_settings.ensureDir = function() return true end
+menu_settings.downloadDir = function() return "/storage/emulated/0/downloads" end
+local comic_options, layout_events = {}, {}
+local comic_config = {
+    readSetting = function(self, key) return comic_options[key] end,
+    saveSetting = function(self, key, value) comic_options[key] = value end,
+}
+BooxBook.ui = { document = { file = "/sdcard/downloads/comics/truyentuoitho/test/tap-1.cbz" }, paging = {},
+    view = { onSetScrollMode = function(self, value) assert(value == false); layout_events[#layout_events + 1] = "paged" end },
+    zooming = { setZoomMode = function(self, mode, quiet) assert(mode == "page" and quiet); layout_events[#layout_events + 1] = "fit" end } }
+BooxBook:onReaderReady(comic_config)
+assert_eq(table.concat(layout_events, ","), "paged,fit", "comics default to whole pages instead of continuous slices")
+assert_eq(comic_options.kopt_page_scroll, 0, "paged mode persists per comic")
+comic_options.zoom_mode = "pagewidth"
+BooxBook:onReaderReady(comic_config)
+assert_eq(#layout_events, 2, "later reader preferences preserved")
+comic_options.booxbook_comic_page_layout = nil
+BooxBook.ui.document.file = "/downloads/novels/book.epub"
+BooxBook:onReaderReady(comic_config)
+assert_eq(#layout_events, 2, "other documents unchanged")
+BooxBook.ui = nil
+menu_settings.downloadDir = function() return "/downloads" end
 local retention_settings = { novel_epub = false, novel_keep_html = true, news_delete_finished = false }
 menu_settings.get = function(key) return retention_settings[key] end
 menu_settings.set = function(key, value) retention_settings[key] = value end
@@ -371,7 +397,8 @@ assert_true(truyen ~= nil, "Truyện menu entry exists")
 truyen.callback()
 scheduled()
 assert_eq(shown_menu.title, "Truyện", "Truyện catalog opens")
-assert_eq(#shown_menu.items, 6, "Truyện lists six sources")
+assert_eq(#shown_menu.items, 7, "Truyện lists six novel sources and comic trial")
+assert_eq(shown_menu.items[7].text, "Truyện Tuổi Thơ", "comic source discoverable")
 assert_eq(shown_menu.items[6].text, "Truyện Full", "TruyenFull discoverable")
 assert_eq(shown_menu.items[5].text, "TVTruyen", "TVTruyen discoverable")
 assert_eq(shown_menu.items[4].text, "MeTruyenCV", "MeTruyenCV discoverable")
@@ -436,6 +463,9 @@ dofile("tests/news-cleanup.lua")
 dofile("tests/docln-ui.lua")
 dofile("tests/network.lua")
 dofile("tests/update.lua")
+dofile("tests/truyentuoitho.lua")
+dofile("tests/comic-download.lua")
+dofile("tests/truyentuoitho-ui.lua")
 
 if failures > 0 then
     io.stderr:write(tostring(failures) .. " test(s) failed\n")

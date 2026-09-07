@@ -116,6 +116,9 @@ function BooxBook:showMainMenu()
                             { text = "Truyện Full", keep_menu_open = true, callback = function()
                                 require("booxbook.ui.truyenfull").openSource()
                             end },
+                            { text = _("Truyện Tuổi Thơ"), keep_menu_open = true, callback = function()
+                                require("booxbook.ui.truyentuoitho").openSource()
+                            end },
                         } }
                     end)
                 end,
@@ -139,6 +142,24 @@ function BooxBook:showMainMenu()
             },
         },
     }
+end
+
+function BooxBook:onReaderReady(config)
+    local ui = self.ui
+    local path = ui.document and ui.document.file
+    if not path or not ui.paging or not ui.zooming then return end
+    local ffiUtil = require("ffi/util")
+    local root = ffiUtil.realpath(Settings.downloadDir() .. "/comics/truyentuoitho")
+    path = ffiUtil.realpath(path)
+    if not root or not path or path:sub(1, #root + 1) ~= root .. "/" or not path:match("%.cbz$")
+        or config:readSetting("booxbook_comic_page_layout") then return end
+    -- Once per book, including files opened from the offline library. Later user
+    -- zoom/scroll choices remain theirs; never change global reader preferences.
+    ui.view:onSetScrollMode(false)
+    ui.zooming:setZoomMode("page", true)
+    config:saveSetting("kopt_page_scroll", 0)
+    config:saveSetting("zoom_mode", "page")
+    config:saveSetting("booxbook_comic_page_layout", true)
 end
 
 function BooxBook:onEndOfBook()

@@ -41,6 +41,8 @@ local function extension(body)
     if body:sub(1, 4) == "RIFF" and body:sub(9, 12) == "WEBP" then return "webp" end
 end
 
+Images.extension = extension
+
 -- No path = pure rendering. A path is supplied only for the selected article.
 function Images.process(body, base, path, decode)
     local cached, attempts, bytes = {}, 0, 0

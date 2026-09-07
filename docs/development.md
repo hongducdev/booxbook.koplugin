@@ -48,6 +48,11 @@ luajit tests/run.lua
 ```
 
 `tests/gzip.lua` chạy riêng (cần zlib của KOReader hoặc shim FFI trên máy dev).
+Truyện tranh: `tests/truyentuoitho.lua`, `tests/comic-download.lua` và
+`tests/truyentuoitho-ui.lua` được gọi bởi runner chung. Kiểm thử tải dùng file
+tạm thật và giả lập biên HTTP/archive để tiêm lỗi có chủ đích. Đã smoke test
+wrapper archiver KOReader với libarchive Windows, hai ảnh WebP thật, kiểm tra
+ZIP/CRC bằng Python độc lập. Đây không thay thế kiểm tra trên thiết bị Boox.
 `tests/metruyencv-crypto.lua` chạy riêng với loader FFI và OpenSSL của KOReader
 (hoặc shim `ffi.loadlib` trên máy dev); cần `ffi/sha2` và `ffi/crypto` từ KOReader.
 Đối chiếu vector AES/SHA1 độc lập, CBC/PKCS7 và lỗi nguồn ngẫu nhiên.

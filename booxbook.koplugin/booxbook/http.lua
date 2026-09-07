@@ -177,13 +177,16 @@ local function requestOnce(opts)
         end
     end
     local function closeDest(keep)
+        local closed, close_err = true, nil
         if fh then
-            pcall(function() fh:close() end)
+            local called, result, err = pcall(fh.close, fh)
+            closed, close_err = called and result, called and err or result
             fh = nil
         end
-        if dest_file and not keep then
+        if dest_file and (not keep or not closed) then
             os.remove(dest_file)
         end
+        return closed, close_err
     end
 
     local socketutil = setTimeout(opts.timeout, opts.maxtime)
@@ -228,7 +231,8 @@ local function requestOnce(opts)
     end
     -- Redirect hops reopen dest_file with "wb"; keep the path. Drop 4xx/5xx files.
     local keep = type(code) == "number" and code >= 200 and code < 400
-    closeDest(keep)
+    local closed, close_err = closeDest(keep)
+    if not closed then return nil, close_err or "file close failed", response_headers, nil end
     return code, status, response_headers, payload
 end
 
@@ -290,6 +294,9 @@ function Http.request(opts)
     local max_tries = 3
     local last_err
     while attempts < max_tries do
+        if opts.allow_url and not opts.allow_url(url) then
+            return false, "URL not allowed"
+        end
         attempts = attempts + 1
         RateLimit.wait(RateLimit.hostFromUrl(url), delay_ms)
         local code, status, headers, body = requestOnce({

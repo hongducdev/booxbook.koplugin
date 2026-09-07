@@ -90,12 +90,40 @@ cần tải lại để nhận metadata và bìa mới.
 - KOReader cập nhật lịch sử, bộ sưu tập và metadata khi xóa. Ảnh tải kèm vẫn giữ.
 - Không quét xóa báo cũ hàng loạt. Có thể tải lại bài từ danh sách online.
 
+## Truyện Tuổi Thơ — CBZ
+
+1. Vào **Truyện → Truyện Tuổi Thơ**. Chọn **Mới cập nhật**, **Lượt xem**, **Truyện mới** hoặc **Thịnh hành** để duyệt grid bìa, lật trang bằng mũi tên.
+2. **Tìm truyện / nhập URL** nhận tên truyện, URL bộ hoặc URL một tập, ví dụ `https://truyentuoitho.com/manga/tieu-hoa-thuong/tap-28/`.
+3. Chọn bộ để xem thông tin và **Danh sách tập**. Chọn tập hoặc **Mở tập bất kỳ** (số thứ tự mục lục) để tải/mở CBZ.
+4. Icon menu bên trái mục lục có **Tải khoảng tập**, **Tải toàn bộ tập**. Mỗi tập là một CBZ riêng. Xác nhận số tập trước khi tải nhiều tập.
+5. **Truyện đã tải (offline)** mở thư mục CBZ ngay cả khi mất mạng. Trong mục lục đã mở, **Tập đã tải (offline)** liệt kê tập có sẵn của bộ đó.
+
+Lần đầu mở mỗi CBZ của nguồn này (kể cả tập tải trước bản sửa), plugin chọn
+**hiển thị từng trang + vừa toàn trang** để một trang truyện không bị chia qua
+nhiều lần lật màn hình. Bạn vẫn có thể đổi zoom/chế độ cuộn sau đó; plugin chỉ
+đặt mặc định một lần, không đổi thiết lập toàn cục.
+
+Chạm thông báo tiến độ để tạm dừng, rồi chọn hủy hoặc tiếp tục. Hủy có hiệu lực
+giữa các lượt tải ảnh/đóng gói; một request đang chạy có thể mất tới 60 giây.
+Chọn lại tập hoặc khoảng tập để tải tiếp các trang còn thiếu; tập đã xong không tải lại. CBZ có sẵn được kiểm tra và
+mở lại; đọc offline qua **Thư viện → comics → truyentuoitho → tên bộ → tập.cbz**.
+
+Chỉ nhận URL bộ/tập HTTPS trên `truyentuoitho.com` / `truyentuoitho.online`.
+Lỗi/hủy dừng khoảng tải và giữ các tập đã hoàn tất. Không dùng liên kết tải kho
+Google Drive trả phí. Ảnh chỉ từ hai domain nguồn và `img.resourcehub.shop`.
+Giới hạn 600 trang/tập, 8 MiB/ảnh, 512 MiB/tập; cần chỗ trống cho cả ảnh tạm và
+CBZ (khoảng hai lần dung lượng ảnh). Ảnh tạm nằm trong thư mục ẩn `.<tập>-pages`,
+chỉ dọn các trang dùng trong CBZ sau khi thành công. Đổi nguồn ảnh có thể cần tải lại.
+Không phụ thuộc công tắc ảnh minh họa hay EPUB của truyện chữ.
+Chưa xác minh giao diện và CBZ WebP trên Boox thật.
+
 ## Dữ liệu trên máy
 
 | Loại | Đường dẫn |
 |---|---|
 | Bài báo đã mở | `koreader/booxbook/news/<feed-id>/` |
 | Chương truyện | `koreader/booxbook/novels/<nguồn>/<id>/` |
+| Tập truyện tranh CBZ | `koreader/booxbook/comics/truyentuoitho/<bộ>/<tập>.cbz` |
 | Cài đặt + cookie | `koreader/settings/booxbook.lua` |
 
 ## TVTruyen

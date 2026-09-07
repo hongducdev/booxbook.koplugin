@@ -123,6 +123,30 @@ Mục lục gộp trang, loại ID trùng và sắp theo index; chương khóa b
 UI grid dùng cùng mẫu Wattpad, mục lục/HTML/EPUB/offline dùng pipeline chung;
 đường lưu `novels/metruyencv/<id>/`. Chưa hỗ trợ URL slug hoặc lọc độ tuổi.
 
+## Truyện Tuổi Thơ CBZ
+
+Adapter comic đăng ký trong registry. `ui/truyentuoitho` dùng CoverGrid và SeriesUI:
+duyệt `/manga/page/N/?m_orderby=...`, tìm `/?s=...&post_type=wp-manga&paged=N`.
+Parser hỗ trợ `.page-item-detail`, `.c-tabs-item__content`, `.wp-pagenavi`;
+thông tin bộ trong `.post-title`/`.description-summary`. Khi có `#manga-chapters-holder`,
+POST công khai `/<bộ>/ajax/chapters/`; lọc đúng bộ, loại trùng và đảo mục lục Madara về thứ tự đọc.
+Tải khoảng gọi từng tập tuần tự, giữ kết quả trước lỗi/hủy và bỏ qua CBZ đã có.
+
+`ui/truyentuoitho` nhận URL tập → `sources/truyentuoitho` lấy ảnh trong
+`.reading-content` → `comic-download` dùng `Http.downloadToFile` → `comic-cbz`
+ghi ZIP store bằng archiver KOReader → ReaderUI. Không đổi adapter truyện chữ.
+HTTP có tùy chọn `allow_url` để kiểm tra từng redirect trước request; lỗi close
+file cũng làm download thất bại. Selector HTML xử lý đúng thẻ rỗng `img`.
+
+Trang hoàn chỉnh trong thư mục staging ẩn có receipt URL + byte count để tải tiếp.
+Kiểm tra chữ ký ảnh, kích thước RIFF WebP, Content-Length nếu có; không giải mã
+toàn bộ ảnh để kiểm tra pixel. Giới hạn 600 trang, 8 MiB/ảnh, 512 MiB/tập.
+Đóng gói/đọc kiểm tra từng entry để chặn lỗi CRC/truncated ZIP; tên trang `%04d`.
+Chỉ rename sau khi archive đủ trang; không xóa CBZ cũ khi rename thất bại.
+Staging giữ khi lỗi/hủy; thành công xóa các trang đã dùng. CBZ dưới
+`comics/truyentuoitho/<series>/<chapter>.cbz`, mở offline qua FileManager.
+Đã xác minh ReaderUI/WebP và fit-page trên điện thoại Samsung Android; chưa xác minh Boox/Kindle/Kobo.
+
 ## Liên kết
 
 - [Quy ước phát triển](development.md)

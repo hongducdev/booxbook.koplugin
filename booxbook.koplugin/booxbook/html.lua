@@ -122,7 +122,11 @@ local function matchingClose(html, tag, from)
     return #html, #html
 end
 
+local VOID_TAGS = { area = true, base = true, br = true, col = true, embed = true, hr = true,
+    img = true, input = true, link = true, meta = true, param = true, source = true, track = true, wbr = true }
+
 local function extractElement(html, open_s, open_e, tag)
+    if VOID_TAGS[tag] then return "", html:sub(open_s, open_e) end
     local close_s, close_e = matchingClose(html, tag, open_e + 1)
     local inner = html:sub(open_e + 1, close_s - 1)
     local outer = html:sub(open_s, close_e)
