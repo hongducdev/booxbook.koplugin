@@ -107,6 +107,12 @@ function BooxBook:showMainMenu()
                                     )
                                 end,
                             },
+                            { text = "MeTruyenCV", keep_menu_open = true, callback = function()
+                                require("booxbook.ui.metruyencv").openSource()
+                            end },
+                            { text = "TVTruyen", keep_menu_open = true, callback = function()
+                                require("booxbook.ui.tvtruyen").openSource()
+                            end },
                             { text = "Truyện Full", keep_menu_open = true, callback = function()
                                 require("booxbook.ui.truyenfull").openSource()
                             end },

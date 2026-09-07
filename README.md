@@ -11,7 +11,7 @@ Dùng như trình đọc RSS / thư viện cá nhân. Không phát tán nội du
 | Mục | Nguồn | Ghi chú |
 |---|---|---|
 | **Báo** | 17 tờ, 633 kênh RSS | 9 báo Việt, 8 nguồn nước ngoài; thêm RSS tùy chỉnh |
-| **Truyện** | DocLN, Wattpad, Sangtacviet, Truyện Full | Tìm / duyệt, tải chương, đọc lại offline |
+| **Truyện** | DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full | Tìm / duyệt, tải chương, đọc lại offline |
 | **Thư viện** | File đã tải | Mở thư mục tải bằng trình quản lý file KOReader; nhấn giữ để thao tác |
 
 Cách dùng chi tiết: [hướng dẫn](docs/usage.md). Phạm vi RSS: [danh mục báo](docs/news-categories.md).
@@ -30,7 +30,7 @@ Cập nhật khi có [Release](https://github.com/hongducdev/booxbook.koplugin/r
 - Cookie từng nguồn: dán session từ trình duyệt. Cookie không được in ra log.
 - Sangtacviet tắt mặc định; lần đầu mở sẽ hỏi xác nhận. Có thể tắt lại trong Cài đặt.
 - Nội dung 18+: tắt mặc định. **Tải ảnh minh họa**: bật mặc định.
-- **Lưu truyện thành EPUB**: tắt mặc định. Mỗi khoảng chương tải xong có EPUB với mục lục; áp dụng cả bốn nguồn.
+- **Lưu truyện thành EPUB**: tắt mặc định. Mỗi khoảng chương tải xong có EPUB với mục lục; áp dụng cả sáu nguồn.
 - EPUB giữ tên truyện gốc, tác giả, mô tả/thẻ nếu nguồn cung cấp, liên kết nguồn và ảnh bìa nhúng offline. Không dùng BooxBook làm tác giả.
 - **Giữ bản HTML khi lưu EPUB**: bật mặc định. Tắt để chỉ giữ EPUB sau khi xuất và cập nhật danh sách thành công; lỗi vẫn giữ HTML để phục hồi.
 - **Tự xóa HTML báo sau khi đọc xong**: tắt mặc định. Xóa khi đóng bài đã đánh dấu đã đọc, hoặc vừa tới cuối và vẫn ở cuối; quay lại giữa bài thì giữ.

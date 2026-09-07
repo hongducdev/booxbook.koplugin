@@ -33,7 +33,7 @@ booxbook.koplugin/
     novel-download.lua      tải khoảng chương → HTML + index.json
     update.lua              kiểm tra / cài zip GitHub Release
     store/settings.lua      LuaSettings → settings/booxbook.lua
-    sources/                RSS + DocLN + Wattpad + Sangtacviet + Truyện Full + feeds*
+    sources/                RSS + DocLN + Wattpad + Sangtacviet + MeTruyenCV + TVTruyen + Truyện Full + feeds*
     ui/                     catalog, danh sách, grid, news, novels
 ```
 
@@ -48,6 +48,11 @@ luajit tests/run.lua
 ```
 
 `tests/gzip.lua` chạy riêng (cần zlib của KOReader hoặc shim FFI trên máy dev).
+`tests/metruyencv-crypto.lua` chạy riêng với loader FFI và OpenSSL của KOReader
+(hoặc shim `ffi.loadlib` trên máy dev); cần `ffi/sha2` và `ffi/crypto` từ KOReader.
+Đối chiếu vector AES/SHA1 độc lập, CBC/PKCS7 và lỗi nguồn ngẫu nhiên.
+Chạy cả JIT bật/tắt; không thay toàn bộ wrapper crypto bằng mock vì sẽ bỏ sót
+khác biệt symbol giữa OpenSSL desktop và bản monolibtic Android.
 
 Rà catalog RSS trên mạng:
 

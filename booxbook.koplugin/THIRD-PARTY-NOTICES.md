@@ -14,6 +14,11 @@ notes are ported from
 [Nekori SangTacViet](https://github.com/Yuneko-dev/Nekori-plugins/blob/master/plugins/vietnamese/SangTacViet/index.ts).
 BooxBook does not include Nekori's name engine, WebView helpers, or captcha UI.
 
+MeTruyenCV API endpoints, AES-CBC signature/content format and metadata mapping
+are adapted from [Nekori MeTruyenCV 1.0.6](https://github.com/Yuneko-dev/Nekori-plugins/blob/master/plugins/vietnamese/MeTruyenCV/index.ts).
+The Lua port uses KOReader's bundled OpenSSL, not Nekori's TypeScript dependencies.
+Upstream credits Captain for API decryption.
+
 Truyện Full listing/search URLs, TOC pagination (`/trang-N/#list-chapter`) and
 `#chapter-c` mapping are adapted from
 [Nekori TruyenFull 1.0.7](https://github.com/Yuneko-dev/Nekori-plugins/blob/master/plugins/vietnamese/TruyenFull/index.ts).

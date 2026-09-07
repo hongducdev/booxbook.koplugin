@@ -26,6 +26,21 @@ function SeriesUI.show(series, opts)
     opts = opts or {}
     series = series or {}
     local items = {}
+    if opts.on_go and #(series.chapters or {}) > 0 then
+        items[#items + 1] = { text = _("Mở chương bất kỳ"), keep_menu_open = true, callback = function()
+            Catalog.promptText{
+                title = _("Số thứ tự trong mục lục (1–") .. #series.chapters .. ")",
+                input = "1",
+                on_submit = function(value)
+                    local number = tonumber(value)
+                    if not number or number % 1 ~= 0 or number < 1 or number > #series.chapters then
+                        UIManager:show(InfoMessage:new{ text = _("Số chương không hợp lệ.") }); return
+                    end
+                    opts.on_go(number)
+                end,
+            }
+        end }
+    end
     if series.author and series.author ~= "" then
         items[#items + 1] = {
             text = _("Tác giả") .. ": " .. series.author,

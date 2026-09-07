@@ -90,10 +90,12 @@ assert(grid.pages[#grid.pages].title:find('query', 1, true))
 Docln.getSeries = function(ref) assert(ref.url == '/truyen/1'); return series end
 grid.opts.on_select({ title = 'Book', url = '/truyen/1' }); drain()
 assert(shown.left_icon == 'appbar.menu' and type(shown.on_left_icon) == 'function')
-assert(shown.items[1].text == 'Chương đã tải (offline)')
-assert(shown.items[2].text == 'Tập')
-local offline_item = shown.items[1]
-local chapter_item = shown.items[2].sub_item_table[2]
+assert(shown.items[1].text == 'Mở chương bất kỳ')
+assert(shown.items[2].text == 'Chương đã tải (offline)')
+assert(shown.items[3].text == 'Tập')
+local go_item = shown.items[1]
+local offline_item = shown.items[2]
+local chapter_item = shown.items[3].sub_item_table[2]
 local open_downloads = shown.on_left_icon
 local first, last
 Download.range = function(_, a, b)
@@ -103,6 +105,20 @@ end
 Download.savedList = function()
     return { { title = 'Saved', path = '/offline/ch.html', number = 1 } }
 end
+go_item.callback()
+for _, value in ipairs({'', '0', '-1', '3', '1.5', 'abc'}) do
+    first = nil; prompt.on_submit(value); drain(); assert(first == nil)
+end
+prompt.on_submit('2'); drain()
+assert(first == 2 and last == 2 and opened == '/local/ch-2.html', 'go opens selected chapter directly')
+local normal_range = Download.range
+Download.range = function() return {saved = {}, skipped = {{title = 'Two', reason = 'locked'}}} end
+opened = nil; prompt.on_submit('2'); drain()
+assert(opened == nil and shown.items[1].text:find('locked', 1, true))
+Download.range = function() return {saved = {{path = '/partial.html'}}, skipped = {}, error = 'write failed'} end
+prompt.on_submit('2'); drain()
+assert(opened == nil and notice:find('write failed', 1, true))
+Download.range = normal_range
 offline_item.callback()
 assert(shown.title == 'Chương đã tải (offline)' and shown.items[1].text == 'Saved')
 shown.items[1].callback(); drain(); assert(opened == '/offline/ch.html')
@@ -110,7 +126,7 @@ Download.savedList = function() return {} end
 offline_item.callback(); assert(notice == 'Chưa có chương đã tải.')
 grid.opts.on_select({ title = 'Book', url = '/truyen/1' }); drain()
 open_downloads = shown.on_left_icon
-chapter_item = shown.items[2].sub_item_table[2]
+chapter_item = shown.items[3].sub_item_table[2]
 open_downloads()
 assert(shown.title == 'Tải chương')
 assert(shown.items[1].text == 'Tải khoảng chương' and shown.items[2].text == 'Tải toàn bộ chương')
@@ -119,7 +135,7 @@ all_item.callback(); assert(confirm, 'download-all requires confirmation')
 confirm(); drain(); assert(first == 1 and last == 2)
 grid.opts.on_select({ title = 'Book', url = '/truyen/1' }); drain()
 open_downloads = shown.on_left_icon
-chapter_item = shown.items[2].sub_item_table[2]
+chapter_item = shown.items[3].sub_item_table[2]
 open_downloads()
 range_item = shown.items[1]
 range_item.callback(); prompt.on_submit('1'); prompt.on_submit('2'); drain()

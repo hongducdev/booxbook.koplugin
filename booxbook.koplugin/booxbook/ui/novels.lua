@@ -127,10 +127,10 @@ local function fetchList(site_page, offset)
     end)
 end
 
-function Novels.download(series, first, last, confirmed)
+function Novels.download(series, first, last, confirmed, open_after)
     if last - first + 1 > 50 and not confirmed then
         Catalog.confirm(_("Tải hơn 50 chương có thể mất nhiều thời gian. Tiếp tục?"), function()
-            Novels.download(series, first, last, true)
+            Novels.download(series, first, last, true, open_after)
         end)
         return
     end
@@ -139,6 +139,11 @@ function Novels.download(series, first, last, confirmed)
             Trapper:info(string.format(_("Đang tải %d/%d: %s"), number, total, chapter.title))
         end)
     end, function(result)
+        if open_after and not result.error and #result.saved > 0 then
+            local path = result.saved[1].path
+            UIManager:nextTick(function() Catalog.clearStack(); ReaderUI:showReader(path) end)
+            return
+        end
         local items = {}
         for position, saved in ipairs(result.saved) do
             local current = saved
@@ -186,6 +191,7 @@ function Novels.showSeries(ref, adapter)
     online(_("Đang lấy mục lục…"), function() return (adapter or Docln).getSeries(ref) end, function(series)
         local total = #(series.chapters or {})
         SeriesUI.show(series, {
+            on_go = function(number) Novels.download(series, number, number, false, true) end,
             on_chapter = function(chapter) Novels.download(series, chapter.index, chapter.index) end,
             on_range = function()
                 SeriesUI.askRange(total, function(first, last) Novels.download(series, first, last) end)

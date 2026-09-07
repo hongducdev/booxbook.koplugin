@@ -35,6 +35,14 @@ Màn hình chính hiện phiên bản ngay dưới tiêu đề. Điều hướng
 - Dùng **Cookie Wattpad** đã lưu; không đăng nhập bằng mật khẩu hay mở khóa chương trả phí. Ẩn truyện 18+ hoặc chưa rõ phân loại khi thiết lập 18+ tắt. Bỏ qua bản nháp, chương xóa/khóa/trống; HTTP 403/429 dừng lượt tải.
 - Giãn cách ít nhất 1,6 giây; tự giải nén gzip bằng zlib của KOReader. Chỉ lưu chữ; EPUB tùy chọn trong Cài đặt, ảnh để bước sau.
 
+## MeTruyenCV
+
+- **Truyện → MeTruyenCV**: Mới cập nhật / Lượt xem, grid bìa 2×3; kính lúp để tìm tên truyện hoặc nhập ID số / URL `https://metruyencv.com/truyen/<id>`.
+- URL dạng tên (slug) chưa hỗ trợ; tìm theo tên truyện để chọn kết quả tương ứng.
+- Mục lục và tải khoảng/toàn bộ dùng chung các nguồn khác. Lưu HTML, `index.json` và EPUB tùy chọn tại `koreader/booxbook/novels/metruyencv/<id>/`.
+- Giãn cách tối thiểu 1,6 giây. Bỏ qua chương được đánh dấu khóa/VIP hoặc không có nội dung; lỗi HTTP 403/429 hoặc giải mã dừng lượt tải và giữ file đã lưu.
+- Không cần cookie. Dùng thư viện OpenSSL có sẵn trong KOReader; đồng hồ thiết bị cần đúng để ký request API. API tham khảo không cung cấp phân loại 18+, nên nguồn này chưa lọc theo độ tuổi.
+
 ## Sangtacviet
 
 - **Truyện → Sangtacviet** luôn hiện trong menu. Lần đầu chạm sẽ hỏi xác nhận (cảnh báo dịch máy); sau đó mở grid. Tắt lại bằng **Cài đặt → Bật Sangtacviet**.
@@ -42,16 +50,6 @@ Màn hình chính hiện phiên bản ngay dưới tiêu đề. Điều hướng
 - Tải chương qua AJAX (`sajax=readchapter`) kèm Referer + cookie phiên; giãn cách ≥ 2 giây. Bỏ qua VIP; captcha / rate-limit / chương trống sau lỗi dừng cả lượt tải.
 - ID truyện là `{host}-{bookid}` (cùng bookid có thể trùng giữa nguồn gốc). Lưu HTML tại `koreader/booxbook/novels/sangtacviet/{host}-{bookid}/`. Chương id dài (fanqie) giữ dạng chuỗi, không `tonumber`. Icon menu trên mục lục mở **Tải khoảng / toàn bộ** như DocLN; tải toàn bộ có thể chậm vì giãn cách ≥ 2 giây và dừng khi captcha/rate-limit.
 - Chỉ dùng cá nhân; nhiều bản dịch máy. Không vượt captcha/VIP. Bảng glyph PUA (sangtac/dich) theo [Nekori SangTacViet](https://github.com/Yuneko-dev/Nekori-plugins/tree/master/plugins/vietnamese/SangTacViet) — [MIT](../booxbook.koplugin/THIRD-PARTY-NOTICES.md).
-
-## Truyện Full
-
-**Truyện → Truyện Full**: danh sách mới / lượt xem, tìm tên hoặc nhập URL
-`https://truyenfull.live/ten-truyen/`. Đọc HTML trực tiếp (`#chapter-c`); không
-cần mã hóa hay cookie. Mục lục lấy từng trang `/trang-N/` (khoảng 50 chương/trang)
-nên truyện dài có thể chờ vài phút. Tải khoảng/toàn bộ, HTML/EPUB và offline
-dùng cùng menu các nguồn khác. Lưu dưới `novels/truyenfull/<ten-truyen>/`.
-Chương trống hoặc khóa bỏ qua; lỗi mạng dừng và giữ file đã tải. Nguồn này
-chưa có bộ lọc độ tuổi.
 
 ## EPUB và Thư viện
 
@@ -62,7 +60,7 @@ lỗi hoặc định dạng chưa hỗ trợ thì giữ HTML và báo lỗi. EPU
 cần tải lại để nhận metadata và bìa mới.
 
 - Bật **Cài đặt → Lưu truyện thành EPUB**. Mặc định vẫn là HTML.
-- Áp dụng DocLN, Wattpad, Sangtacviet và Truyện Full: mỗi khoảng tải xong có file
+- Áp dụng DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen và Truyện Full: mỗi khoảng tải xong có file
   `chapters-<từ>-<đến>.epub` trong thư mục truyện, chứa các chương tải được theo
   thứ tự và mục lục. Tải toàn bộ tạo một EPUB cho khoảng đó. Chương khóa bị bỏ qua.
 - Chọn dòng **(EPUB)** ở đầu kết quả để đọc. **Giữ bản HTML khi lưu EPUB** bật
@@ -99,3 +97,30 @@ cần tải lại để nhận metadata và bìa mới.
 | Bài báo đã mở | `koreader/booxbook/news/<feed-id>/` |
 | Chương truyện | `koreader/booxbook/novels/<nguồn>/<id>/` |
 | Cài đặt + cookie | `koreader/settings/booxbook.lua` |
+
+## TVTruyen
+
+**Truyện → TVTruyen**: danh sách mới / lượt xem, tìm tên hoặc nhập URL
+`https://www.tvtruyen.live/ten-truyen.html`. Đọc HTML trực tiếp; không cần mã hóa,
+JavaScript hoặc cookie. Mục lục tải lần lượt các trang nên truyện dài có thể chờ
+vài phút. Tải khoảng/toàn bộ, HTML/EPUB và offline dùng cùng menu các nguồn khác.
+Lưu dưới `novels/tvtruyen/<ten-truyen>/`. Chương khóa/trống bỏ qua; lỗi mạng dừng.
+và giữ file đã tải. Nguồn này chưa có bộ lọc độ tuổi. Bìa WebP chỉ hiện ở grid; EPUB bỏ bìa WebP vì bộ ghi hiện tại chỉ nhận JPEG/PNG/GIF.
+
+## Truyện Full
+
+**Truyện → Truyện Full**: danh sách mới / lượt xem, tìm tên hoặc nhập URL
+`https://truyenfull.live/ten-truyen/`. Đọc HTML trực tiếp (`#chapter-c`); không
+cần mã hóa hay cookie. Mục lục lấy từng trang `/trang-N/` (khoảng 50 chương/trang)
+nên truyện dài có thể chờ vài phút. Tải khoảng/toàn bộ, HTML/EPUB và offline
+dùng cùng menu các nguồn khác. Lưu dưới `novels/truyenfull/<ten-truyen>/`.
+Chương trống hoặc khóa bỏ qua; lỗi mạng dừng và giữ file đã tải. Nguồn này
+chưa có bộ lọc độ tuổi.
+
+## Mở nhanh một chương
+
+Trong mục lục truyện, chọn **Mở chương bất kỳ**, nhập số thứ tự 1…N đang hiển thị
+bên cạnh chương. Plugin tải riêng chương đó và mở ngay HTML hoặc EPUB theo cài đặt.
+Áp dụng cả sáu nguồn, thứ tự tính xuyên các tập. Đây là số thứ tự mục lục, không
+phải ID hoặc số nằm trong tiêu đề (các số này có thể bị khuyết/lặp).
+Chương khóa hoặc tải lỗi hiện lý do; không tự mở file lỗi.

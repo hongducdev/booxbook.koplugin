@@ -26,4 +26,4 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" booxbook.koplugin.zip
           --title "${GITHUB_REF_NAME}"
           --generate-notes
-          --fail-on-missing-files
+          --verify-tag

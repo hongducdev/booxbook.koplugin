@@ -1,5 +1,7 @@
 local Docln = require("booxbook.sources.docln")
 local Wattpad = require("booxbook.sources.wattpad")
+local MeTruyenCV = require("booxbook.sources.metruyencv")
+local TVTruyen = require("booxbook.sources.tvtruyen")
 local TruyenFull = require("booxbook.sources.truyenfull")
 local Sangtacviet = require("booxbook.sources.sangtacviet")
 local Html = require("booxbook.html")
@@ -28,6 +30,13 @@ local function seriesLocation(series)
         local chapter
         id, chapter = TruyenFull.parseRef(series.url)
         path, adapter = not chapter and id or nil, TruyenFull
+    elseif source_id == "tvtruyen" then
+        local chapter
+        id, chapter = TVTruyen.parseRef(series.url)
+        path, adapter = not chapter and id or nil, TVTruyen
+    elseif source_id == "metruyencv" then
+        id = MeTruyenCV.refId(series.url, true)
+        path, adapter = id, MeTruyenCV
     elseif source_id == "wattpad" then
         id = Wattpad.refId(series.url, true)
         path, adapter = id, Wattpad
@@ -128,6 +137,12 @@ function Download.range(series, first, last, confirmed, progress)
         if source_id == "truyenfull" then
             chapter_series, chapter_id = TruyenFull.parseRef(chapter)
             if chapter.series_id ~= chapter_series then chapter_series = nil end
+        elseif source_id == "tvtruyen" then
+            chapter_series, chapter_id = TVTruyen.parseRef(chapter)
+            if chapter.series_id ~= chapter_series then chapter_series = nil end
+        elseif source_id == "metruyencv" then
+            chapter_id = MeTruyenCV.refId(chapter, false)
+            chapter_series = chapter.series_id
         elseif source_id == "wattpad" then
             chapter_id = Wattpad.refId(chapter, false)
             chapter_series = chapter.series_id

@@ -1,6 +1,6 @@
 # Kiến trúc hệ thống
 
-Plugin KOReader `booxbook.koplugin` cho Onyx Boox và thiết bị khác: RSS/Atom lưu HTML cục bộ; adapter truyện DocLN, Wattpad, Sangtacviet, Truyện Full. Thư viện mở thư mục tải bằng trình quản lý file KOReader.
+Plugin KOReader `booxbook.koplugin` cho Onyx Boox và thiết bị khác: RSS/Atom lưu HTML cục bộ; adapter truyện DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full. Thư viện mở thư mục tải bằng trình quản lý file KOReader.
 
 Trình đọc cá nhân. Không vượt VIP / paywall / captcha.
 
@@ -13,7 +13,7 @@ main.lua  →  booxbook.ui (Báo + Truyện / Thư viện file / Cài đặt / C
               ↓
          booxbook.html → HTML bài/chương (mặc định) / booxbook.epub (tùy chọn)
               ↓
-         booxbook.source → rss / docln / wattpad / sangtacviet / truyenfull
+         booxbook.source → rss / docln / wattpad / sangtacviet / metruyencv / tvtruyen / truyenfull
 ```
 
 Điểm vào mạng bọc `Network.whenOnline`. Selftest GET `https://example.com` kèm Referer, ghi `_selftest.html` (`Tiếng Việt`) và `_selftest.epub` dưới `koreader/booxbook/`.
@@ -108,6 +108,36 @@ Catalog `push` giữ widget cha dưới widget con. `pop` chỉ đóng widget đ
 
 `ui/sangtacviet.lua` giống Wattpad (Mới cập nhật / Lượt xem + URL/tìm). Tải tắt đến ConfirmBox lần đầu. Probe `.com` → `.app` → `.xyz` → `.pro`, nhớ `stv_home`, prime `_ac`/`_gac`, đọc `sajax=readchapter` kèm Referer. VIP bỏ qua không request. Giãn cách sàn 2000ms. Glyph PUA chỉ host `sangtac`/`dich`. Đường lưu `{host}-{bookid}`; id chương dài giữ chuỗi.
 
+## MeTruyenCV
+
+`sources/metruyencv.lua` dùng API `backend.metruyencv.com/api`, header X-App và
+X-Signature theo Nekori 1.0.6. Chữ ký dùng AES-128-CBC/PKCS7 bằng Lua trong
+`metruyencv-aes.lua`; SHA1/Base64 dùng `ffi/sha2` có sẵn. Giải mã dùng
+`ffi/crypto` AES-ECB rồi XOR để khôi phục CBC, kiểm tra đầy đủ PKCS7.
+Không gọi trực tiếp các symbol AES-CBC/Encrypt/RAND/Base64 mà Android monolibtic
+không export. Hash đọc 8 byte `/dev/urandom` trên Android/Linux (Kindle, Kobo…);
+lỗi đọc dừng tải. Không thêm native library hoặc đường dẫn Android vào plugin.
+Đã kiểm tra wrapper từ APK Android; các thiết bị Kindle/Kobo chưa được test thật.
+JSON đi qua HTTP chung với giãn cách ≥ 1600ms; lỗi 403/429/giải mã dừng download.
+Mục lục gộp trang, loại ID trùng và sắp theo index; chương khóa bỏ qua trước request.
+UI grid dùng cùng mẫu Wattpad, mục lục/HTML/EPUB/offline dùng pipeline chung;
+đường lưu `novels/metruyencv/<id>/`. Chưa hỗ trợ URL slug hoặc lọc độ tuổi.
+
+## Liên kết
+
+- [Quy ước phát triển](development.md)
+- [Hướng dẫn dùng](usage.md)
+- [README](../README.md)
+
+## TVTruyen HTML
+
+`sources/tvtruyen.lua` lấy HTML qua HTTP chung (≥1600ms). Parser dùng
+`Html.elements/select/attr`: `.info-mobile-card`, `#comic_name`,
+`#mobile-list-chapter`, `#chapter-content`. Theo `rel=next` tuần tự, chống mục lục
+lặp, giới hạn 1000 trang; sắp chương theo số URL. Tên thư mục là slug đã kiểm tra,
+chương phải thuộc đúng slug. Chỉ lưu chữ đã escape, không tải script/ảnh quảng cáo.
+Không phụ thuộc crypto; dùng grid và pipeline HTML/EPUB/offline hiện có.
+
 ## Truyện Full HTML
 
 `sources/truyenfull.lua` lấy HTML qua HTTP chung (≥1600ms). Parser:
@@ -115,9 +145,3 @@ Catalog `push` giữ widget cha dưới widget con. `pop` chỉ đóng widget đ
 Duyệt `/danh-sach/truyen-moi|truyen-hot/trang-N/`, tìm `/tim-kiem?tukhoa=`. TOC
 theo `/<slug>/trang-N/`, chống lặp, giới hạn 1000 trang; sắp theo số `chuong-N`.
 Chương trống/khóa bỏ qua (không dừng cả khoảng). Host chỉ `truyenfull.live`.
-
-## Liên kết
-
-- [Quy ước phát triển](development.md)
-- [Hướng dẫn dùng](usage.md)
-- [README](../README.md)

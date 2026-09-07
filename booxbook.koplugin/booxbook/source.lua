@@ -39,6 +39,8 @@ Source.register(require("booxbook.sources.rss"))
 
 Source.register(require("booxbook.sources.docln"))
 Source.register(require("booxbook.sources.wattpad"))
+Source.register(require("booxbook.sources.metruyencv"))
+Source.register(require("booxbook.sources.tvtruyen"))
 Source.register(require("booxbook.sources.truyenfull"))
 Source.register(require("booxbook.sources.sangtacviet"))
 
