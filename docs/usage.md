@@ -2,6 +2,33 @@
 
 Màn hình chính hiện phiên bản ngay dưới tiêu đề. Điều hướng dùng **Quay lại / Trước / Sau** ở chân trang.
 
+## Gửi sách qua Wi-Fi
+
+1. Kết nối máy đọc sách và điện thoại/máy tính vào cùng mạng Wi-Fi.
+2. Trong **BooxBook → Gửi sách qua Wi-Fi**, giữ màn hình nhận sách mở.
+3. Điện thoại: chọn **Quét QR để gửi từ điện thoại**, quét bằng camera để mở web
+   với mã phiên điền sẵn. Máy tính: gõ địa chỉ `http://…:8080/` đang hiển thị
+   vào trình duyệt, rồi nhập mã phiên 6 chữ số trên máy đọc sách (giữ số 0 đầu).
+4. Chọn một hoặc nhiều sách, bấm **Gửi sách**. Xem tiến độ và kết quả từng file.
+5. Bấm **Dừng nhận sách**, rồi mở **Thư viện → received** để đọc.
+
+Hỗ trợ EPUB, PDF, CBZ, CBR, FB2, MOBI, AZW/AZW3, DJVU/DJV, TXT, RTF, DOC, CHM;
+khả năng đọc từng định dạng phụ thuộc KOReader. Mỗi file từ 1 byte đến 512 MiB.
+File trùng tên bị từ chối; đổi tên trên thiết bị gửi rồi gửi lại. Không ghi đè sách cũ.
+File gửi dở bị xóa khi ngắt kết nối, hết thời gian hoặc dừng phiên; gửi lại từ đầu.
+
+Không cần Internet hay tài khoản. Chỉ dùng trong mạng tin cậy vì kết nối là HTTP.
+Một thiết bị nhập sai mã 5 lần sẽ bị khóa tới khi mở lại phiên; thiết bị khác
+trong cùng mạng vẫn gửi được.
+Đóng màn hình nhận sách, tắt KOReader, mất mạng hoặc cho máy ngủ sẽ dừng phiên;
+mở lại sẽ có mã phiên mới. Khi gửi sách lớn, tránh để máy tự ngủ.
+Không vào được web: kiểm tra cùng Wi-Fi, tránh mạng khách/chặn thiết bị nội bộ,
+tắt VPN nếu địa chỉ hiển thị thuộc VPN. Nếu cổng 8080 bận, dừng HTTP Inspector
+hoặc ứng dụng đang dùng cổng đó rồi mở lại. Chưa xác nhận trên Boox/Kindle/Kobo thật.
+
+Sau khi mỗi file được ghi hoàn tất, KOReader hiện thông báo **Đã nhận sách** kèm
+tên file trong 3 giây. Không báo thành công cho file dở hoặc file bị từ chối.
+
 ## Báo RSS
 
 - **Báo → Báo Việt / Báo Nước Ngoài → chọn đầu báo → chọn danh mục**: chỉ lấy danh sách tiêu đề RSS khi chọn danh mục, chưa tải nội dung các bài.

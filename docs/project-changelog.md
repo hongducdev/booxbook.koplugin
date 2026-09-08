@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.0.8 — 2026-09-09
+
+- Báo **Đã nhận sách** và tên file trên KOReader sau khi lưu hoàn tất.
+- Ưu tiên IPv4 của interface Wi-Fi; khóa 5 lần sai theo IP nguồn và hủy callback
+  bật Wi-Fi khi người dùng đã rời màn hình.
+
+- Sửa QR nhận sách quá nhỏ: khung vuông bằng 85% cạnh ngắn màn hình,
+  dùng kích thước render QR trực tiếp để giữ nét và vừa cả màn hình ngang/dọc.
+
+- Rút mã phiên Wi-Fi còn 6 chữ số ngẫu nhiên, bàn phím số trên điện thoại;
+  khóa nhận sau 5 lần sai đến khi mở lại phiên.
+
+- Thêm **Gửi sách qua Wi-Fi** riêng trong BooxBook: web tiếng Việt cho điện thoại/máy tính,
+  QR điền mã phiên, chọn nhiều sách, tiến độ gửi, lưu vào `received` trong Thư viện.
+- Nhận stream tối đa 512 MiB/file; chặn tên/định dạng không hợp lệ, sai mã phiên,
+  cross-origin và ghi đè. Dọn file gửi dở khi disconnect/timeout/dừng.
+- Dừng khi đóng màn hình, ngủ, mất mạng hoặc thoát; không thêm dependency cho plugin.
+- Qua kiểm thử LuaJIT và TCP desktop với transport kiểm thử; còn smoke test trên Boox thật.
+
 ## 0.0.7 — 2026-09-08
 
 - Tải truyện chữ bỏ qua chương còn file, nhưng tải lại entry có file bị mất.

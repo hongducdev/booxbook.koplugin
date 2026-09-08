@@ -140,9 +140,24 @@ function BooxBook:showMainMenu()
                     Catalog.show{ title = _("Cài đặt"), items = self:settingsMenu() }
                 end,
             },
+            {
+                text = _("Gửi sách qua Wi-Fi"),
+                keep_menu_open = true,
+                callback = function() require("booxbook.ui.wifi-transfer").show() end,
+            },
         },
     }
 end
+
+function BooxBook:stopWifiTransfer()
+    local transfer = package.loaded["booxbook.ui.wifi-transfer"]
+    if transfer then transfer.stop() end
+end
+
+BooxBook.onSuspend = BooxBook.stopWifiTransfer
+BooxBook.onExit = BooxBook.stopWifiTransfer
+BooxBook.onNetworkDisconnected = BooxBook.stopWifiTransfer
+BooxBook.onCloseWidget = BooxBook.stopWifiTransfer
 
 function BooxBook:onReaderReady(config)
     local ui = self.ui

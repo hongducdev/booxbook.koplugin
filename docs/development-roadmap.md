@@ -1,5 +1,14 @@
 # Lộ trình phát triển
 
+## Gửi sách qua Wi-Fi — 2026-09-08
+
+- [x] Mục riêng, địa chỉ web, mã phiên và QR dùng widget KOReader.
+- [x] Trang web mobile/desktop, nhiều sách, tiến độ và kết quả từng file.
+- [x] Nhận stream, không ghi đè, kiểm đường dẫn/size/origin/token, dọn file dở.
+- [x] Kiểm cú pháp và hồi quy LuaJIT; TCP 8 MiB đối chiếu byte với transport desktop.
+- [x] Sửa chọn IP Wi-Fi, khóa mã sai theo IP, callback Wi-Fi muộn; báo nhận thành công.
+- [ ] Smoke test LuaSocket native, QR, Wi-Fi, suspend trên Boox trước phát hành.
+
 ## Tối ưu tải và EPUB truyện — 2026-09-08
 
 - [x] Bỏ qua chương đã có file; file thiếu được tải lại thay vì tin riêng index.

@@ -287,7 +287,7 @@ assert_eq(table.concat(menu_events, ","), "close,nextTick", "Tools closes before
 assert_true(type(scheduled) == "function", "fullscreen work is deferred")
 scheduled()
 assert_eq(table.concat(menu_events, ","), "close,nextTick,clear,show", "fullscreen menu resets and opens in order")
-assert_eq(shown_menu.subtitle, "v0.0.7 · Đã kết nối mạng", "home TitleBar shows the plugin version")
+assert_eq(shown_menu.subtitle, "v0.0.8 · Đã kết nối mạng", "home TitleBar shows the plugin version")
 assert_eq(shown_menu.left_icon, "info", "home TitleBar has an update icon")
 assert_true(type(shown_menu.on_left_icon) == "function", "home TitleBar update icon is tappable")
 assert_eq(shown_menu.items[4].text, "Cập nhật", "home list has an update action")
@@ -467,6 +467,7 @@ dofile("tests/truyentuoitho.lua")
 dofile("tests/comic-download.lua")
 dofile("tests/storage-cache.lua")
 dofile("tests/truyentuoitho-ui.lua")
+dofile("tests/wifi-transfer.lua")
 
 if failures > 0 then
     io.stderr:write(tostring(failures) .. " test(s) failed\n")
