@@ -21,6 +21,7 @@ local chapters = { { title = "One", index = 1 }, { title = "Two", index = 2 } }
 SeriesUI.show({ title = "Book", chapters = chapters, volumes = { { title = "V1", chapters = chapters } } }, {
     on_range = function() end,
     on_download_all = function() end,
+    on_package = function() end,
     on_offline = function() end,
 })
 assert(shown.left_icon == "appbar.menu" and type(shown.on_left_icon) == "function")
@@ -30,6 +31,7 @@ shown.on_left_icon()
 assert(shown.title == "Tải chương")
 assert(shown.items[1].text == "Tải khoảng chương")
 assert(shown.items[2].text == "Tải toàn bộ chương")
+assert(shown.items[3].text == "Tạo EPUB từ chương đã tải")
 SeriesUI.show({ title = "Comic", chapters = chapters }, {
     unit = "tập", Unit = "Tập", on_go = function() end,
     on_range = function() end, on_download_all = function() end, on_offline = function() end,
@@ -54,11 +56,13 @@ local empty = assert(Download.savedList({
 assert(#empty == 0, "missing index yields empty offline list")
 
 io.open = function(path)
-    assert(path:find("novels/docln/truyen-1/index.json", 1, true))
-    return {
-        read = function() return "index-body" end,
-        close = function() end,
-    }
+    if path:find("novels/docln/truyen-1/index.json", 1, true) then
+        return {
+            read = function() return "index-body" end,
+            close = function() end,
+        }
+    end
+    return { close = function() end }
 end
 package.loaded.json.decode = function(text)
     assert(text == "index-body")
@@ -81,7 +85,7 @@ assert(list[1].title == "One" and list[1].number == 1)
 assert(list[2].title == "Three" and list[2].number == 3)
 assert(list[1].path:find("ch-000000000011.html", 1, true))
 package.loaded.json.decode = function()
-    return { chapters = {
+    return { id = "truyen-1", chapters = {
         ["11"] = { file = "chapters-1-3.epub", export_title = "Book (EPUB)", number = 1 },
         ["13"] = { file = "chapters-1-3.epub", export_title = "Book (EPUB)", number = 3 },
         ["14"] = { file = "../../outside.html", number = 4 },
@@ -91,6 +95,60 @@ package.loaded.json.decode = function()
 end
 list = assert(Download.savedList({ source_id = "docln", id = "truyen-1", url = "/truyen/1" }))
 assert(#list == 1 and list[1].title == "Book (EPUB)" and list[1].number == 1)
+
+io.open = function(path)
+    if path:match("index%.json$") then
+        return { read = function() return "{bad" end, close = function() end }
+    end
+    if path:match("index%.json%.bak$") then
+        return { read = function() return "backup-body" end, close = function() end }
+    end
+    return { close = function() end }
+end
+package.loaded.json.decode = function(text)
+    if text == "{bad" then error("bad json") end
+    return { id = "truyen-1", chapters = {
+        ["11"] = { title = "Recovered", file = "ch-000000000011.html", number = 1 },
+    } }
+end
+list = assert(Download.savedList({ source_id = "docln", id = "truyen-1", url = "/truyen/1" }))
+assert(#list == 1 and list[1].title == "Recovered", "valid backup recovers offline list")
+
+local Export = require("booxbook.novel-export")
+local old_finish = Export.finish
+local package_index = { id = "truyen-1", chapters = {
+    ["11"] = { title = "One", file = "ch-000000000011.html", number = 1 },
+    ["12"] = { title = "Two", skipped = "locked", number = 2 },
+    ["13"] = { title = "Three", file = "ch-000000000013.html", number = 3 },
+} }
+package.loaded.json.decode = function() return package_index end
+io.open = function(path)
+    if path:match("index%.json$") then
+        return { read = function() return "package-index" end, close = function() end }
+    end
+    if path:match("ch%-000000000011%.html$") then return { close = function() end } end
+    return nil, "no such file", 2
+end
+local explicit
+Export.finish = function(_, _, first, last, _, result, _, force)
+    explicit = force
+    assert(first == 1 and last == 3 and result.keep_html and #result.saved == 1 and #result.skipped == 2)
+    table.insert(result.saved, 1, { title = "Book EPUB", path = "book.epub" })
+end
+local package_series = { source_id = "docln", id = "truyen-1", url = "/truyen/1", title = "Book", chapters = {
+    { title = "One" }, { title = "Two" }, { title = "Three" },
+} }
+local packaged = assert(Download.packageSaved(package_series, 1, 3))
+assert(explicit and #packaged.saved == 2 and packaged.saved[1].path == "book.epub")
+io.open = function(path)
+    if path:match("index%.json$") then
+        return { read = function() return "package-index" end, close = function() end }
+    end
+    return nil, "no such file", 2
+end
+local no_html, no_html_err = Download.packageSaved(package_series, 1, 3)
+assert(not no_html and no_html_err:find("không có chương HTML", 1, true))
+Export.finish = old_finish
 
 io.open = function()
     return { read = function() return "{bad" end, close = function() end }

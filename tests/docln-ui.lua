@@ -6,7 +6,7 @@ local saved = {}
 for _, name in ipairs(names) do saved[name] = package.loaded[name] end
 local Docln = require('booxbook.sources.docln')
 local Download = require('booxbook.novel-download')
-local old = { Docln.search, Docln.getSeries, Docln.browse, Download.range, Download.savedList }
+local old = { Docln.search, Docln.getSeries, Docln.browse, Download.range, Download.savedList, Download.packageSaved }
 local shown, prompt, confirm, opened, notice, grid
 local wifi, cleared, queue = 0, 0, {}
 local online = true
@@ -115,8 +115,13 @@ local normal_range = Download.range
 Download.range = function() return {saved = {}, skipped = {{title = 'Two', reason = 'locked'}}} end
 opened = nil; prompt.on_submit('2'); drain()
 assert(opened == nil and shown.items[1].text:find('locked', 1, true))
+Download.range = function()
+    return {saved = {}, existing = {{title = 'Two', path = '/local/existing.html'}}, skipped = {}}
+end
+opened = nil; prompt.on_submit('2'); drain()
+assert(opened == '/local/existing.html', 'go opens an existing chapter without downloading it')
 Download.range = function() return {saved = {{path = '/partial.html'}}, skipped = {}, error = 'write failed'} end
-prompt.on_submit('2'); drain()
+opened = nil; prompt.on_submit('2'); drain()
 assert(opened == nil and notice:find('write failed', 1, true))
 Download.range = normal_range
 offline_item.callback()
@@ -129,8 +134,9 @@ open_downloads = shown.on_left_icon
 chapter_item = shown.items[3].sub_item_table[2]
 open_downloads()
 assert(shown.title == 'Tải chương')
-assert(shown.items[1].text == 'Tải khoảng chương' and shown.items[2].text == 'Tải toàn bộ chương')
-local range_item, all_item = shown.items[1], shown.items[2]
+    assert(shown.items[1].text == 'Tải khoảng chương' and shown.items[2].text == 'Tải toàn bộ chương'
+        and shown.items[3].text == 'Tạo EPUB từ chương đã tải')
+    local range_item, all_item, package_item = shown.items[1], shown.items[2], shown.items[3]
 all_item.callback(); assert(confirm, 'download-all requires confirmation')
 confirm(); drain(); assert(first == 1 and last == 2)
 grid.opts.on_select({ title = 'Book', url = '/truyen/1' }); drain()
@@ -138,10 +144,20 @@ open_downloads = shown.on_left_icon
 chapter_item = shown.items[3].sub_item_table[2]
 open_downloads()
 range_item = shown.items[1]
-range_item.callback(); prompt.on_submit('1'); prompt.on_submit('2'); drain()
-assert(first == 1 and last == 2)
-shown.items[1].callback(); drain(); assert(opened == '/local/ch-2.html')
-chapter_item.callback(); drain(); assert(first == 2 and last == 2)
+    range_item.callback(); prompt.on_submit('1'); prompt.on_submit('2'); drain()
+    assert(first == 1 and last == 2)
+    shown.items[1].callback(); drain(); assert(opened == '/local/ch-2.html')
+    local package_first, package_last
+    Download.packageSaved = function(_, a, b)
+        package_first, package_last = a, b
+        return { saved = { { title = 'Book EPUB', path = '/local/book.epub' } }, skipped = {} }
+    end
+    package_item.callback()
+    assert(prompt.title:find('Đóng gói từ chương', 1, true))
+    prompt.on_submit('1'); prompt.on_submit('2'); drain()
+    assert(package_first == 1 and package_last == 2 and shown.title == 'EPUB đã tạo')
+    shown.items[1].callback(); drain(); assert(opened == '/local/book.epub')
+    chapter_item.callback(); drain(); assert(first == 2 and last == 2)
 first = nil
 SeriesUI.askRange(2, function(a) first = a end); prompt.on_submit('3'); assert(not first)
 SeriesUI.askRange(2, function(a) first = a end); prompt.on_submit('1.5'); assert(not first)
@@ -441,7 +457,8 @@ assert(closes == 1 and shows == 0, 'second pop of same widget is ignored')
 
 for _, name in ipairs(catalog_stub_names) do package.loaded[name] = catalog_saved[name] end
 
-Docln.search, Docln.getSeries, Docln.browse, Download.range, Download.savedList = old[1], old[2], old[3], old[4], old[5]
+Docln.search, Docln.getSeries, Docln.browse, Download.range, Download.savedList, Download.packageSaved =
+    old[1], old[2], old[3], old[4], old[5], old[6]
 for _, name in ipairs(names) do package.loaded[name] = saved[name] end
 package.loaded['booxbook.ui.novels'] = nil
 package.loaded['booxbook.ui.catalog'] = nil

@@ -155,11 +155,56 @@ package.loaded.json = { encode = function(value) index = value; return '{"id":"t
 Html.writeFile = function(path, text) writes[#writes + 1] = { path, text }; return true end
 Http.get = function() return true, 200, '<div id="chapter-content"><p>Tiếng Việt</p></div>' end
 local downloaded = assert(Download.range(series, 1, 3))
-assert(#downloaded.saved == 2 and #downloaded.skipped == 1 and #writes == 5)
+assert(#downloaded.saved == 2 and #downloaded.skipped == 1 and #writes == 6)
 assert(writes[1][2]:find('charset="utf-8"', 1, true) and writes[1][2]:find('Tiếng Việt', 1, true))
 assert(index.chapters['11'].file ~= index.chapters['13'].file and index.chapters['12'].skipped)
+
+-- A valid indexed file is reused without touching the chapter endpoint; a stale
+-- index entry falls through to the normal download path.
+local indexed = index
+package.loaded.json.decode = function() return indexed end
+io.open = function(path)
+    if path:match('index%.json$') then
+        return { read = function() return '{"id":"truyen-1"}' end, close = function() end }
+    end
+    if path:match('ch%-000000000011%.html$') then return { close = function() end } end
+    return nil, 'no such file', 2
+end
+Http.get = function() error('existing chapter must not request') end
+local writes_before_reuse = #writes
+local reused = assert(Download.range(series, 1, 1))
+assert(#reused.saved == 0 and #reused.existing == 1 and reused.existing[1].path:match('%.html$'))
+assert(#writes == writes_before_reuse, 'existing-only range must not write files')
+local requests = 0
+io.open = function(path)
+    if path:match('index%.json$') then
+        return { read = function() return '{"id":"truyen-1"}' end, close = function() end }
+    end
+    return nil, 'no such file', 2
+end
+Http.get = function()
+    requests = requests + 1
+    return true, 200, '<div id="chapter-content"><p>Tải lại</p></div>'
+end
+local refreshed = assert(Download.range(series, 1, 1))
+assert(#refreshed.saved == 1 and #refreshed.existing == 0 and requests == 1)
+io.open = function() return nil end
+package.loaded.json.decode = nil
+Http.get = function() return true, 200, '<div id="chapter-content"><p>Tiếng Việt</p></div>' end
 local Epub = require('booxbook.epub')
 local old_epub_write, exports = Epub.write, 0
+local Export = require('booxbook.novel-export')
+Epub.write = function(path, book)
+    exports = exports + 1
+    assert(path:find('/chapters-1-1.epub', 1, true) and #book.chapters == 1)
+    return true
+end
+Settings.set('novel_epub', false)
+local manual = { saved = { downloaded.saved[1] }, skipped = {}, keep_html = true }
+Export.finish(series, '/test', 1, 1, index, manual, package.loaded.json, true)
+assert(exports == 1 and #manual.saved == 2 and manual.saved[1].path:match('%.epub$'),
+    'explicit EPUB export works while automatic export is disabled and keeps HTML')
+exports = 0
 Settings.set('novel_epub', true)
 Epub.write = function(path, book)
     exports = exports + 1
@@ -270,7 +315,12 @@ Http.get = function() return false, 429 end
 assert(Download.range(series, 1, 3).error)
 assert(Download.range(series, 1, 3, false, function() return false end).error)
 local stored = { id = series.id, chapters = { ['11'] = { file = 'existing.html' } } }
-io.open = function() return { read = function() return '{}' end, close = function() end } end
+io.open = function(path)
+    if tostring(path):find('index.json', 1, true) then
+        return { read = function() return '{}' end, close = function() end }
+    end
+    return nil
+end
 package.loaded.json.decode = function() return stored end
 series.chapters[1].locked = true
 local preserved = Download.range(series, 1, 1)
