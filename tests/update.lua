@@ -64,7 +64,7 @@ end
 assert(select(2, Update.parseRelease('{"tag_name":"v0.0.3","assets":[]}')) == "no_asset", "JSON string without zip is no_asset")
 Update._jsonDecode = nil
 
-assert(Update.currentVersion() == "0.0.5", "installed version is 0.0.5")
+assert(Update.currentVersion() == "0.0.6", "installed version is 0.0.6")
 assert(Http.MAX_BODY == 2 * 1024 * 1024, "article HTTP cap stays 2 MiB")
 
 local original_get = Http.get

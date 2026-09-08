@@ -155,6 +155,48 @@ Docln.search = function() return { items = {}, has_more = false } end
 Novels.search('query', 1); drain(); assert(notice == 'Không tìm thấy truyện phù hợp.')
 assert(cleared >= 1 and wifi == 0, 'online path clears progress without Wi-Fi prompts')
 
+-- Cancel confirm must appear before the chapter list/toast, or the user cannot choose Đóng gói.
+local Settings = require('booxbook.store.settings')
+Settings.set('novel_epub', true)
+local listed, captured_text, captured_ok, captured_opts = 0
+local toc_shown = shown
+package.loaded['booxbook.ui.catalog'].show = function(value)
+    listed = listed + 1
+    shown = value
+end
+package.loaded['booxbook.ui.catalog'].confirm = function(text, fn, opts)
+    captured_text, captured_ok, captured_opts = text, fn, opts
+end
+notice = nil
+Download.range = function()
+    return {
+        cancelled = true,
+        saved = { { title = 'Three', path = '/local/ch-3.html', number = 3 } },
+        skipped = {},
+        error = 'cancelled',
+    }
+end
+local old_partial = Download.packagePartial
+Download.packagePartial = function(target, first, last_partial)
+    assert(first == 1 and last_partial == 3, 'last_partial is max saved.number, not cancelled_at-1')
+    return { saved = {
+        { title = 'EPUB', path = '/partial.epub' },
+        { title = 'Three', path = '/local/ch-3.html', number = 3 },
+    }, skipped = {} }
+end
+Novels.download(series, 1, 3, true)
+drain()
+assert(captured_text and captured_text:find('1–3', 1, true), 'confirm names the saved range')
+assert(listed == 0 and shown == toc_shown and notice == nil, 'confirm is not covered by list or toast')
+assert(captured_opts and captured_opts.cancel_callback)
+captured_ok(); drain()
+assert(listed == 1 and shown.items[1].text == 'EPUB')
+assert(notice and notice:find('1', 1, true))
+Download.packagePartial, Download.range = old_partial, normal_range
+package.loaded['booxbook.ui.catalog'].show = function(value) shown = value end
+package.loaded['booxbook.ui.catalog'].confirm = function(_, callback) confirm = callback end
+Settings.set('novel_epub', false)
+
 -- Returning from TOC must leave the grid session available for Catalog stack restore.
 assert(grid ~= nil)
 

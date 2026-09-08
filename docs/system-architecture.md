@@ -77,7 +77,9 @@ Mỗi adapter trả:
 
 `novel-export.lua` xử lý đóng gói và giữ/xóa HTML. Khi `novel_keep_html=false`,
 ghi tham chiếu EPUB vào index trước khi xóa HTML; lỗi xóa dừng ngay và trả
-những HTML còn lại vào index. Offline deduplicate theo path; tên file chỉ nhận
+những HTML còn lại vào index. Đóng gói sau khi hủy tải (`keep_html=true` /
+`packagePartial`) luôn giữ HTML để resume. ConfirmBox hủy tải hiện trước
+list/toast (`cancel_callback`) để không bị fullscreen menu che. Offline deduplicate theo path; tên file chỉ nhận
 `tên.ext`, từ chối `.` / `..` / `../`.
 `news-cleanup.lua` nhận CloseDocument từ plugin, đợi tick sau mới gọi native
 FileManager:deleteFile. Chỉ nhận HTML dưới news sau kiểm tra realpath; yêu cầu
@@ -131,6 +133,8 @@ Parser hỗ trợ `.page-item-detail`, `.c-tabs-item__content`, `.wp-pagenavi`;
 thông tin bộ trong `.post-title`/`.description-summary`. Khi có `#manga-chapters-holder`,
 POST công khai `/<bộ>/ajax/chapters/`; lọc đúng bộ, loại trùng và đảo mục lục Madara về thứ tự đọc.
 Tải khoảng gọi từng tập tuần tự, giữ kết quả trước lỗi/hủy và bỏ qua CBZ đã có.
+Hủy giữa chừng hỏi Đóng gói / Giữ ảnh trước list/toast; cancel dùng sentinel
+`booxbook:cancelled` (không khớp chuỗi UI).
 
 `ui/truyentuoitho` nhận URL tập → `sources/truyentuoitho` lấy ảnh trong
 `.reading-content` → `comic-download` dùng `Http.downloadToFile` → `comic-cbz`

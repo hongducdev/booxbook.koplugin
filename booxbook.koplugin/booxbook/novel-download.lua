@@ -125,11 +125,14 @@ function Download.range(series, first, last, confirmed, progress)
         end
         index = saved
     end
-    local result = { saved = {}, skipped = {} }
+    local result = { saved = {}, skipped = {}, cancelled = false }
     for number = first, last do
         local chapter = series.chapters[number]
         if progress and progress(number - first + 1, last - first + 1, chapter) == false then
-            result.error = _("Đã dừng tải."); break
+            result.cancelled = true
+            result.cancelled_at = number
+            result.error = _("Đã hủy tải; chọn đóng gói để giữ EPUB partial hoặc giữ HTML để tải tiếp.")
+            break
         end
         local chapter_path, chapter_series = Parser.path(chapter)
         local chapter_id = chapter_path and chapter_path:match("/c(%d+)")
@@ -170,7 +173,7 @@ function Download.range(series, first, last, confirmed, progress)
             local document = Html.wrapDocument(chapter.title, "<h1>" .. Html.escape(chapter.title) .. "</h1>" .. content.html)
             local ok, write_err = Html.writeFile(target, document)
             if not ok then result.error = write_err; break end
-            result.saved[#result.saved + 1] = { title = chapter.title, path = target, id = chapter_id }
+            result.saved[#result.saved + 1] = { title = chapter.title, path = target, id = chapter_id, number = number }
         end
         index.chapters[chapter_id] = entry
         local encoded_ok, encoded = pcall(Json.encode, index)
@@ -178,8 +181,46 @@ function Download.range(series, first, last, confirmed, progress)
         local ok, write_err = Html.writeFile(index_path, encoded)
         if not ok then result.error = write_err; break end
     end
-    Export.finish(series, dir, first, last, index, result, Json)
+    -- Cancelled runs keep HTML/index for resume; EPUB partial is only
+    -- packaged on explicit user confirmation via Download.packagePartial.
+    if not result.cancelled then
+        Export.finish(series, dir, first, last, index, result, Json)
+    end
+    result.dir = dir
     return result
+end
+
+-- Package an EPUB from an already-cancelled run. `saved` is the cancelled
+-- result.saved list; `last_partial` defaults to first + #saved - 1.
+-- Returns the Export-updated result (result.saved gains the EPUB entry).
+function Download.packagePartial(series, first, last_partial, saved)
+    series = series or {}
+    saved = saved or {}
+    if type(first) ~= "number" or #saved == 0 then
+        return nil, _("Không có chương đã tải để đóng gói.")
+    end
+    if type(last_partial) ~= "number" or last_partial < first then
+        last_partial = first + #saved - 1
+    end
+    local source_id, id, _, location_err = seriesLocation(series)
+    if not source_id then return nil, location_err end
+    if not id or id ~= series.id then
+        return nil, _("Không xác định được thư mục truyện.")
+    end
+    local json_ok, Json = pcall(require, "json")
+    if not json_ok then return nil, _("Không có thư viện JSON của KOReader.") end
+    local dir = Settings.downloadDir() .. "/novels/" .. source_id .. "/" .. id
+    local index_path = dir .. "/index.json"
+    local file = io.open(index_path, "rb")
+    if not file then return nil, _("Không đọc được danh sách chương đã tải.") end
+    local content = file:read("*a"); file:close()
+    local ok, index = pcall(Json.decode, content)
+    if not ok or type(index) ~= "table" or type(index.chapters) ~= "table" then
+        return nil, _("index.json bị lỗi.")
+    end
+    local partial = { saved = saved, skipped = {}, keep_html = true }
+    Export.finish(series, dir, first, last_partial, index, partial, Json)
+    return partial
 end
 
 return Download

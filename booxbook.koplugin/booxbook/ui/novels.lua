@@ -136,9 +136,13 @@ function Novels.download(series, first, last, confirmed, open_after)
     end
     online(_("Đang tải chương…"), function()
         return Download.range(series, first, last, confirmed, function(number, total, chapter)
-            Trapper:info(string.format(_("Đang tải %d/%d: %s"), number, total, chapter.title))
+            return Trapper:info(string.format(_("Đang tải %d/%d: %s — chạm để hủy"), number, total, chapter.title))
         end)
     end, function(result)
+        if result.cancelled then
+            Novels.onCancelled(series, first, result, open_after)
+            return
+        end
         if open_after and not result.error and #result.saved > 0 then
             local path = result.saved[1].path
             UIManager:nextTick(function() Catalog.clearStack(); ReaderUI:showReader(path) end)
@@ -157,6 +161,70 @@ function Novels.download(series, first, last, confirmed, open_after)
         if #items > 0 then Catalog.show{ title = _("Chương đã tải / bỏ qua"), items = items } end
         if result.error then notify(_("Đã dừng tải: ") .. tostring(result.error)) end
     end)
+end
+
+local function showSaved(result)
+    local items = {}
+    for _, saved in ipairs(result.saved or {}) do
+        local current = saved
+        items[#items + 1] = { text = current.title, keep_menu_open = true, callback = function()
+            UIManager:nextTick(function() Catalog.clearStack(); ReaderUI:showReader(current.path) end)
+        end }
+    end
+    for _, skipped in ipairs(result.skipped or {}) do
+        items[#items + 1] = { text = skipped.title .. ": " .. skipped.reason, select_enabled = false }
+    end
+    if #items > 0 then Catalog.show{ title = _("Chương đã tải / bỏ qua"), items = items } end
+end
+
+-- Popup after a cancelled novel download: package EPUB partial or keep HTML.
+-- Confirm first; the chapter list/toast wait until the user answers so they
+-- are not covered by a fullscreen menu.
+function Novels.onCancelled(series, first, result, open_after)
+    result = result or { saved = {}, skipped = {} }
+    local saved_count = #(result.saved or {})
+    if saved_count == 0 then
+        notify(_("Đã hủy tải; chưa có chương nào được lưu."))
+        return
+    end
+    local last_partial = first
+    for _, saved in ipairs(result.saved) do
+        if type(saved.number) == "number" and saved.number > last_partial then
+            last_partial = saved.number
+        end
+    end
+    local function keepHtml()
+        showSaved(result)
+        notify(string.format(_("Đã hủy tải; đã giữ %d chương HTML để tải tiếp."), saved_count))
+    end
+    if Settings.get("novel_epub") ~= true then
+        keepHtml()
+        return
+    end
+    Catalog.confirm(
+        string.format(_("Đã hủy tải. Đóng gói EPUB với %d chương đã tải (%d–%d)? HTML được giữ để tải tiếp."),
+            saved_count, first, last_partial),
+        function()
+            local partial, err = Download.packagePartial(series, first, last_partial, result.saved)
+            if not partial then
+                showSaved(result)
+                notify(tostring(err or _("Không đóng gói được EPUB partial.")))
+                return
+            end
+            if partial.error then
+                showSaved(result)
+                notify(tostring(partial.error))
+                return
+            end
+            showSaved(partial)
+            notify(string.format(_("Đã đóng gói EPUB với %d chương đã tải."), saved_count))
+            if open_after and partial.saved[1] then
+                local path = partial.saved[1].path
+                UIManager:nextTick(function() Catalog.clearStack(); ReaderUI:showReader(path) end)
+            end
+        end,
+        { ok_text = _("Đóng gói"), cancel_text = _("Giữ HTML"), cancel_callback = keepHtml }
+    )
 end
 
 function Novels.showOffline(series)

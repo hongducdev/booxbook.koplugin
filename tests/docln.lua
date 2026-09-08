@@ -189,6 +189,26 @@ assert(Download.range(series, 1, 3).error, 'missing cover must not silently expo
 Covers.fetch, series.cover, Epub.write = old_fetch, old_cover, successful_write
 local interrupted = Download.range(series, 1, 3, false, function(n) return n < 2 end)
 assert(interrupted.error and #interrupted.saved == 1 and exports == 1)
+assert(interrupted.cancelled and interrupted.saved[1].number == 1)
+local old_json_decode, old_io_open = package.loaded.json.decode, io.open
+package.loaded.json.decode = function() return index end
+io.open = function(path)
+    if tostring(path):find('index.json', 1, true) then
+        return { read = function() return '{"id":"ok"}' end, close = function() end }
+    end
+    return nil
+end
+Settings.set('novel_keep_html', false)
+Epub.write = function(path, book)
+    exports = exports + 1
+    assert(path:find('/chapters-1-1.epub', 1, true))
+    assert(#book.chapters == 1 and book.chapters[1].path:match('%.html$'))
+    return true
+end
+local packaged = assert(Download.packagePartial(series, 1, 1, interrupted.saved))
+assert(not packaged.error and #packaged.saved == 2 and packaged.saved[1].path:match('%.epub$'))
+assert(packaged.saved[2].path:match('%.html$') and exports == 2, 'cancel pack keeps HTML even when novel_keep_html=false')
+io.open, package.loaded.json.decode = old_io_open, old_json_decode
 Epub.write = function() return false, 'archive failed' end
 Settings.set('novel_keep_html', false)
 local failed_epub = Download.range(series, 1, 3)

@@ -73,6 +73,41 @@ assert(#menu.items == 2, "offline list includes both downloaded books")
 package.loaded["booxbook.comic-download"].savedPath = function(url) return "/" .. url .. ".cbz" end
 menu.items[1].callback(); scheduled(); assert(opened == "/book-1.cbz")
 menu.items[2].callback(); scheduled(); assert(opened == "/book-2.cbz", "offline callbacks keep their own book")
+-- Confirm is captured, not auto-OK: list/toast must wait so they cannot cover the dialog.
+local listed, confirm_text, confirm_ok, confirm_opts = 0
+package.loaded["booxbook.ui.catalog"].show = function(opts)
+    menu = opts
+    listed = listed + 1
+end
+package.loaded["booxbook.ui.catalog"].confirm = function(text, fn, opts)
+    confirm_text, confirm_ok, confirm_opts = text, fn, opts
+end
+notice, opened = nil, nil
+package.loaded["booxbook.comic-download"].savedPath = function() end
+package.loaded["booxbook.comic-download"].isCancelErr = function(err)
+    return err == "booxbook:cancelled"
+end
+package.loaded["booxbook.comic-download"].chapter = function(url)
+    return nil, "booxbook:cancelled", { cancelled = true, downloaded = 2, total = 10, url = url }
+end
+package.loaded["booxbook.comic-download"].packageStaging = function()
+    return "/partial.cbz"
+end
+UI.download("https://truyentuoitho.com/manga/test/tap-1/")
+scheduled(); scheduled()
+assert(confirm_text and confirm_text:find("2/10", 1, true), "cancel shows pack confirm")
+assert(listed == 0 and not notice and not opened, "confirm is not covered by list or toast")
+assert(confirm_opts and confirm_opts.cancel_callback)
+confirm_ok()
+scheduled()
+assert(opened == "/partial.cbz" and notice:find("2", 1, true), "pack confirm publishes CBZ")
+package.loaded["booxbook.ui.catalog"].show = function(opts) menu = opts end
+package.loaded["booxbook.ui.catalog"].confirm = function(text, fn) fn() end
+package.loaded["booxbook.comic-download"].chapter = function(url, progress)
+    downloads = downloads + 1; assert(progress(1, 2, false))
+    if fail then error("download failed") end
+    return "/book.cbz"
+end
 local network_calls = 0
 package.loaded["booxbook.network"].whenOnline = function() network_calls = network_calls + 1 end
 package.loaded["booxbook.comic-download"].savedPath = function() return "/offline.cbz" end

@@ -37,11 +37,22 @@ function UI.download(url)
     if path then open(path); return end
     if err then notify(err); return end
     online(_("Đang lấy tập Truyện Tuổi Thơ…"), function()
-        return Download.chapter(url, function(i, count, packing)
-            return Trapper:info(string.format(packing and _("Đóng gói CBZ: %d/%d")
-                or _("Tải ảnh: %d/%d — chạm để dừng"), i, count))
+        local result, chapter_err, partial = Download.chapter(url, function(i, count, packing)
+            return Trapper:info(string.format(packing and _("Đóng gói CBZ: %d/%d — chạm để hủy")
+                or _("Tải ảnh: %d/%d — chạm để hủy"), i, count))
         end)
-    end, function(result) Catalog.clearStack(); ReaderUI:showReader(result) end)
+        if not result and Download.isCancelErr(chapter_err) then
+            return { cancelled = true, err = chapter_err, partial = partial, url = url }
+        end
+        if not result then return nil, chapter_err end
+        return result
+    end, function(result)
+        if type(result) == "table" and result.cancelled then
+            UI.onChapterCancelled(result.url, result.partial)
+            return
+        end
+        Catalog.clearStack(); ReaderUI:showReader(result)
+    end)
 end
 
 function UI.promptSearch()
@@ -108,13 +119,59 @@ end
 function UI.downloadRange(series, first, last)
     online(_("Đang tải tập truyện…"), function()
         return Download.range(series, first, last, function(n, count, chapter, i, total, packing)
-            return Trapper:info(string.format(_("Tập %d/%d: %s\n%s %d/%d — chạm để dừng"),
+            return Trapper:info(string.format(_("Tập %d/%d: %s\n%s %d/%d — chạm để hủy"),
                 n, count, chapter.title, packing and _("Đóng gói") or _("Tải ảnh"), i, total))
         end)
     end, function(result)
+        if result.cancelled and result.partial_url then
+            UI.onChapterCancelled(result.partial_url, result.partial, function()
+                if #result.saved > 0 then UI.showOffline(series) end
+            end)
+            return
+        end
         if #result.saved > 0 then UI.showOffline(series) end
-        if result.error then notify(_("Đã dừng tải: ") .. tostring(result.error)) end
+        if result.error then
+            if result.cancelled then
+                notify(string.format(_("Đã hủy tải; đã giữ %d tập để tải tiếp."), #result.saved))
+            else
+                notify(_("Đã dừng tải: ") .. tostring(result.error))
+            end
+        end
     end)
+end
+
+-- Popup after a cancelled comic download: package partial CBZ or keep staging.
+-- Confirm first; list/toast wait until the user answers.
+function UI.onChapterCancelled(url, partial, after)
+    local pages = partial and partial.downloaded
+    if pages == nil then
+        local staged = Download.stagingPages(url)
+        pages = staged and #staged or 0
+    end
+    if not pages or pages <= 0 then
+        notify(_("Đã hủy tải; chưa có ảnh nào được lưu."))
+        if after then after() end
+        return
+    end
+    local total = (partial and partial.total) or pages
+    local function keepImages()
+        notify(string.format(_("Đã hủy tải; đã giữ %d ảnh để tải tiếp."), pages))
+        if after then after() end
+    end
+    Catalog.confirm(
+        string.format(_("Đã hủy tải. Đóng gói CBZ với %d/%d ảnh đã tải?"), pages, total),
+        function()
+            local packed, err = Download.packageStaging(url)
+            if not packed then
+                notify(tostring(err or _("Không đóng gói được CBZ partial; đã giữ ảnh để tải tiếp.")))
+            else
+                notify(string.format(_("Đã đóng gói CBZ với %d ảnh đã tải."), pages))
+                open(packed)
+            end
+            if after then after() end
+        end,
+        { ok_text = _("Đóng gói"), cancel_text = _("Giữ ảnh"), cancel_callback = keepImages }
+    )
 end
 
 function UI.showSeries(ref)

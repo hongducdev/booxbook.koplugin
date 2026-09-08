@@ -1,5 +1,8 @@
 local _ = require("gettext")
-local Cbz = {}
+local Cbz = {
+    -- Not translated: callers compare this sentinel instead of parsing UI copy.
+    CANCELLED = "booxbook:cbz-cancelled",
+}
 
 function Cbz.verify(path, pages, progress)
     local Archiver = require("ffi/archiver")
@@ -17,7 +20,7 @@ function Cbz.verify(path, pages, progress)
         for entry in reader:iterate() do
             count = count + 1
             assert(count <= 600, "too many pages")
-            if progress and progress(count, #pages, true) == false then error(_("Đã dừng kiểm tra CBZ."), 0) end
+            if progress and progress(count, #pages, true) == false then error(Cbz.CANCELLED, 0) end
             assert(entry.mode == "file" and entry.path:match("^%d+%.[a-z]+$"), "invalid page entry")
             if pages then
                 assert(pages[count] and entry.path == pages[count].name
@@ -44,7 +47,7 @@ function Cbz.write(path, pages, progress)
         assert(writer:open(pending, "zip"), writer.err or "archive open failed")
         assert(writer:setZipCompression("store"), writer.err or "compression failed")
         for i, page in ipairs(pages) do
-            if progress and progress(i, #pages, true) == false then error(_("Đã dừng đóng gói."), 0) end
+            if progress and progress(i, #pages, true) == false then error(Cbz.CANCELLED, 0) end
             local file = assert(io.open(page.path, "rb"))
             local data = file:read(page.size + 1)
             file:close()

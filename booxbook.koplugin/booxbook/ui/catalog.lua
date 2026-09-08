@@ -94,6 +94,7 @@ function Catalog.confirm(text, on_ok, opts)
         ok_text = opts.ok_text or _("Đồng ý"),
         cancel_text = opts.cancel_text or _("Hủy"),
         ok_callback = on_ok,
+        cancel_callback = opts.cancel_callback,
     })
 end
 

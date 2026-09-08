@@ -7,6 +7,7 @@ local Storage = require("booxbook.store.storage")
 local Cbz = require("booxbook.comic-cbz")
 local _ = require("gettext")
 local Download = { MAX_IMAGE = 8 * 1024 * 1024, MAX_TOTAL = 512 * 1024 * 1024 }
+Download.CANCELLED = "booxbook:cancelled"
 
 local function inspect(path)
     local file = io.open(path, "rb")
@@ -21,6 +22,85 @@ local function inspect(path)
         if a + b * 256 + c * 65536 + d * 16777216 + 8 ~= size then return nil end
     end
     return ext, size
+end
+
+local function isCancelErr(err)
+    return err == Download.CANCELLED
+end
+
+function Download.isCancelErr(err) return isCancelErr(err) end
+
+local function cancelPartial(url, staging, downloaded, total)
+    return nil, Download.CANCELLED, {
+        cancelled = true, downloaded = downloaded, total = total, staging = staging, url = url,
+    }
+end
+
+-- Collect already-downloaded staging pages for a chapter URL.
+-- Returns pages list (for Cbz.write) + staging dir, or nil + err.
+function Download.stagingPages(url)
+    local path, path_err = Download.path(url)
+    if not path then return nil, path_err end
+    local ref = Source.parseRef(url)
+    if not ref then return nil, _("URL tập Truyện Tuổi Thơ không hợp lệ.") end
+    local dir = path:match("^(.*)/[^/]+$")
+    local staging = dir .. "/." .. ref.chapter .. "-pages"
+    local pages = {}
+    local ok, lfs = pcall(require, "libs/libkoreader-lfs")
+    if not ok or not lfs then ok, lfs = pcall(require, "lfs") end
+    if ok and lfs and lfs.dir and lfs.attributes then
+        local ok_dir, iter, state = pcall(lfs.dir, staging)
+        if not (ok_dir and iter) then return nil, _("Chưa có ảnh nào được tải.") end
+        local by_index = {}
+        for name in iter, state do
+            local n = name:match("^(%d%d%d%d)$")
+            if n then
+                local target = staging .. "/" .. name
+                local ext, size = inspect(target)
+                if ext then by_index[tonumber(n)] = { path = target, size = size, name = string.format("%04d.%s", tonumber(n), ext) } end
+            end
+        end
+        local max_n = 0
+        for n in pairs(by_index) do max_n = math.max(max_n, n) end
+        for i = 1, max_n do
+            if not by_index[i] then return nil, _("Ảnh tải dở còn thiếu trang ") .. i end
+            pages[i] = by_index[i]
+        end
+    else
+        for i = 1, 600 do
+            local target = staging .. "/" .. string.format("%04d", i)
+            local probe = io.open(target, "rb")
+            if not probe then break end
+            probe:close()
+            local ext, size = inspect(target)
+            if not ext then break end
+            pages[i] = { path = target, size = size, name = string.format("%04d.%s", i, ext) }
+        end
+    end
+    if #pages == 0 then return nil, _("Chưa có ảnh nào được tải.") end
+    return pages, staging
+end
+
+-- Package a partial CBZ from staging pages after user confirms.
+-- Keeps staging on failure so the user can resume; cleans it on success.
+function Download.packageStaging(url, progress)
+    local pages, staging = Download.stagingPages(url)
+    if not pages then return nil, staging end
+    local path, path_err = Download.path(url)
+    if not path then return nil, path_err end
+    local result, pack_err = Cbz.write(path, pages, progress)
+    if not result then
+        if pack_err == Cbz.CANCELLED then
+            return nil, _("Đã hủy đóng gói; đã giữ ảnh để tải tiếp.")
+        end
+        return nil, pack_err
+    end
+    for _, page in ipairs(pages) do
+        os.remove(page.path .. ".url")
+        os.remove(page.path)
+    end
+    pcall(Storage.emptyDir, staging)
+    return result
 end
 
 function Download.path(url)
@@ -54,7 +134,9 @@ function Download.chapter(url, progress)
     if not Settings.ensureDir(staging) then return nil, _("Không tạo được thư mục tải ảnh.") end
     local pages, total = {}, 0
     for i, image_url in ipairs(chapter.pages) do
-        if progress and progress(i, #chapter.pages, false) == false then return nil, _("Đã dừng tải; chọn lại tập hoặc khoảng tập để tiếp tục.") end
+        if progress and progress(i, #chapter.pages, false) == false then
+            return cancelPartial(url, staging, i - 1, #chapter.pages)
+        end
         local target = staging .. "/" .. string.format("%04d", i)
         local receipt = io.open(target .. ".url", "rb")
         local saved = receipt and receipt:read(8192)
@@ -91,7 +173,12 @@ function Download.chapter(url, progress)
         pages[i] = { path = target, size = size, name = string.format("%04d.%s", i, ext) }
     end
     local result, pack_err = Cbz.write(path, pages, progress)
-    if not result then return nil, pack_err end
+    if not result then
+        if pack_err == Cbz.CANCELLED then
+            return cancelPartial(url, staging, #pages, #chapter.pages)
+        end
+        return nil, pack_err
+    end
     for _, page in ipairs(pages) do
         os.remove(page.path .. ".url")
         os.remove(page.path)
@@ -165,19 +252,32 @@ function Download.range(series, first, last, progress)
     local count = type(series) == "table" and #(series.chapters or {}) or 0
     if type(first) ~= "number" or type(last) ~= "number" or first % 1 ~= 0 or last % 1 ~= 0
         or first < 1 or last < first or last > count then return nil, _("Khoảng tập không hợp lệ.") end
-    local result = { saved = {} }
+    local result = { saved = {}, cancelled = false }
     for n = first, last do
         local chapter = series.chapters[n]
         if not Source.parseRef(chapter) or Source.parseRef(chapter).series ~= series.id then
             result.error = _("Tập không thuộc bộ truyện."); break
         end
         if progress and progress(n - first + 1, last - first + 1, chapter, 0, 0, false) == false then
-            result.error = _("Đã dừng tải; chọn lại khoảng tập để tiếp tục."); break
+            result.cancelled = true
+            result.cancelled_at = n
+            result.error = _("Đã hủy tải; chọn đóng gói để giữ CBZ partial hoặc giữ ảnh để tải tiếp.")
+            break
         end
-        local ok, path, err = pcall(Download.chapter, chapter.url, function(i, total, packing)
+        local ok, path, err, partial = pcall(Download.chapter, chapter.url, function(i, total, packing)
             if progress then return progress(n - first + 1, last - first + 1, chapter, i, total, packing) end
         end)
-        if not ok or not path then result.error = ok and err or path; break end
+        if not ok or not path then
+            result.error = ok and err or path
+            if ok and (err == Download.CANCELLED or partial) then
+                result.cancelled = true
+                result.cancelled_at = n
+                result.partial_url = chapter.url
+                result.partial = partial
+                result.error = _("Đã hủy tải; chọn đóng gói để giữ CBZ partial hoặc giữ ảnh để tải tiếp.")
+            end
+            break
+        end
         result.saved[#result.saved + 1] = { title = chapter.title, path = path, number = n }
     end
     return result

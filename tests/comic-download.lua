@@ -1,6 +1,10 @@
-local names = { "gettext", "ffi/archiver", "booxbook.comic-download", "booxbook.comic-cbz" }
+local names = { "gettext", "ffi/archiver", "booxbook.comic-download", "booxbook.comic-cbz",
+    "lfs", "libs/libkoreader-lfs" }
 local saved = {}
 for _, name in ipairs(names) do saved[name] = package.loaded[name] end
+-- Virtual @comic/ paths are mapped via io.open; disable lfs so stagingPages
+-- uses that mapped fallback instead of listing real temp directories.
+package.loaded.lfs, package.loaded["libs/libkoreader-lfs"] = false, false
 package.loaded.gettext = function(s) return s end
 package.loaded["booxbook.comic-download"], package.loaded["booxbook.comic-cbz"] = nil, nil
 local Http = require("booxbook.http")
@@ -75,6 +79,21 @@ assert(Download.chapter(url) == path and request_count == 1, "existing book reus
 os.remove(path)
 request_count = 0
 assert(not Download.chapter(url, function() return false end) and request_count == 0, "cancel before first image")
+local _, cancel_err, cancel_partial = Download.chapter(url, function() return false end)
+assert(Download.isCancelErr(cancel_err) and cancel_partial.downloaded == 0)
+assert(not Download.isCancelErr("Đã dừng tải"), "HTTP errors are not treated as cancel")
+local pack_cancelled, pack_err, pack_partial = Download.chapter(url, function(_, _, packing)
+    if packing then return false end
+end)
+assert(not pack_cancelled and Download.isCancelErr(pack_err) and pack_partial.downloaded == 2)
+assert(io.open(staging .. "0001", "rb"):close() and io.open(staging .. "0002", "rb"):close(),
+    "pack cancel keeps staging")
+assert(not io.open(path, "rb"), "pack cancel does not publish CBZ")
+local packed = assert(Download.packageStaging(url))
+assert(packed == path)
+assert(not io.open(staging .. "0001", "rb"), "packageStaging removes staging after success")
+os.remove(path)
+request_count = 0
 response = "<html>not an image</html>"
 assert(not Download.chapter(url), "HTTP 200 HTML is not an image")
 response = image:sub(1, -2)
