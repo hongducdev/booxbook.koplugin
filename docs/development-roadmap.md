@@ -1,5 +1,13 @@
 # Lộ trình phát triển
 
+## Tối ưu tải và EPUB truyện — 2026-09-08
+
+- [x] Bỏ qua chương đã có file; file thiếu được tải lại thay vì tin riêng index.
+- [x] Backup/fallback `index.json` có kiểm tra schema và đúng series.
+- [x] Tạo EPUB theo khoảng từ HTML đã tải, không tải lại và luôn giữ HTML.
+- [x] Kiểm thử download, phục hồi index, EPUB thủ công, UI và toàn bộ hồi quy.
+- [ ] Smoke test tải lặp, fallback index và EPUB thủ công trên Boox thật.
+
 ## Truyện Tuổi Thơ CBZ — 2026-09-07
 
 - [x] Bản thử nhập URL tập, parser ảnh, tải tiếp và đóng gói CBZ.

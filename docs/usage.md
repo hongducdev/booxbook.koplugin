@@ -20,9 +20,9 @@ Màn hình chính hiện phiên bản ngay dưới tiêu đề. Điều hướng
 ## DocLN
 
 - **Truyện → DocLN**: nhập từ khóa; chọn truyện để xem các tập và chương. Có **Trang tiếp** khi còn kết quả.
-- **Tải chương** (icon menu góc trái thanh tiêu đề mục lục): **Tải khoảng chương** (nhập từ–đến) hoặc **Tải toàn bộ chương** (xác nhận rồi tải 1…N). **Chương đã tải (offline)** nằm trong danh sách mục lục: mở HTML đã lưu từ `index.json`, không cần mạng. Chạm một chương để chỉ tải chương đó; chọn chương trong kết quả tải để mở bằng KOReader.
+- **Tải chương** (icon menu góc trái thanh tiêu đề mục lục): **Tải khoảng chương** (nhập từ–đến), **Tải toàn bộ chương** hoặc **Tạo EPUB từ chương đã tải**. **Chương đã tải (offline)** nằm trong danh sách mục lục: mở file đã lưu từ `index.json`, không cần mạng. Chạm một chương để tải hoặc mở ngay bản đã có.
 - Mỗi lượt mặc định gợi ý tối đa 20 chương; hơn 50 chương cần xác nhận. Tải tuần tự, cách nhau ít nhất 1,5 giây; HTTP 429 dừng lượt tải.
-- Lưu HTML từng chương và `index.json` tại `koreader/booxbook/novels/docln/<loại-truyện-id>/`. Tên file dùng ID chương ổn định. Đọc lại offline từ mục lục truyện hoặc trình quản lý file KOReader.
+- Lưu HTML từng chương và `index.json` tại `koreader/booxbook/novels/docln/<loại-truyện-id>/`. Tải lại khoảng tự bỏ qua chương còn file; mục index có file đã mất được tải lại. `index.json.bak` giữ bản hợp lệ gần nhất để fallback nếu index chính hỏng. Tên file dùng ID chương ổn định.
 - Tự chuyển giữa `docln.net`, `ln.hako.vn`, `docln.sbs` khi lỗi mạng/trang; nhớ tên miền hoạt động. Dùng **Cookie DocLN** đã có trong Cài đặt nếu cần.
 - Ẩn kết quả được đánh dấu 18+ khi thiết lập tắt; kiểm tra lại trên trang truyện. Chương khóa/404/không có chữ hiển thị lý do bỏ qua; lỗi mạng hoặc ghi file giữ lại các chương đã lưu.
 - Hỗ trợ nội dung công khai được đóng gói trong HTML theo cách của [Nekori LNHako](https://github.com/Yuneko-dev/Nekori-plugins/tree/c29b05de71bf71e5321d6488014d027d7b2f68cb/plugins/vietnamese/LNHako). [Thông báo MIT](../booxbook.koplugin/THIRD-PARTY-NOTICES.md). EPUB tùy chọn trong Cài đặt; tải ảnh chương để bước sau.
@@ -60,6 +60,7 @@ lỗi hoặc định dạng chưa hỗ trợ thì giữ HTML và báo lỗi. EPU
 cần tải lại để nhận metadata và bìa mới.
 
 - Bật **Cài đặt → Lưu truyện thành EPUB**. Mặc định vẫn là HTML.
+- Không cần bật công tắc để đóng gói thủ công: trong menu mục lục chọn **Tạo EPUB từ chương đã tải**, nhập khoảng. Plugin chỉ dùng HTML đang có, báo số chương thiếu và luôn giữ HTML/index.
 - Áp dụng DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen và Truyện Full: mỗi khoảng tải xong có file
   `chapters-<từ>-<đến>.epub` trong thư mục truyện, chứa các chương tải được theo
   thứ tự và mục lục. Tải toàn bộ tạo một EPUB cho khoảng đó. Chương khóa bị bỏ qua.

@@ -71,11 +71,13 @@ Mỗi adapter trả:
 - Hành động online hoãn sau khi chọn menu, có Wi-Fi và Trapper. Ghi HTML qua file tạm rồi rename.
 - Cổng mạng (`booxbook.network.whenOnline`): nếu đã online/connected thì chạy ngay; chỉ gọi `beforeWifiAction` khi cả hai false.
 - Sangtacviet tắt (`stv_enabled = false`) đến khi xác nhận cảnh báo. 18+ tắt; ảnh bật (`adult_content`, `include_images`).
-- Truyện: **một HTML mỗi chương**. Bật `novel_epub` để tạo thêm EPUB theo khoảng chương sau lượt tải thành công. Bộ ghi đọc từng HTML, giữ thứ tự/mục lục, kiểm tra lỗi ghi, mở lại archive trước khi rename; nếu rename fail vì file đích đã có thì xóa đích rồi thử lại.
+- Truyện: **một HTML mỗi chương**. Range kiểm tra entry + file trước request, trả `existing` để mở/báo bỏ qua; entry mất file được tải lại. Index ghi từng chương qua file tạm, giữ `index.json.bak` hợp lệ gần nhất và chỉ fallback khi schema/id đúng. Bật `novel_epub` để tự tạo EPUB theo khoảng; action thủ công đóng gói các HTML đã tải với `keep_html=true`. Bộ ghi mở lại archive trước rename; nếu FAT từ chối đè file đích thì replace an toàn.
 
 ## DocLN
 
-`novel-export.lua` xử lý đóng gói và giữ/xóa HTML. Khi `novel_keep_html=false`,
+`novel-export.lua` xử lý đóng gói và giữ/xóa HTML. `packageSaved` chọn HTML
+theo số mục lục từ index, bỏ qua file thiếu/entry EPUB và không gọi adapter.
+Khi `novel_keep_html=false`,
 ghi tham chiếu EPUB vào index trước khi xóa HTML; lỗi xóa dừng ngay và trả
 những HTML còn lại vào index. Đóng gói sau khi hủy tải (`keep_html=true` /
 `packagePartial`) luôn giữ HTML để resume. ConfirmBox hủy tải hiện trước
