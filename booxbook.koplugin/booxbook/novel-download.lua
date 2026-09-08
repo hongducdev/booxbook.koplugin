@@ -53,6 +53,40 @@ local function seriesLocation(series)
     return source_id, id, path, adapter
 end
 
+local function safeEntry(entry)
+    return type(entry) == "table" and type(entry.file) == "string"
+        and entry.file:match("^[%w_%-]+%.[%w]+$") ~= nil
+end
+
+local function fileExists(path)
+    local file = io.open(path, "rb")
+    if not file then return false end
+    file:close()
+    return true
+end
+
+local function readIndex(path, Json, id, allow_legacy_id)
+    local file, read_err, read_code = io.open(path, "rb")
+    if not file then return nil, nil, read_err, not read_code or read_code == 2 end
+    local content = file:read("*a")
+    file:close()
+    local ok, index = pcall(Json.decode, content)
+    if not ok or type(index) ~= "table" or type(index.chapters) ~= "table"
+        or (index.id ~= id and not (allow_legacy_id and index.id == nil)) then
+        return nil, nil, _("index.json bị lỗi."), false
+    end
+    return index, content
+end
+
+local function loadIndex(path, Json, id, allow_legacy_id)
+    local index, content, err, missing = readIndex(path, Json, id, allow_legacy_id)
+    if index then return index, content end
+    local backup, backup_content, backup_err, backup_missing = readIndex(path .. ".bak", Json, id, false)
+    if backup then return backup, backup_content, nil, false, true end
+    if missing and backup_missing then return nil, nil, nil, true end
+    return nil, nil, missing and backup_err or err, false
+end
+
 function Download.savedList(series)
     series = series or {}
     local source_id, id, _path, err = seriesLocation(series)
@@ -64,24 +98,15 @@ function Download.savedList(series)
     if not json_ok then return nil, _("Không có thư viện JSON của KOReader.") end
     local dir = Settings.downloadDir() .. "/novels/" .. source_id .. "/" .. id
     local index_path = dir .. "/index.json"
-    local file, read_err, read_code = io.open(index_path, "rb")
-    if not file then
-        if not read_code or read_code == 2 then return {} end
-        return nil, read_err
-    end
-    local content = file:read("*a")
-    file:close()
-    local ok, saved = pcall(Json.decode, content)
-    if not ok or type(saved) ~= "table" or type(saved.chapters) ~= "table" then
-        return nil, _("index.json bị lỗi.")
-    end
+    local saved, _, read_err, missing = loadIndex(index_path, Json, id, true)
+    if not saved then return missing and {} or nil, read_err end
     local list = {}
     for chapter_id, entry in pairs(saved.chapters) do
-        if type(entry) == "table" and type(entry.file) == "string"
-            and entry.file:match("^[%w_%-]+%.[%w]+$") then
+        local path = safeEntry(entry) and (dir .. "/" .. entry.file)
+        if path and fileExists(path) then
             list[#list + 1] = {
                 title = entry.export_title or entry.title or tostring(chapter_id),
-                path = dir .. "/" .. entry.file,
+                path = path,
                 number = entry.number,
                 id = chapter_id,
             }
@@ -114,18 +139,20 @@ function Download.range(series, first, last, confirmed, progress)
     if not json_ok then return nil, _("Không có thư viện JSON của KOReader.") end
     local dir = Settings.downloadDir() .. "/novels/" .. source_id .. "/" .. id
     if not Settings.ensureDir(dir) then return nil, _("Không tạo được thư mục truyện.") end
-    local index_path, index = dir .. "/index.json", { id = id, title = series.title, chapters = {} }
-    local file, read_err, read_code = io.open(index_path, "rb")
-    if not file and read_code and read_code ~= 2 then return nil, read_err end
-    if file then
-        local content = file:read("*a"); file:close()
-        local ok, saved = pcall(Json.decode, content)
-        if not ok or type(saved) ~= "table" or saved.id ~= id or type(saved.chapters) ~= "table" then
-            return nil, _("index.json bị lỗi; giữ nguyên dữ liệu đã tải.")
+    local index_path = dir .. "/index.json"
+    local index, index_content, read_err, missing, recovered = loadIndex(index_path, Json, id, false)
+    if not index then
+        if not missing then return nil, read_err or _("index.json bị lỗi; giữ nguyên dữ liệu đã tải.") end
+        index = { id = id, title = series.title, chapters = {} }
+    else
+        if recovered then
+            local restored, restore_err = Html.writeFile(index_path, index_content)
+            if not restored then return nil, _("Không phục hồi được index.json: ") .. tostring(restore_err) end
         end
-        index = saved
     end
-    local result = { saved = {}, skipped = {}, cancelled = false }
+    local result = { saved = {}, existing = {}, skipped = {}, cancelled = false }
+    local index_changed = false
+    local backup_pending = index_content ~= nil and not recovered
     for number = first, last do
         local chapter = series.chapters[number]
         if progress and progress(number - first + 1, last - first + 1, chapter) == false then
@@ -158,33 +185,63 @@ function Download.range(series, first, last, confirmed, progress)
         if chapter_series ~= id or not chapter_id or #chapter_id > max_id_len then
             result.error = _("Đường dẫn chương không thuộc truyện này."); break
         end
-        local content, err = adapter.getChapter(chapter)
-        if not content then result.error = err; break end
-        local entry = { title = chapter.title, url = chapter.url, number = number }
-        if content.skipped then
-            entry.skipped = content.skipped
-            result.skipped[#result.skipped + 1] = { title = chapter.title, reason = content.skipped }
-            -- A later locked response must not remove a previously downloaded chapter.
-            if index.chapters[chapter_id] then entry = index.chapters[chapter_id] end
+        local previous = index.chapters[chapter_id]
+        local existing_path = safeEntry(previous) and (dir .. "/" .. previous.file)
+        if existing_path and fileExists(existing_path) then
+            result.existing[#result.existing + 1] = {
+                title = previous.export_title or previous.title or chapter.title,
+                path = existing_path,
+                id = chapter_id,
+                number = previous.number or number,
+            }
         else
-            entry.file = chapterFileName(chapter_id)
-            if not entry.file then result.error = _("ID chương không hợp lệ."); break end
-            local target = dir .. "/" .. entry.file
-            local document = Html.wrapDocument(chapter.title, "<h1>" .. Html.escape(chapter.title) .. "</h1>" .. content.html)
-            local ok, write_err = Html.writeFile(target, document)
+            if backup_pending then
+                local backed_up, backup_err = Html.writeFile(index_path .. ".bak", index_content)
+                if not backed_up then
+                    result.error = _("Không sao lưu được index.json: ") .. tostring(backup_err)
+                    break
+                end
+                backup_pending = false
+            end
+            local content, err = adapter.getChapter(chapter)
+            if not content then result.error = err; break end
+            local entry = { title = chapter.title, url = chapter.url, number = number }
+            if content.skipped then
+                entry.skipped = content.skipped
+                result.skipped[#result.skipped + 1] = { title = chapter.title, reason = content.skipped }
+                -- A later locked response must not remove a previously downloaded chapter.
+                if index.chapters[chapter_id] then entry = index.chapters[chapter_id] end
+            else
+                entry.file = chapterFileName(chapter_id)
+                if not entry.file then result.error = _("ID chương không hợp lệ."); break end
+                local target = dir .. "/" .. entry.file
+                local document = Html.wrapDocument(chapter.title, "<h1>" .. Html.escape(chapter.title) .. "</h1>" .. content.html)
+                local ok, write_err = Html.writeFile(target, document)
+                if not ok then result.error = write_err; break end
+                result.saved[#result.saved + 1] = { title = chapter.title, path = target, id = chapter_id, number = number }
+            end
+            index.chapters[chapter_id] = entry
+            local encoded_ok, encoded = pcall(Json.encode, index)
+            if not encoded_ok or type(encoded) ~= "string" then result.error = _("Không ghi được danh sách chương."); break end
+            local ok, write_err = Html.writeFile(index_path, encoded)
             if not ok then result.error = write_err; break end
-            result.saved[#result.saved + 1] = { title = chapter.title, path = target, id = chapter_id, number = number }
+            index_changed = true
         end
-        index.chapters[chapter_id] = entry
-        local encoded_ok, encoded = pcall(Json.encode, index)
-        if not encoded_ok or type(encoded) ~= "string" then result.error = _("Không ghi được danh sách chương."); break end
-        local ok, write_err = Html.writeFile(index_path, encoded)
-        if not ok then result.error = write_err; break end
     end
     -- Cancelled runs keep HTML/index for resume; EPUB partial is only
     -- packaged on explicit user confirmation via Download.packagePartial.
     if not result.cancelled then
         Export.finish(series, dir, first, last, index, result, Json)
+    end
+    if index_changed then
+        local encoded_ok, encoded = pcall(Json.encode, index)
+        local backup_ok, backup_err = false, _("Không ghi được danh sách chương.")
+        if encoded_ok and type(encoded) == "string" then
+            backup_ok, backup_err = Html.writeFile(index_path .. ".bak", encoded)
+        end
+        if not backup_ok and not result.error then
+            result.error = _("Không sao lưu được index.json: ") .. tostring(backup_err)
+        end
     end
     result.dir = dir
     return result
@@ -211,16 +268,56 @@ function Download.packagePartial(series, first, last_partial, saved)
     if not json_ok then return nil, _("Không có thư viện JSON của KOReader.") end
     local dir = Settings.downloadDir() .. "/novels/" .. source_id .. "/" .. id
     local index_path = dir .. "/index.json"
-    local file = io.open(index_path, "rb")
-    if not file then return nil, _("Không đọc được danh sách chương đã tải.") end
-    local content = file:read("*a"); file:close()
-    local ok, index = pcall(Json.decode, content)
-    if not ok or type(index) ~= "table" or type(index.chapters) ~= "table" then
-        return nil, _("index.json bị lỗi.")
-    end
+    local index, _, read_err = loadIndex(index_path, Json, id, false)
+    if not index then return nil, read_err or _("Không đọc được danh sách chương đã tải.") end
     local partial = { saved = saved, skipped = {}, keep_html = true }
     Export.finish(series, dir, first, last_partial, index, partial, Json)
     return partial
+end
+
+function Download.packageSaved(series, first, last)
+    series = series or {}
+    local source_id, id, path, location_err = seriesLocation(series)
+    if not source_id then return nil, location_err end
+    if not path or id ~= series.id or type(first) ~= "number" or type(last) ~= "number"
+        or first % 1 ~= 0 or last % 1 ~= 0 or first < 1 or last < first or last > #(series.chapters or {}) then
+        return nil, _("Khoảng chương không hợp lệ.")
+    end
+    local json_ok, Json = pcall(require, "json")
+    if not json_ok then return nil, _("Không có thư viện JSON của KOReader.") end
+    local dir = Settings.downloadDir() .. "/novels/" .. source_id .. "/" .. id
+    local index, index_content, read_err = loadIndex(dir .. "/index.json", Json, id, false)
+    if not index then return nil, read_err or _("Không đọc được danh sách chương đã tải.") end
+
+    local by_number = {}
+    for chapter_id, entry in pairs(index.chapters) do
+        local number = type(entry) == "table" and tonumber(entry.number)
+        if number and number % 1 == 0 and not by_number[number] then
+            by_number[number] = { id = chapter_id, entry = entry }
+        end
+    end
+    local result = { saved = {}, skipped = {}, keep_html = true }
+    for number = first, last do
+        local found = by_number[number]
+        local entry = found and found.entry
+        local chapter_path = safeEntry(entry) and entry.file:lower():match("%.html$") and (dir .. "/" .. entry.file)
+        if chapter_path and fileExists(chapter_path) then
+            result.saved[#result.saved + 1] = {
+                title = entry.title or (series.chapters[number] and series.chapters[number].title) or (_("Chương") .. " " .. number),
+                path = chapter_path,
+                id = found.id,
+                number = number,
+            }
+        else
+            result.skipped[#result.skipped + 1] = {
+                title = (series.chapters[number] and series.chapters[number].title) or (_("Chương") .. " " .. number),
+                reason = _("Chưa có bản HTML."),
+            }
+        end
+    end
+    if #result.saved == 0 then return nil, _("Khoảng đã chọn không có chương HTML đã tải.") end
+    Export.finish(series, dir, first, last, index, result, Json, true)
+    return result
 end
 
 return Download

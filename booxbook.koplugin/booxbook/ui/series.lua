@@ -68,7 +68,7 @@ function SeriesUI.show(series, opts)
         return
     end
     local on_left_icon
-    if #(series.chapters or {}) > 0 and (opts.on_range or opts.on_download_all) then
+    if #(series.chapters or {}) > 0 and (opts.on_range or opts.on_download_all or opts.on_package) then
         on_left_icon = function()
             local actions = {}
             if opts.on_range then
@@ -85,6 +85,13 @@ function SeriesUI.show(series, opts)
                     callback = opts.on_download_all,
                 }
             end
+            if opts.on_package then
+                actions[#actions + 1] = {
+                    text = _("Tạo EPUB từ chương đã tải"),
+                    keep_menu_open = true,
+                    callback = opts.on_package,
+                }
+            end
             Catalog.show({
                 title = _("Tải ") .. unit,
                 items = actions,
@@ -99,11 +106,11 @@ function SeriesUI.show(series, opts)
     })
 end
 
-function SeriesUI.askRange(max_chapter, on_submit)
+function SeriesUI.askRange(max_chapter, on_submit, verb)
     max_chapter = tonumber(max_chapter) or 0
     if max_chapter < 1 then return end
     Catalog.promptText({
-        title = _("Tải từ chương (1–") .. tostring(max_chapter) .. ")",
+        title = (verb or _("Tải")) .. _(" từ chương (1–") .. tostring(max_chapter) .. ")",
         input = "1",
         on_submit = function(from_text)
             local from = tonumber(from_text)

@@ -143,8 +143,9 @@ function Novels.download(series, first, last, confirmed, open_after)
             Novels.onCancelled(series, first, result, open_after)
             return
         end
-        if open_after and not result.error and #result.saved > 0 then
-            local path = result.saved[1].path
+        local existing = result.existing or {}
+        if open_after and not result.error and (#result.saved > 0 or #existing > 0) then
+            local path = (#result.saved > 0 and result.saved[1] or existing[1]).path
             UIManager:nextTick(function() Catalog.clearStack(); ReaderUI:showReader(path) end)
             return
         end
@@ -159,6 +160,9 @@ function Novels.download(series, first, last, confirmed, open_after)
             items[#items + 1] = { text = skipped.title .. ": " .. skipped.reason, select_enabled = false }
         end
         if #items > 0 then Catalog.show{ title = _("Chương đã tải / bỏ qua"), items = items } end
+        if #existing > 0 then
+            notify(string.format(_("Đã bỏ qua %d chương đã có."), #existing))
+        end
         if result.error then notify(_("Đã dừng tải: ") .. tostring(result.error)) end
     end)
 end
@@ -175,6 +179,32 @@ local function showSaved(result)
         items[#items + 1] = { text = skipped.title .. ": " .. skipped.reason, select_enabled = false }
     end
     if #items > 0 then Catalog.show{ title = _("Chương đã tải / bỏ qua"), items = items } end
+end
+
+function Novels.packageSaved(series, first, last)
+    online(_("Đang tạo EPUB…"), function()
+        return Download.packageSaved(series, first, last)
+    end, function(result)
+        if result.error then
+            notify(_("Không tạo được EPUB: ") .. tostring(result.error))
+            return
+        end
+        local epub = result.saved and result.saved[1]
+        if not epub or not epub.path:match("%.epub$") then
+            notify(_("Không tạo được EPUB."))
+            return
+        end
+        Catalog.show{ title = _("EPUB đã tạo"), items = { {
+            text = epub.title,
+            keep_menu_open = true,
+            callback = function()
+                UIManager:nextTick(function() Catalog.clearStack(); ReaderUI:showReader(epub.path) end)
+            end,
+        } } }
+        if #(result.skipped or {}) > 0 then
+            notify(string.format(_("Đã bỏ qua %d chương chưa có HTML."), #result.skipped))
+        end
+    end)
 end
 
 -- Popup after a cancelled novel download: package EPUB partial or keep HTML.
@@ -269,6 +299,11 @@ function Novels.showSeries(ref, adapter)
                     string.format(_("Tải toàn bộ %d chương? Có thể mất nhiều thời gian (rate-limit / captcha)."), total),
                     function() Novels.download(series, 1, total) end
                 )
+            end,
+            on_package = function()
+                SeriesUI.askRange(total, function(first, last)
+                    Novels.packageSaved(series, first, last)
+                end, _("Đóng gói"))
             end,
             on_offline = function() Novels.showOffline(series) end,
         })

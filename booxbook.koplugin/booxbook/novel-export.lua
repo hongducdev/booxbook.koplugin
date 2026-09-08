@@ -8,8 +8,8 @@ local has_gettext, gettext = pcall(require, "gettext")
 local _ = has_gettext and gettext or function(text) return text end
 local Export = {}
 
-function Export.finish(series, dir, first, last, index, result, Json)
-    if Settings.get("novel_epub") ~= true or result.error or #result.saved == 0 then return end
+function Export.finish(series, dir, first, last, index, result, Json, explicit)
+    if (not explicit and Settings.get("novel_epub") ~= true) or result.error or #result.saved == 0 then return end
     local title = string.format(_("%s — Chương %d–%d"), series.title or series.id, first, last)
     local filename = string.format("chapters-%d-%d.epub", first, last)
     local target = dir .. "/" .. filename
