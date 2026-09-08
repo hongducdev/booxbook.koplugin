@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.7 — 2026-09-08
+
+- Tải truyện chữ bỏ qua chương còn file, nhưng tải lại entry có file bị mất.
+- Backup/fallback `index.json` hợp lệ để danh sách offline chịu được index chính hỏng.
+- Thêm **Tạo EPUB từ chương đã tải** theo khoảng; không tải lại nội dung và luôn giữ HTML.
+
 ## 0.0.6 — 2026-09-08
 
 - Hủy giữa chừng tải truyện chữ/truyện tranh: hỏi Đóng gói EPUB/CBZ partial hoặc giữ HTML/ảnh để tải tiếp; ConfirmBox hiện trước list/toast.
