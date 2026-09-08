@@ -1,6 +1,7 @@
 local Html = require("booxbook.html")
 local Http = require("booxbook.http")
 local Settings = require("booxbook.store.settings")
+local Storage = require("booxbook.store.storage")
 
 local Images = {}
 
@@ -43,12 +44,36 @@ end
 
 Images.extension = extension
 
+-- Apply sidecar deletes only after the HTML write/delete committed.
+-- plan.remove: drop the whole tree. plan.keep: prune unreferenced names.
+-- Empty keep means every fetch failed — leave the previous tree intact.
+function Images.commitSidecar(html_path, plan)
+    if type(html_path) ~= "string" or type(plan) ~= "table" then return end
+    if plan.remove then
+        pcall(Storage.removeSidecar, html_path)
+        return
+    end
+    if type(plan.keep) == "table" and next(plan.keep) then
+        local dir = Storage.sidecarDir(html_path)
+        if dir then pcall(Storage.pruneSidecar, dir, plan.keep) end
+    end
+end
+
 -- No path = pure rendering. A path is supplied only for the selected article.
+-- Second return is a sidecar plan; callers commit it after Html.writeFile.
 function Images.process(body, base, path, decode)
     local cached, attempts, bytes = {}, 0, 0
-    local dir = path and (path .. ".images")
+    local dir = path and Storage.sidecarDir(path)
+    if path and not Settings.includeImages() then
+        local html = body:gsub("<%s*[Ii][Mm][Gg]%f[%W][^>]*>", function(tag)
+            local attrs = attributes(tag, decode)
+            local alt = Html.escape(attrs.alt or "")
+            return alt ~= "" and ("<p>" .. alt .. "</p>") or ""
+        end)
+        return html, { remove = true }
+    end
     local ready, file_index = nil, 0
-    return body:gsub("<%s*[Ii][Mm][Gg]%f[%W][^>]*>", function(tag)
+    local rendered = body:gsub("<%s*[Ii][Mm][Gg]%f[%W][^>]*>", function(tag)
         local attrs = attributes(tag, decode)
         local alt = Html.escape(attrs.alt or "")
         if not Settings.includeImages() then return "" end
@@ -92,6 +117,15 @@ function Images.process(body, base, path, decode)
         end
         return '<img src="' .. Html.escape(src) .. '" alt="' .. alt .. '"/>'
     end)
+    if not dir then return rendered end
+    local keep = {}
+    for _, ref in pairs(cached) do
+        if type(ref) == "string" then
+            local name = ref:match("([^/]+)$")
+            if name then keep[name] = true end
+        end
+    end
+    return rendered, { keep = keep }
 end
 
 return Images

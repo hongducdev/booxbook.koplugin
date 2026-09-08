@@ -81,4 +81,41 @@ assert(deleted == "/storage/news/feed/article.html")
 Settings.set("news_delete_finished", false)
 Settings.downloadDir = old_dir
 for _, name in ipairs(names) do package.loaded[name] = previous[name] end
+
+-- Sidecar removal is gated on FileManager:deleteFile succeeding.
+local sidecar_calls = {}
+package.loaded["booxbook.store.storage"] = {
+    removeSidecar = function(html) sidecar_calls[#sidecar_calls + 1] = html end,
+}
+package.loaded["booxbook.news-cleanup"] = nil
+package.loaded["ui/uimanager"] = { nextTick = function(_, callback) pending = callback end }
+package.loaded["ffi/util"] = { realpath = function(p) return p end }
+package.loaded["libs/libkoreader-lfs"] = { attributes = function() return "file" end }
+package.loaded["apps/reader/readerui"] = { instance = nil }
+local delete_ok = true
+package.loaded["apps/filemanager/filemanager"] = {
+    deleteFile = function(_, p)
+        deleted = p
+        return delete_ok
+    end,
+    instance = { onRefresh = function() end },
+}
+Settings.downloadDir = function() return "/downloads" end
+Settings.set("news_delete_finished", true)
+local CleanupSidecar = require("booxbook.news-cleanup")
+ui.document.file = path
+pending, deleted, sidecar_calls = nil, nil, {}
+CleanupSidecar.afterClose(ui, path)
+assert(pending); pending()
+assert(deleted == path and #sidecar_calls == 1, "sidecar removed after HTML delete")
+delete_ok = false
+pending, deleted, sidecar_calls = nil, nil, {}
+CleanupSidecar.afterClose(ui, path)
+assert(pending); pending()
+assert(deleted == path and #sidecar_calls == 0, "failed HTML delete keeps sidecar")
+Settings.set("news_delete_finished", false)
+Settings.downloadDir = old_dir
+package.loaded["booxbook.store.storage"] = nil
+package.loaded["booxbook.news-cleanup"] = nil
+for _, name in ipairs(names) do package.loaded[name] = previous[name] end
 print("Finished news cleanup, deferred deletion and canonical path checks passed")

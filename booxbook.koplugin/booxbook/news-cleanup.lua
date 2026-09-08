@@ -1,4 +1,5 @@
 local Settings = require("booxbook.store.settings")
+local Storage = require("booxbook.store.storage")
 local UIManager = require("ui/uimanager")
 local ffiUtil = require("ffi/util")
 local lfs = require("libs/libkoreader-lfs")
@@ -41,8 +42,14 @@ function Cleanup.afterClose(ui, finished_path)
         if reader and reader.document and ffiUtil.realpath(reader.document.file) == target then return end
         local FileManager = require("apps/filemanager/filemanager")
         -- Use KOReader's deletion so history, collections and sidecar metadata stay in sync.
-        if FileManager:deleteFile(target, true) and FileManager.instance then
-            FileManager.instance:onRefresh()
+        if FileManager:deleteFile(target, true) then
+            if FileManager.instance then
+                FileManager.instance:onRefresh()
+            end
+            -- Image sidecars are disposable plugin data, not library files:
+            -- remove them only after the HTML is gone so a failed delete
+            -- cannot leave a library article with missing images.
+            pcall(Storage.removeSidecar, target)
         end
     end)
 end

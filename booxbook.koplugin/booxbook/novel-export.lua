@@ -3,6 +3,7 @@ local Html = require("booxbook.html")
 local Settings = require("booxbook.store.settings")
 local Covers = require("booxbook.covers")
 local Http = require("booxbook.http")
+local Storage = require("booxbook.store.storage")
 local has_gettext, gettext = pcall(require, "gettext")
 local _ = has_gettext and gettext or function(text) return text end
 local Export = {}
@@ -83,6 +84,8 @@ function Export.finish(series, dir, first, last, index, result, Json)
             result.error = _("Đã tạo EPUB nhưng không xóa được HTML: ") .. tostring(remove_err)
             return
         end
+        -- Chapter HTML currently holds text only; drop any image sidecar anyway.
+        pcall(Storage.removeSidecar, saved.path)
     end
 end
 

@@ -3,6 +3,7 @@ local Http = require("booxbook.http")
 local Html = require("booxbook.html")
 local Images = require("booxbook.article-images")
 local Settings = require("booxbook.store.settings")
+local Storage = require("booxbook.store.storage")
 local Cbz = require("booxbook.comic-cbz")
 local _ = require("gettext")
 local Download = { MAX_IMAGE = 8 * 1024 * 1024, MAX_TOTAL = 512 * 1024 * 1024 }
@@ -95,7 +96,69 @@ function Download.chapter(url, progress)
         os.remove(page.path .. ".url")
         os.remove(page.path)
     end
+    pcall(Storage.emptyDir, staging)
     return result
+end
+
+-- Remove abandoned staging (`.-pages/` dirs + `.part` files) older than
+-- max_age_days whose CBZ was never published. Best-effort, never touches CBZ.
+-- Returns the number of staging dirs/files removed.
+function Download.sweepStale(max_age_days)
+    max_age_days = tonumber(max_age_days) or 7
+    if max_age_days < 0 then return 0 end
+    local ok, lfs = pcall(require, "libs/libkoreader-lfs")
+    if not ok or not lfs then
+        ok, lfs = pcall(require, "lfs")
+    end
+    if not ok or not lfs or not lfs.dir or not lfs.attributes then return 0 end
+    local root = Settings.downloadDir() .. "/comics/truyentuoitho"
+    local now = os.time()
+    local swept = 0
+    local function dirMtime(dir)
+        local newest = nil
+        local ok_dir, iter, state = pcall(lfs.dir, dir)
+        if not (ok_dir and iter) then return nil end
+        for name in iter, state do
+            if name ~= "." and name ~= ".." then
+                local ok_t, mtime = pcall(lfs.attributes, dir .. "/" .. name, "modification")
+                if ok_t and type(mtime) == "number" and (not newest or mtime > newest) then
+                    newest = mtime
+                end
+            end
+        end
+        return newest
+    end
+    local ok_root, root_iter, root_state = pcall(lfs.dir, root)
+    if not (ok_root and root_iter) then return 0 end
+    for series in root_iter, root_state do
+        if series ~= "." and series ~= ".." then
+            local series_dir = root .. "/" .. series
+            local ok_attr, mode = pcall(lfs.attributes, series_dir, "mode")
+            if ok_attr and mode == "directory" then
+                local ok_s, s_iter, s_state = pcall(lfs.dir, series_dir)
+                if ok_s and s_iter then
+                    for name in s_iter, s_state do
+                        local path = series_dir .. "/" .. name
+                        if name:match("^%.") and name:match("%-pages$") then
+                            local mtime = dirMtime(path)
+                            -- Empty leftover dirs (pages already packed or never written)
+                            -- have no file mtime; reclaim them. Aged dirs with files too.
+                            if not mtime or (now - mtime) > max_age_days * 86400 then
+                                if Storage.emptyDir(path) then swept = swept + 1 end
+                            end
+                        elseif name:match("%.part$") then
+                            local ok_t, mtime = pcall(lfs.attributes, path, "modification")
+                            if ok_t and type(mtime) == "number"
+                                and (now - mtime) > max_age_days * 86400 then
+                                if os.remove(path) then swept = swept + 1 end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return swept
 end
 
 function Download.range(series, first, last, progress)

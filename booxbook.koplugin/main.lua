@@ -249,6 +249,18 @@ function BooxBook:settingsMenu()
             end,
         },
         {
+            text = _("Ảnh đã lưu") .. ": " .. BooxBook.storageText(),
+            select_enabled = false,
+        },
+        {
+            text = _("Dọn ảnh bìa và ảnh thừa"),
+            callback = function()
+                Catalog.confirm(_("Xóa ảnh bìa đã lưu, ảnh của bài đã xóa và bản nháp comic quá 7 ngày? Sách/truyện đã tải không bị ảnh hưởng."), function()
+                    notify(BooxBook.purgeImageCache())
+                end)
+            end,
+        },
+        {
             text = _("Bật Sangtacviet"),
             checked_func = function()
                 return Settings.sangtacvietEnabled()
@@ -297,6 +309,50 @@ function BooxBook:settingsMenu()
             end,
         },
     }
+end
+
+local function formatBytes(bytes)
+    bytes = tonumber(bytes) or 0
+    if bytes >= 1024 * 1024 then
+        return string.format("%.1f MB", bytes / (1024 * 1024))
+    elseif bytes >= 1024 then
+        return string.format("%d KB", math.floor(bytes / 1024))
+    end
+    return tostring(bytes) .. " B"
+end
+
+function BooxBook.storageText()
+    -- Menu build must stay light and dependency-free: Covers pulls Http,
+    -- which may be stubbed in tests. Measure through Storage only.
+    local ok_storage, Storage = pcall(require, "booxbook.store.storage")
+    local ok_dir, root = pcall(function() return Settings.downloadDir() .. "/covers" end)
+    if not ok_storage or not Storage or not ok_dir then return "?" end
+    local ok_use, bytes = pcall(Storage.treeSize, root)
+    if not ok_use then return "?" end
+    return formatBytes(bytes)
+end
+
+function BooxBook.purgeImageCache()
+    local ok, Covers = pcall(require, "booxbook.covers")
+    local cleared = false
+    if ok and Covers and Covers.clear then
+        local ok_clear, result = pcall(Covers.clear)
+        cleared = ok_clear and result == true
+    end
+    local swept_news, swept_comics = 0, 0
+    local ok_storage, Storage = pcall(require, "booxbook.store.storage")
+    if ok_storage and Storage then
+        local ok_sweep, swept = pcall(Storage.sweepOrphanSidecars, Settings.downloadDir() .. "/news")
+        swept_news = (ok_sweep and tonumber(swept)) or 0
+    end
+    local ok_dl, Download = pcall(require, "booxbook.comic-download")
+    if ok_dl and Download and Download.sweepStale then
+        local ok_sweep, swept = pcall(Download.sweepStale, 7)
+        swept_comics = (ok_sweep and tonumber(swept)) or 0
+    end
+    return (cleared and _("Đã xóa ảnh bìa") or _("Không xóa được ảnh bìa"))
+        .. " · " .. tostring(swept_news) .. " " .. _("thư mục ảnh thừa")
+        .. " · " .. tostring(swept_comics) .. " " .. _("bản nháp comic cũ")
 end
 
 function BooxBook:editCookie(source_id, title)

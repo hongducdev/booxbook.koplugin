@@ -65,7 +65,7 @@ Mỗi adapter trả:
 
 - Chuỗi giao diện: tiếng Việt, `_()` (`gettext`).
 - Báo: 17 đầu báo (9 Việt / 8 quốc tế), 633 kênh nonempty ngày 04/09/2026, 1–20 bài/danh mục, ảnh bật mặc định, fallback tóm tắt. `feeds.lua` gắn `region` (`vietnam`/`world`) tường minh. Đã bỏ công tắc nguồn.
-- HTML bài có h1 đã escape. Ảnh: lazy/srcset/URL tương đối; chỉ HTTP(S) JPEG/PNG/GIF/WebP; tối đa 20 request, 2 MiB/ảnh, 10 MiB/bài. URL trùng dùng chung file. Lỗi ảnh vẫn đọc được chữ.
+- HTML bài có h1 đã escape. Ảnh: lazy/srcset/URL tương đối; chỉ HTTP(S) JPEG/PNG/GIF/WebP; tối đa 20 request, 2 MiB/ảnh, 10 MiB/bài. URL trùng dùng chung file. Lỗi ảnh vẫn đọc được chữ. Ảnh nằm trong thư mục sidecar `<bài>.html.images/`; tải lại bài cắt ảnh thừa không còn dùng, tắt ảnh rồi tải lại xóa sidecar — chỉ sau khi ghi HTML thành công (ghi fail giữ bài cũ và ảnh cũ). Fetch ảnh fail thì không prune. Xóa HTML (báo đọc xong, EPUB không giữ HTML) xóa sidecar chỉ khi xóa HTML thành công. Bìa grid dưới `covers/<nguồn>/`, trần 50MB toàn cây (FIFO theo mtime, không xóa bìa vừa ghi); staging comic `.-pages/` xóa sau khi xuất CBZ, thư mục rỗng hoặc quá 7 ngày được quét dọn.
 - Online: **Báo → Báo Việt / Báo Nước Ngoài → đầu báo → danh mục → bài**. Menu vùng/đầu báo không HTTP. Chọn danh mục gọi `Rss.list` (chỉ XML). Chọn tiêu đề gọi `Rss.loadArticle` cho đúng bài đó. RSS tùy chỉnh chỉ tóm tắt. **Tin đã tải** giữ file cũ.
 - Mọi màn hình fullscreen dùng chung TitleBar X và chân **Quay lại / Trước / trang / Sau**. Không dùng Menu chevron của KOReader.
 - Hành động online hoãn sau khi chọn menu, có Wi-Fi và Trapper. Ghi HTML qua file tạm rồi rename.

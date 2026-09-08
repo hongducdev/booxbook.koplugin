@@ -34,7 +34,8 @@ Cập nhật khi có [Release](https://github.com/hongducdev/booxbook.koplugin/r
 - **Lưu truyện thành EPUB**: tắt mặc định. Mỗi khoảng chương tải xong có EPUB với mục lục; áp dụng cả sáu nguồn.
 - EPUB giữ tên truyện gốc, tác giả, mô tả/thẻ nếu nguồn cung cấp, liên kết nguồn và ảnh bìa nhúng offline. Không dùng BooxBook làm tác giả.
 - **Giữ bản HTML khi lưu EPUB**: bật mặc định. Tắt để chỉ giữ EPUB sau khi xuất và cập nhật danh sách thành công; lỗi vẫn giữ HTML để phục hồi.
-- **Tự xóa HTML báo sau khi đọc xong**: tắt mặc định. Xóa khi đóng bài đã đánh dấu đã đọc, hoặc vừa tới cuối và vẫn ở cuối; quay lại giữa bài thì giữ.
+- **Tự xóa HTML báo sau khi đọc xong**: tắt mặc định. Xóa khi đóng bài đã đánh dấu đã đọc, hoặc vừa tới cuối và vẫn ở cuối; quay lại giữa bài thì giữ. Thư mục ảnh `.images` của bài bị xóa cùng HTML (chỉ khi xóa HTML thành công); tải lại bài làm mới sạch ảnh cũ sau khi ghi HTML xong.
+- **Ảnh bìa**: lưu dưới `koreader/booxbook/covers/`, trần 50MB (xóa bìa cũ nhất trước). Cài đặt hiện dung lượng ảnh và có mục **Dọn ảnh bìa và ảnh thừa** (xóa bìa, ảnh của bài đã mất, bản nháp comic quá 7 ngày).
 - **Kiểm tra cài đặt** (cần Wi-Fi): gọi `example.com`, ghi `_selftest.html` (có chữ `Tiếng Việt`) và thử EPUB vào `koreader/booxbook/`.
 
 ## Phát triển

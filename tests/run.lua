@@ -465,6 +465,7 @@ dofile("tests/network.lua")
 dofile("tests/update.lua")
 dofile("tests/truyentuoitho.lua")
 dofile("tests/comic-download.lua")
+dofile("tests/storage-cache.lua")
 dofile("tests/truyentuoitho-ui.lua")
 
 if failures > 0 then

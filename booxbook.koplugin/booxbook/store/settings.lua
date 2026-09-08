@@ -4,6 +4,7 @@ local DEFAULTS = {
     download_dir = nil,
     delay_ms = 1200,
     include_images = true,
+    covers_max_bytes = 50 * 1024 * 1024,
     novel_epub = false,
     novel_keep_html = true,
     news_delete_finished = false,

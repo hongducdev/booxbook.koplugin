@@ -1,9 +1,13 @@
 -- Local cover cache for novel grids. Downloads only when a card is visible.
 local Http = require("booxbook.http")
 local Settings = require("booxbook.store.settings")
+local Storage = require("booxbook.store.storage")
 
 local Covers = {
     MAX_BYTES = 256 * 1024,
+    -- e-ink grids only need thumbnails; cap the whole covers tree so
+    -- browsing hundreds of series cannot fill a Boox data partition.
+    MAX_TOTAL_BYTES = 50 * 1024 * 1024,
 }
 
 local function extension(body)
@@ -23,6 +27,27 @@ end
 
 function Covers.dir(source_id)
     return Settings.downloadDir() .. "/covers/" .. tostring(source_id or "unknown")
+end
+
+function Covers.root()
+    return Settings.downloadDir() .. "/covers"
+end
+
+-- Total bytes/files under covers/. Safe no-op (0,0) when lfs is unavailable.
+function Covers.diskUsage()
+    return Storage.treeSize(Covers.root())
+end
+
+-- Remove every cached cover. Returns true when nothing remains.
+function Covers.clear()
+    return Storage.clearTree(Covers.root())
+end
+
+-- Best-effort FIFO trim of the whole covers tree after a new cover lands.
+local function trimBudget(keep_path)
+    local configured = tonumber(Settings.get("covers_max_bytes") or "") or Covers.MAX_TOTAL_BYTES
+    if configured <= 0 then return end
+    pcall(Storage.trimTreeByMtime, Covers.root(), configured, nil, keep_path)
 end
 
 function Covers.pathFor(source_id, url, ext)
@@ -77,6 +102,7 @@ function Covers.fetch(source_id, url, opts)
         os.remove(path)
         return nil
     end
+    trimBudget(path)
     return path
 end
 

@@ -111,11 +111,12 @@ function Rss.renderArticle(item, full_html, feed, path)
     body = Html.stripDangerous(body)
     -- Publisher headings may be inside or outside the extracted article container.
     body = body:gsub("<%s*[Hh]1%f[%W][^>]*>.-</%s*[Hh]1%s*>", "")
-    body = Html.sanitize(Images.process(body, item.link, path, decode))
+    local processed, sidecar = Images.process(body, item.link, path, decode)
+    body = Html.sanitize(processed)
     local meta = "<h1>" .. Html.escape(item.title) .. "</h1>"
         .. "<p><strong>" .. Html.escape(item.date) .. "</strong></p>"
         .. '<p><a href="' .. Html.escape(item.link) .. '">Nguồn bài viết</a></p>'
-    return Html.wrapDocument(item.title, meta .. body)
+    return Html.wrapDocument(item.title, meta .. body), sidecar
 end
 
 local function safeName(value)
@@ -161,10 +162,12 @@ function Rss.loadArticle(feed, item)
     end
     -- Only selected articles are materialized: ReaderUI opens a local document.
     local path = dir .. "/" .. safeName((item.date or "") .. " " .. (item.title or "")) .. ".html"
-    local written, err = Html.writeFile(path, Rss.renderArticle(item, article, feed, path))
+    local html, sidecar = Rss.renderArticle(item, article, feed, path)
+    local written, err = Html.writeFile(path, html)
     if not written then
         return nil, tostring(err)
     end
+    Images.commitSidecar(path, sidecar)
     return path
 end
 
