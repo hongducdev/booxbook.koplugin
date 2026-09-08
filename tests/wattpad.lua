@@ -27,9 +27,11 @@ assert(not W.getSeries("https://evil.test/story/1") and calls == 0)
 data = { stories = { { id = "1", title = "Public", mature = false },
     { id = "2", title = "Adult", mature = true }, { id = "3", title = "Unknown" } } }
 assert(#assert(W.search("tiếng Việt", 2)).items == 1)
-assert(last_url:find("offset=20", 1, true) and last_url:find("%20", 1, true))
+assert(last_url:find("/v4/search/stories?", 1, true) and last_url:find("language=19", 1, true)
+    and last_url:find("offset=20", 1, true) and last_url:find("%20", 1, true))
 assert(not W.search("", 1) and not W.browse("hot", 0))
-assert(W.browse("featured") and last_url:find("filter=featured", 1, true))
+assert(W.browse("featured") and last_url:find("/api/v3/stories?", 1, true)
+    and last_url:find("filter=featured", 1, true) and last_url:find("language=19", 1, true))
 assert(W.browse("new") and last_url:find("filter=new", 1, true))
 data.stories = {}
 for i = 1, 20 do data.stories[i] = { id = tostring(i), title = "Adult", mature = true } end

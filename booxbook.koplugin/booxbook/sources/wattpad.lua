@@ -51,14 +51,14 @@ local function adult(story)
     return story.mature ~= false -- Unknown metadata stays hidden with the default setting.
 end
 
-local function list(params, page)
+local function list(path, page)
     page = tonumber(page or 1)
     if not page or page < 1 or page >= 100000 or page % 1 ~= 0 then return nil, _("Trang không hợp lệ.") end
-    local data, err = request("/api/v3/stories?" .. params .. "&limit=20&offset=" .. (page - 1) * 20, true)
+    local data, err = request(path .. "&limit=20&offset=" .. (page - 1) * 20, true)
     if not data then return nil, CHANGED .. " " .. err end
     if type(data.stories) ~= "table" then return nil, CHANGED end
     local items = {}
-    -- Live 2026-09-06: stories[], id(string), title, cover, mature(boolean); parts[].id(number).
+    -- Live 2026-09-08: v3 lists and v4 search both return stories[], id, title, cover, mature.
     for _, story in ipairs(data.stories) do
         if type(story) ~= "table" then return nil, CHANGED end
         local id = Wattpad.refId(story.id, true)
@@ -74,13 +74,15 @@ end
 function Wattpad.search(query, page)
     query = type(query) == "string" and query:match("^%s*(.-)%s*$") or ""
     if query == "" or #query > 300 then return nil, _("Từ khóa không hợp lệ.") end
-    return list("query=" .. query:gsub("([^%w%-_%.~])", function(c) return string.format("%%%02X", c:byte()) end), page)
+    local encoded = query:gsub("([^%w%-_%.~])", function(c) return string.format("%%%02X", c:byte()) end)
+    -- /api/v3/stories?query= without language=19 returns English tag-similar stories, not title hits.
+    return list("/v4/search/stories?query=" .. encoded .. "&language=19", page)
 end
 
 function Wattpad.browse(kind, page)
     kind = kind or "hot"
     if kind ~= "hot" and kind ~= "featured" and kind ~= "new" then return nil, _("Kiểu danh sách không hợp lệ.") end
-    return list("filter=" .. kind .. "&language=19", page)
+    return list("/api/v3/stories?filter=" .. kind .. "&language=19", page)
 end
 
 function Wattpad.getSeries(ref)
