@@ -4,7 +4,16 @@ Plugin [KOReader](https://github.com/koreader/koreader) để đọc báo RSS v�
 
 **Phiên bản:** 0.0.8 (`hongducdev/booxbook.koplugin`) · giấy phép [AGPL-3.0-or-later](./LICENSE)
 
+**Website giới thiệu + hướng dẫn:** xem [`website/`](website/) (deploy tự động lên GitHub Pages qua workflow `pages.yml`). Số version và link Release trên web tự đồng bộ từ `version` trong `booxbook.koplugin/_meta.lua` lúc deploy — không sửa tay. Preview local: `pwsh -File scripts/preview-website.ps1`.
+
 Dùng như trình đọc RSS / thư viện cá nhân. Không phát tán nội dung đã tải. Không vượt VIP, paywall hay captcha.
+
+## Website có gì
+
+- Giới thiệu tính năng: báo RSS 17 tờ / 633 kênh, truyện chữ 6 nguồn, truyện tranh CBZ, EPUB + thư viện, gửi sách qua Wi-Fi.
+- Hướng dẫn cài 5 bước từ file Release (có ảnh minh họa từng bước), cập nhật từ Release, kiểm tra cài đặt.
+- Hướng dẫn dùng theo tab: Báo / Truyện chữ / Truyện tranh / EPUB & Thư viện / Wi-Fi; bảng danh mục báo; đường dẫn dữ liệu; FAQ.
+- Nguồn: [`website/`](website/) tĩnh (HTML/CSS/JS, không build). Sửa nội dung ở `website/index.html`, style ở `website/styles.css`.
 
 ## Tính năng
 
@@ -20,12 +29,17 @@ Cách dùng chi tiết: [hướng dẫn](docs/usage.md). Phạm vi RSS: [danh m�
 
 ## Cài trên Boox (Android)
 
-1. Copy thư mục `booxbook.koplugin` vào `/sdcard/koreader/plugins/booxbook.koplugin/`. Trong đó phải có `main.lua`, `_meta.lua` và thư mục `booxbook/`.
-2. Restart KOReader.
-3. Bật plugin: **Tools → More tools → Plugin management → BooxBook**.
-4. Mở: **Tools → BooxBook**.
+Tải file từ trang Release, không copy code lẻ từ GitHub:
 
-Cập nhật khi có [Release](https://github.com/hongducdev/booxbook.koplugin/releases) kèm `booxbook.koplugin.zip`: icon thông tin trên màn hình chính, mục **Cập nhật**, hoặc **Cài đặt → Cập nhật từ GitHub** (cần Wi-Fi). Dữ liệu trong `koreader/booxbook/` và cookie không bị xóa. Restart KOReader sau khi cài.
+1. Mở [Release mới nhất](https://github.com/hongducdev/booxbook.koplugin/releases/latest), kéo tới **Assets**, tải `booxbook.koplugin.zip`.
+2. Giải nén zip được thư mục `booxbook.koplugin`. Copy nguyên thư mục vào `/sdcard/koreader/plugins/booxbook.koplugin/`. Trong đó phải có `main.lua`, `_meta.lua` và thư mục `booxbook/`.
+3. Restart KOReader (tắt hẳn rồi mở lại).
+4. Bật plugin: **Tools → More tools → Plugin management → BooxBook**.
+5. Mở: **Tools → BooxBook**. Hiện phiên bản dưới tiêu đề là thành công.
+
+Minh họa từng bước: [website #cai-dat](./website/index.html#cai-dat) (timeline số dọc).
+
+Cập nhật: mỗi bản mới đều có `booxbook.koplugin.zip` ở [Release](https://github.com/hongducdev/booxbook.koplugin/releases) — tải zip mới đè vào thư mục cũ, hoặc dùng icon thông tin trên màn hình chính → **Cập nhật** → **Cài đặt → Cập nhật từ GitHub** (cần Wi-Fi). Dữ liệu trong `koreader/booxbook/` và cookie không bị xóa. Restart KOReader sau khi cài.
 
 ## Cài đặt trong plugin
 
@@ -58,6 +72,7 @@ booxbook.koplugin/   plugin KOReader — copy nguyên thư mục này lên máy
 docs/                hướng dẫn dùng, danh mục RSS, kiến trúc
 scripts/             kiểm tra RSS trên mạng
 tests/               unit test LuaJIT (không cần KOReader)
+website/             site tĩnh giới thiệu + hướng dẫn (deploy GitHub Pages)
 ```
 
 Ghi chú bên thứ ba (MIT, Nekori): [THIRD-PARTY-NOTICES.md](booxbook.koplugin/THIRD-PARTY-NOTICES.md).

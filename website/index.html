@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BooxBook — Đọc báo & truyện offline trong KOReader</title>
+<meta name="description" content="BooxBook là plugin KOReader để đọc báo RSS và truyện chữ, truyện tranh offline trên máy đọc sách. Miễn phí, mã nguồn mở AGPL-3.0." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,750&family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./styles.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231C1A15'/%3E%3Cpath d='M9 8h8a5 5 0 0 1 0 10H9z M9 18h9a5 5 0 0 1 0 10H9z' fill='none' stroke='%23F7F3EA' stroke-width='2.4'/%3E%3C/svg%3E" />
+</head>
+<body>
+<a class="skip" href="#main">Bỏ qua tới nội dung</a>
+
+<header class="topbar" id="top">
+  <div class="wrap topbar-in">
+    <a class="brand" href="#top" aria-label="BooxBook trang chủ">
+      <span class="brand-mark" aria-hidden="true">B</span>
+      <span class="brand-text">BooxBook <em>cho KOReader</em></span>
+    </a>
+    <nav class="nav" aria-label="Điều hướng chính">
+      <a href="#tinh-nang">Tính năng</a>
+      <a href="#cai-dat">Cài đặt</a>
+      <a href="#huong-dan">Hướng dẫn</a>
+      <a href="#bao-chi">Báo chí</a>
+      <a href="#faq">Hỏi đáp</a>
+    </nav>
+    <div class="top-actions">
+      <span class="ver" title="Phiên bản hiện tại">v{{BOOXBOOK_VERSION}}</span>
+      <a class="btn btn-ink" href="{{BOOXBOOK_RELEASE_URL}}">Tải plugin</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <!-- HERO: split-screen, left aligned -->
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <p class="kicker"><span class="dot" aria-hidden="true"></span> Plugin KOReader · AGPL-3.0 · Tiếng Việt</p>
+      <h1>Đọc báo &amp; truyện<br /><span class="ink-accent">offline</span> trên<br />máy đọc sách.</h1>
+      <p class="lede">BooxBook tải HTML về máy để đọc trong KOReader — 17 đầu báo với 633 kênh RSS, truyện chữ từ 6 nguồn, truyện tranh CBZ, thư viện cá nhân và gửi sách qua Wi-Fi. Không tài khoản, không paywall, không VIP.</p>
+      <div class="cta-row">
+        <a class="btn btn-accent" href="#cai-dat">Cài trong 5 bước</a>
+        <a class="btn btn-ghost" href="#huong-dan">Xem hướng dẫn</a>
+      </div>
+      <dl class="stats" aria-label="Số liệu nổi bật">
+        <div><dt>17</dt><dd>đầu báo<br />9 Việt · 8 quốc tế</dd></div>
+        <div><dt>633</dt><dd>kênh RSS<br />có bài 04/09/2026</dd></div>
+        <div><dt>6+1</dt><dd>nguồn truyện<br />chữ + tranh CBZ</dd></div>
+        <div><dt>512<span class="unit">MiB</span></dt><dd>giới hạn file<br />gửi qua Wi-Fi</dd></div>
+      </dl>
+      <p class="fineprint">Dùng như trình đọc RSS / thư viện cá nhân. Không phát tán nội dung đã tải. Không vượt VIP, paywall hay captcha.</p>
+    </div>
+    <div class="hero-device" aria-label="Minh họa giao diện BooxBook">
+      <div class="device">
+        <div class="device-bar"><span></span><span></span><span></span></div>
+        <p class="device-title">BooxBook <span>v{{BOOXBOOK_VERSION}} · online</span></p>
+        <ul class="device-menu">
+          <li><strong>Báo</strong><span>17 tờ · 633 kênh</span></li>
+          <li><strong>Truyện</strong><span>DocLN · Wattpad · STV · MTCV · TVT · TF</span></li>
+          <li><strong>Truyện Tuổi Thơ</strong><span>CBZ từng tập</span></li>
+          <li><strong>Thư viện</strong><span>koreader/booxbook/</span></li>
+          <li><strong>Gửi sách qua Wi-Fi</strong><span>QR + mã 6 số</span></li>
+        </ul>
+        <p class="device-foot"><span>Quay lại</span><span>Trước · 1/8 · Sau</span></p>
+      </div>
+      <p class="device-caption">Mô phỏng menu chính: Tools → BooxBook. E-ink thật không có màu — site dùng màu giấy-mực để dễ đọc trên điện thoại.</p>
+    </div>
+  </section>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span>VnExpress · Tuổi Trẻ · Thanh Niên · Dân Trí · Tiền Phong · VietnamPlus · BBC · Guardian · DW · Sky News · Al Jazeera · France 24 · ABC News · DocLN · Wattpad · Sangtacviet · MeTruyenCV · TVTruyen · Truyện Full · Truyện Tuổi Thơ ·&nbsp;</span>
+      <span>VnExpress · Tuổi Trẻ · Thanh Niên · Dân Trí · Tiền Phong · VietnamPlus · BBC · Guardian · DW · Sky News · Al Jazeera · France 24 · ABC News · DocLN · Wattpad · Sangtacviet · MeTruyenCV · TVTruyen · Truyện Full · Truyện Tuổi Thơ ·&nbsp;</span>
+    </div>
+  </div>
+
+  <!-- FEATURES: asymmetric editorial grid -->
+  <section class="wrap section" id="tinh-nang">
+    <div class="sec-head">
+      <p class="kicker">Tính năng</p>
+      <h2>Một plugin, cả thư viện<br />trong túi áo.</h2>
+      <p>Tất cả nội dung được lưu cục bộ thành HTML / EPUB / CBZ để đọc lại không cần mạng.</p>
+    </div>
+    <div class="feat-grid">
+      <article class="feat feat-big">
+        <p class="feat-tag">Báo RSS</p>
+        <h3>17 tờ báo, đọc như sách giấy.</h3>
+        <p>Chạm danh mục mới tải tiêu đề, chạm bài mới tải nội dung. Ảnh lưu cục bộ (tối đa 20 ảnh, 2 MiB/ảnh). Bài đã mở lưu tại <code>news/&lt;feed-id&gt;/</code>, đọc lại ở <strong>Tin đã tải</strong>. Thêm RSS tùy chỉnh bằng URL.</p>
+        <ul class="check">
+          <li>Số bài mỗi danh mục: 1–20 tiêu đề</li>
+          <li>Tự xóa HTML báo sau khi đọc xong (tùy chọn)</li>
+          <li>Fallback tóm tắt RSS khi toàn văn lỗi</li>
+        </ul>
+      </article>
+      <article class="feat feat-side">
+        <p class="feat-tag">Truyện chữ · 6 nguồn</p>
+        <h3>Tải khoảng chương, đọc offline.</h3>
+        <p>DocLN · Wattpad · Sangtacviet · MeTruyenCV · TVTruyen · Truyện Full. Tìm / duyệt grid bìa, tải khoảng / toàn bộ / mở chương bất kỳ.</p>
+        <code class="path">novels/&lt;nguồn&gt;/&lt;id&gt;/ + index.json</code>
+      </article>
+      <article class="feat feat-side">
+        <p class="feat-tag">Truyện tranh · CBZ</p>
+        <h3>Truyện Tuổi Thơ từng tập.</h3>
+        <p>Duyệt Mới cập nhật / Lượt xem, tải một / khoảng / toàn bộ tập, tải tiếp khi dở. Mỗi tập một file CBZ, mặc định hiển thị vừa trang.</p>
+      </article>
+      <article class="feat feat-wide">
+        <div>
+          <p class="feat-tag">EPUB · Thư viện · Wi-Fi</p>
+          <h3>Xuất EPUB, quản lý file, gửi sách không dây.</h3>
+          <p>Bật <strong>Lưu truyện thành EPUB</strong> để mỗi khoảng chương có file <code>chapters-&lt;từ&gt;-&lt;đến&gt;.epub</code> kèm mục lục, bìa và metadata gốc. <strong>Thư viện</strong> mở thư mục tải bằng FileManager KOReader. <strong>Gửi sách qua Wi-Fi</strong>: cùng mạng → quét QR → gửi nhiều file tới 512 MiB.</p>
+        </div>
+        <ul class="format-list" aria-label="Định dạng gửi qua Wi-Fi">
+          <li>EPUB</li><li>PDF</li><li>CBZ</li><li>CBR</li><li>FB2</li><li>MOBI</li><li>AZW</li><li>DJVU</li><li>TXT</li><li>DOC</li><li>CHM</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <!-- INSTALL -->
+  <section class="band" id="cai-dat">
+    <div class="wrap section">
+      <div class="sec-head">
+        <p class="kicker">Cài đặt</p>
+        <h2>Tải từ Release,<br />cài trên Boox chỉ 5 bước.</h2>
+        <p>Luôn tải file ở trang Release chính thức để đúng phiên bản và đủ file. Không copy code lẻ từ GitHub.</p>
+      </div>
+      <div class="release-box">
+        <div>
+          <p class="release-label">File cần tải</p>
+          <p class="release-file"><code>booxbook.koplugin.zip</code> <span>trong mục Assets của bản mới nhất</span></p>
+        </div>
+        <a class="btn btn-accent" href="{{BOOXBOOK_RELEASE_URL}}">Mở trang Release</a>
+      </div>
+      <ol class="steps">
+        <li>
+          <span class="step-n" aria-hidden="true">1</span>
+          <div><h3>Tải file từ Release</h3><p>Mở trang <a href="{{BOOXBOOK_RELEASE_URL}}">Release mới nhất</a>, kéo tới <strong>Assets</strong>, tải <code>booxbook.koplugin.zip</code>. Kiểm tra tên file đúng, không đổi tên.</p></div>
+        </li>
+        <li>
+          <span class="step-n" aria-hidden="true">2</span>
+          <div><h3>Giải nén rồi copy</h3><p>Giải nén file zip sẽ được thư mục:</p><p class="path-block"><code>booxbook.koplugin/</code></p><p>Copy nguyên thư mục vào đây:</p><p class="path-block"><code>/sdcard/koreader/plugins/booxbook.koplugin/</code></p></div>
+        </li>
+        <li>
+          <span class="step-n" aria-hidden="true">3</span>
+          <div><h3>Restart KOReader</h3><p>Tắt hẳn KOReader rồi mở lại để nạp plugin mới. Chỉ vuốt ra nền chưa đủ.</p></div>
+        </li>
+        <li>
+          <span class="step-n" aria-hidden="true">4</span>
+          <div><h3>Bật plugin</h3><p><strong>Tools → More tools → Plugin management → BooxBook</strong>, gạt công tắc sang bật.</p></div>
+        </li>
+        <li>
+          <span class="step-n" aria-hidden="true">5</span>
+          <div><h3>Mở BooxBook</h3><p><strong>Tools → BooxBook</strong>. Màn hình chính hiện phiên bản (v{{BOOXBOOK_VERSION}}) ngay dưới tiêu đề là thành công.</p></div>
+        </li>
+      </ol>
+      <div class="note-grid">
+        <div class="note">
+          <h3>Cập nhật bản mới</h3>
+          <p>Mỗi bản mới đều nằm ở trang <a href="https://github.com/hongducdev/booxbook.koplugin/releases">Release</a> kèm <code>booxbook.koplugin.zip</code>. Tải zip mới, giải nén đè vào thư mục plugin cũ — hoặc bấm icon thông tin trên màn hình chính → <strong>Cập nhật</strong> → <strong>Cài đặt → Cập nhật từ GitHub</strong> (cần Wi-Fi). Dữ liệu trong <code>koreader/booxbook/</code> và cookie được giữ lại. Restart KOReader sau khi cài.</p>
+        </div>
+        <div class="note">
+          <h3>Kiểm tra nhanh</h3>
+          <p>Vào <strong>Cài đặt → Kiểm tra cài đặt</strong> (cần Wi-Fi): plugin gọi <code>example.com</code>, ghi <code>_selftest.html</code> có chữ “Tiếng Việt” và thử xuất EPUB vào <code>koreader/booxbook/</code>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GUIDES: tabs -->
+  <section class="wrap section" id="huong-dan">
+    <div class="sec-head">
+      <p class="kicker">Hướng dẫn</p>
+      <h2>Cách dùng từng phần.</h2>
+      <p>Chi tiết đầy đủ trong <a href="https://github.com/hongducdev/booxbook.koplugin/blob/main/docs/usage.md">docs/usage.md</a>.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Hướng dẫn theo tính năng">
+      <button role="tab" aria-selected="true" aria-controls="panel-bao" id="tab-bao">Báo RSS</button>
+      <button role="tab" aria-selected="false" aria-controls="panel-truyen" id="tab-truyen" tabindex="-1">Truyện chữ</button>
+      <button role="tab" aria-selected="false" aria-controls="panel-tranh" id="tab-tranh" tabindex="-1">Truyện tranh</button>
+      <button role="tab" aria-selected="false" aria-controls="panel-epub" id="tab-epub" tabindex="-1">EPUB &amp; Thư viện</button>
+      <button role="tab" aria-selected="false" aria-controls="panel-wifi" id="tab-wifi" tabindex="-1">Wi-Fi</button>
+    </div>
+    <div class="panels">
+      <article id="panel-bao" role="tabpanel" aria-labelledby="tab-bao">
+        <h3>Báo → chọn tới bài mới tải</h3>
+        <ol>
+          <li><strong>Báo → Báo Việt / Báo Nước Ngoài → đầu báo → danh mục</strong>: chỉ tải tiêu đề, chưa tải nội dung.</li>
+          <li><strong>Chạm tiêu đề</strong>: tải toàn văn và mở bằng KOReader; lỗi thì dùng tóm tắt RSS.</li>
+          <li><strong>Tin đã tải</strong>: đọc lại offline. <strong>Thêm RSS tùy chỉnh</strong>: dán URL http(s), nằm trong nhóm riêng.</li>
+          <li><strong>Số bài mỗi danh mục</strong>: chỉnh 1–20 tiêu đề hiển thị.</li>
+        </ol>
+      </article>
+      <article id="panel-truyen" role="tabpanel" aria-labelledby="tab-truyen" hidden>
+        <h3>Truyện → tìm → tải khoảng chương</h3>
+        <ol>
+          <li>Mở nguồn (DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full), tìm từ khóa hoặc dán URL truyện.</li>
+          <li>Icon menu góc trái mục lục → <strong>Tải khoảng chương / Tải toàn bộ / Tạo EPUB từ chương đã tải</strong>. Hoặc <strong>Mở chương bất kỳ</strong> theo số thứ tự mục lục.</li>
+          <li>Tải lại cùng khoảng tự bỏ qua chương còn file; <code>index.json.bak</code> cứu khi index chính hỏng.</li>
+          <li>Sangtacviet tắt mặc định — lần đầu mở sẽ hỏi xác nhận. Cookie từng nguồn dán từ trình duyệt trong Cài đặt.</li>
+        </ol>
+      </article>
+      <article id="panel-tranh" role="tabpanel" aria-labelledby="tab-tranh" hidden>
+        <h3>Truyện Tuổi Thơ → tải CBZ từng tập</h3>
+        <ol>
+          <li>Vào <strong>Truyện → Truyện Tuổi Thơ</strong>, duyệt Mới cập nhật / Lượt xem / Truyện mới / Thịnh hành, hoặc tìm tên / dán URL bộ &amp; tập.</li>
+          <li>Icon menu mục lục → <strong>Tải khoảng tập / Tải toàn bộ tập</strong>. Mỗi tập một CBZ riêng.</li>
+          <li>Chạm thông báo tiến độ để tạm dừng / hủy / tiếp tục. Chọn lại tập để tải tiếp trang thiếu.</li>
+          <li>Đọc offline ở <strong>Thư viện → comics → truyentuoitho → tên bộ → tập.cbz</strong>.</li>
+        </ol>
+      </article>
+      <article id="panel-epub" role="tabpanel" aria-labelledby="tab-epub" hidden>
+        <h3>EPUB giữ tên gốc, bìa và nguồn</h3>
+        <ol>
+          <li>Bật <strong>Cài đặt → Lưu truyện thành EPUB</strong> (mặc định tắt, HTML là mặc định).</li>
+          <li>Mỗi khoảng tải xong có <code>chapters-&lt;từ&gt;-&lt;đến&gt;.epub</code> kèm mục lục; chọn dòng <strong>(EPUB)</strong> để đọc.</li>
+          <li><strong>Giữ bản HTML khi lưu EPUB</strong> bật mặc định; tắt để chỉ giữ EPUB sau khi xuất thành công.</li>
+          <li><strong>Thư viện</strong> mở <code>koreader/booxbook/</code>: chạm để đọc, nhấn giữ để đổi tên / xóa / thêm bộ sưu tập.</li>
+        </ol>
+      </article>
+      <article id="panel-wifi" role="tabpanel" aria-labelledby="tab-wifi" hidden>
+        <h3>Gửi sách từ điện thoại / máy tính</h3>
+        <ol>
+          <li>Cùng mạng Wi-Fi, mở <strong>BooxBook → Gửi sách qua Wi-Fi</strong>, giữ màn hình nhận sách mở.</li>
+          <li>Điện thoại: <strong>Quét QR</strong> bằng camera. Máy tính: gõ <code>http://…:8080/</code> rồi nhập mã phiên 6 chữ số (giữ số 0 đầu).</li>
+          <li>Chọn một hoặc nhiều sách → <strong>Gửi sách</strong>. File trùng tên bị từ chối; file dở bị xóa khi dừng phiên.</li>
+          <li>Bấm <strong>Dừng nhận sách</strong> → mở <strong>Thư viện → received</strong> để đọc. Chỉ dùng mạng tin cậy (HTTP).</li>
+        </ol>
+      </article>
+    </div>
+  </section>
+
+  <!-- NEWS TABLE -->
+  <section class="wrap section" id="bao-chi">
+    <div class="sec-head split">
+      <div>
+        <p class="kicker">Danh mục báo</p>
+        <h2>633 kênh RSS đang có bài.</h2>
+        <p>Snapshot 04/09/2026 · phạm vi là kênh RSS công khai, không phải toàn bộ website. Chi tiết: <a href="https://github.com/hongducdev/booxbook.koplugin/blob/main/docs/news-categories.md">docs/news-categories.md</a>.</p>
+      </div>
+      <div class="legend">
+        <span><strong>9</strong> báo Việt</span>
+        <span><strong>8</strong> nguồn nước ngoài</span>
+      </div>
+    </div>
+    <div class="table-wrap" role="region" aria-label="Bảng danh mục báo" tabindex="0">
+      <table>
+        <thead><tr><th>Đầu báo</th><th>Kênh</th><th>Phạm vi</th></tr></thead>
+        <tbody>
+          <tr><td>Thanh Niên</td><td class="num">166</td><td>Mục RSS + danh mục con còn bài</td></tr>
+          <tr><td>Tiền Phong</td><td class="num">100</td><td>Mục RSS chính thức</td></tr>
+          <tr><td>VietnamPlus</td><td class="num">58</td><td>Mục RSS, đã bỏ 2 endpoint rỗng</td></tr>
+          <tr><td>Sài Gòn Giải Phóng</td><td class="num">58</td><td>Mục RSS, đã gộp nút trùng</td></tr>
+          <tr><td>The Guardian</td><td class="num">54</td><td>International theo hướng dẫn RSS</td></tr>
+          <tr><td>Nhân Dân</td><td class="num">36</td><td>Mục RSS, đã gộp nút trùng</td></tr>
+          <tr><td>Dân Trí</td><td class="num">33</td><td>Mục RSS, đã gộp trùng</td></tr>
+          <tr><td>BBC News</td><td class="num">26</td><td>Các feed còn hoạt động</td></tr>
+          <tr><td>Báo Tin tức</td><td class="num">23</td><td>Mục RSS chính thức</td></tr>
+          <tr><td>VnExpress</td><td class="num">22</td><td>Mục RSS, đã bỏ Startup</td></tr>
+          <tr><td>Tuổi Trẻ</td><td class="num">19</td><td>Mọi liên kết đã công bố</td></tr>
+          <tr><td>The Independent</td><td class="num">16</td><td>Đã bỏ 41 kênh rỗng</td></tr>
+          <tr><td>DW</td><td class="num">10</td><td>Feed tiếng Anh đã xác minh</td></tr>
+          <tr><td>Sky News</td><td class="num">9</td><td>Mục RSS, bản HTTPS</td></tr>
+          <tr><td>Al Jazeera</td><td class="num">1</td><td>Feed tiếng Anh tổng hợp</td></tr>
+          <tr><td>France 24</td><td class="num">1</td><td>Feed tiếng Anh</td></tr>
+          <tr><td>ABC News Australia</td><td class="num">1</td><td>Just In</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SETTINGS + DATA -->
+  <section class="band" id="cai-dat-plugin">
+    <div class="wrap section">
+      <div class="sec-head">
+        <p class="kicker">Tùy chỉnh</p>
+        <h2>Cài đặt trong plugin &amp; dữ liệu trên máy.</h2>
+      </div>
+      <div class="note-grid">
+        <div class="note">
+          <h3>Công tắc đáng chú ý</h3>
+          <ul class="check">
+            <li>Cookie từng nguồn: dán session, không in ra log</li>
+            <li>Nội dung 18+: tắt mặc định · Ảnh minh họa: bật</li>
+            <li>Lưu EPUB: tắt · Giữ HTML khi EPUB: bật</li>
+            <li>Tự xóa HTML báo sau khi đọc xong: tắt</li>
+            <li>Ảnh bìa trần 50 MB + mục dọn ảnh thừa</li>
+          </ul>
+        </div>
+        <div class="note mono-note">
+          <h3>Đường dẫn dữ liệu</h3>
+          <ul class="paths">
+            <li><span>Báo đã mở</span><code>koreader/booxbook/news/&lt;feed-id&gt;/</code></li>
+            <li><span>Chương truyện</span><code>koreader/booxbook/novels/&lt;nguồn&gt;/&lt;id&gt;/</code></li>
+            <li><span>CBZ tranh</span><code>koreader/booxbook/comics/truyentuoitho/…</code></li>
+            <li><span>Cài đặt + cookie</span><code>koreader/settings/booxbook.lua</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="wrap section" id="faq">
+    <div class="sec-head">
+      <p class="kicker">Hỏi đáp</p>
+      <h2>Những câu hỏi chung.</h2>
+    </div>
+    <div class="faq" data-accordion>
+      <div class="faq-item open">
+        <button class="faq-q" aria-expanded="true" aria-controls="faq-a1" id="faq-q1"><span>Plugin có miễn phí không?</span><span class="faq-icon" aria-hidden="true"></span></button>
+        <div class="faq-a" id="faq-a1" role="region" aria-labelledby="faq-q1"><div class="faq-a-in"><p>Có. BooxBook mã nguồn mở giấy phép AGPL-3.0-or-later, không tài khoản, không quảng cáo.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq-a2" id="faq-q2"><span>Dùng được trên máy nào?</span><span class="faq-icon" aria-hidden="true"></span></button>
+        <div class="faq-a" id="faq-a2" role="region" aria-labelledby="faq-q2"><div class="faq-a-in"><p>Mọi thiết bị chạy KOReader (Onyx Boox Android, Kindle, Kobo…). Một số tính năng ghi chú “chưa xác nhận trên máy thật” — hãy chạy <strong>Kiểm tra cài đặt</strong> sau khi cài.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq-a3" id="faq-q3"><span>Vì sao không tải được chương / bài?</span><span class="faq-icon" aria-hidden="true"></span></button>
+        <div class="faq-a" id="faq-a3" role="region" aria-labelledby="faq-q3"><div class="faq-a-in"><p>Thường do chương khóa/VIP, captcha/rate-limit (HTTP 403/429) hoặc mất mạng. Plugin dừng lượt tải và giữ file đã lưu — thử lại sau, kiểm tra cookie, đồng hồ thiết bị và Wi-Fi.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq-a4" id="faq-q4"><span>Phát triển / test thế nào?</span><span class="faq-icon" aria-hidden="true"></span></button>
+        <div class="faq-a" id="faq-a4" role="region" aria-labelledby="faq-q4"><div class="faq-a-in"><p>LuaJIT, không thêm native library. Chạy <code>luajit tests/run.lua</code>. Rà RSS thật: <code>pwsh -File scripts/news-feeds-live.ps1 -All</code>. Xem <a href="https://github.com/hongducdev/booxbook.koplugin/blob/main/docs/development.md">quy ước</a> và <a href="https://github.com/hongducdev/booxbook.koplugin/blob/main/docs/system-architecture.md">kiến trúc</a>.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap cta-final">
+    <div class="cta-card">
+      <div>
+        <p class="kicker light">Bắt đầu đọc offline</p>
+        <h2>Tải BooxBook v{{BOOXBOOK_VERSION}},<br />copy vào KOReader, đọc ngay.</h2>
+      </div>
+      <div class="cta-row">
+        <a class="btn btn-paper" href="{{BOOXBOOK_RELEASE_URL}}">Trang Release</a>
+        <a class="btn btn-outline-light" href="https://github.com/hongducdev/booxbook.koplugin">Mã nguồn GitHub</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <p><strong>BooxBook</strong> · plugin KOReader đọc báo &amp; truyện offline · AGPL-3.0-or-later · Ghi chú bên thứ ba (MIT, Nekori): <code>THIRD-PARTY-NOTICES.md</code></p>
+    <p class="foot-links"><a href="#cai-dat">Cài đặt</a> · <a href="#huong-dan">Hướng dẫn</a> · <a href="https://github.com/hongducdev/booxbook.koplugin">GitHub</a> · <a href="https://github.com/koreader/koreader">KOReader</a></p>
+  </div>
+</footer>
+
+<script src="./main.js" defer></script>
+</body>
+</html>

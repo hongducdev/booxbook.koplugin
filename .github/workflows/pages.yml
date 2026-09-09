@@ -1,0 +1,42 @@
+name: Deploy website to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "website/**"
+      - "booxbook.koplugin/_meta.lua"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inject plugin version into website
+        run: |
+          VER="$(grep -oP 'version\s*=\s*"\K[^"]+' booxbook.koplugin/_meta.lua)"
+          test -n "$VER"
+          URL="https://github.com/hongducdev/booxbook.koplugin/releases/tag/v${VER}"
+          sed -i "s/{{BOOXBOOK_VERSION}}/${VER}/g; s|{{BOOXBOOK_RELEASE_URL}}|${URL}|g" website/index.html
+          if grep -q "{{BOOXBOOK_" website/index.html; then echo "ERROR: unreplaced placeholder"; exit 1; fi
+          echo "Injected website version ${VER}"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: "website"
+      - id: deployment
+        uses: actions/deploy-pages@v4
