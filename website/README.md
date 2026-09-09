@@ -25,7 +25,7 @@ Mở trực tiếp `index.html` cũng được nhưng sẽ thấy placeholder th
 - `{{BOOXBOOK_VERSION}}` — số phiên bản (badge, mock menu, bước 5, CTA).
 - `{{BOOXBOOK_RELEASE_URL}}` — link đúng tag release (`.../releases/tag/vX.Y.Z`).
 - `{{BOOXBOOK_STARS}}` — số sao GitHub.
-- `{{BOOXBOOK_DOWNLOADS}}` — tổng lượt tải asset của tất cả Release.
+- `{{BOOXBOOK_DOWNLOADS}}` — tổng lượt tải asset của tối đa 100 Release gần nhất.
 
 Workflow `.github/workflows/pages.yml` thay thế các placeholder trước khi deploy và fail
 nếu còn placeholder sót. Đổi version chỉ cần sửa `_meta.lua` — push main là web

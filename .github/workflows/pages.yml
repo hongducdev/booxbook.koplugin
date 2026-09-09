@@ -36,8 +36,11 @@ jobs:
           test -n "$VER"
           URL="https://github.com/hongducdev/booxbook.koplugin/releases/tag/v${VER}"
           STARS="$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.stargazers_count')"
-          DOWNLOADS="$(gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/releases?per_page=100" --jq '[.[][] | .assets[].download_count] | add // 0')"
-          [[ "$STARS" =~ ^[0-9]+$ && "$DOWNLOADS" =~ ^[0-9]+$ ]]
+          DOWNLOADS="$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" --jq '[.[].assets[].download_count] | add // 0')"
+          if ! [[ "$STARS" =~ ^[0-9]+$ && "$DOWNLOADS" =~ ^[0-9]+$ ]]; then
+            echo "ERROR: invalid GitHub stats: stars=${STARS}, downloads=${DOWNLOADS}"
+            exit 1
+          fi
           sed -i "s/{{BOOXBOOK_VERSION}}/${VER}/g; s|{{BOOXBOOK_RELEASE_URL}}|${URL}|g; s/{{BOOXBOOK_STARS}}/${STARS}/g; s/{{BOOXBOOK_DOWNLOADS}}/${DOWNLOADS}/g" website/index.html
           if grep -q "{{BOOXBOOK_" website/index.html; then echo "ERROR: unreplaced placeholder"; exit 1; fi
           echo "Injected website version ${VER}, ${STARS} stars and ${DOWNLOADS} downloads"
