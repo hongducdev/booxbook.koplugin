@@ -44,12 +44,12 @@ Tải file từ trang Release, không copy code lẻ từ GitHub:
 
 Minh họa từng bước: [website #cai-dat](./website/index.html#cai-dat) (timeline số dọc).
 
-Cập nhật: mỗi bản mới đều có `booxbook.koplugin.zip` ở [Release](https://github.com/hongducdev/booxbook.koplugin/releases) — tải zip mới đè vào thư mục cũ, hoặc dùng icon thông tin trên màn hình chính → **Cập nhật** → **Cài đặt → Cập nhật từ GitHub** (cần Wi-Fi). Dữ liệu trong `koreader/booxbook/` và cookie không bị xóa. Restart KOReader sau khi cài.
+Cập nhật: mỗi bản mới đều có `booxbook.koplugin.zip` ở [Release](https://github.com/hongducdev/booxbook.koplugin/releases) — tải zip mới đè vào thư mục cũ, chọn **Cập nhật** ở thanh dưới trang chủ, hoặc vào **Cài đặt → Hệ thống → Cập nhật từ GitHub** (cần Wi-Fi). Dữ liệu trong `koreader/booxbook/` và cookie không bị xóa. Restart KOReader sau khi cài.
 
 ## Cài đặt trong plugin
 
 - Cookie từng nguồn: dán session từ trình duyệt. Cookie không được in ra log.
-- Sangtacviet tắt mặc định; lần đầu mở sẽ hỏi xác nhận. Có thể tắt lại trong Cài đặt.
+- Sangtacviet tắt mặc định; lần đầu mở sẽ hỏi xác nhận. Có thể tắt lại trong **Cài đặt → Nguồn và cookie**.
 - Nội dung 18+: tắt mặc định. **Tải ảnh minh họa**: bật mặc định.
 - **Lưu truyện thành EPUB**: tắt mặc định. Mỗi khoảng chương tải xong có EPUB với mục lục; áp dụng cả sáu nguồn.
 - Tải lại một khoảng tự bỏ qua chương còn file trên máy. `index.json.bak` giữ danh sách hợp lệ gần nhất để fallback khi index chính hỏng.

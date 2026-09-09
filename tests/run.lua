@@ -287,10 +287,14 @@ assert_eq(table.concat(menu_events, ","), "close,nextTick", "Tools closes before
 assert_true(type(scheduled) == "function", "fullscreen work is deferred")
 scheduled()
 assert_eq(table.concat(menu_events, ","), "close,nextTick,clear,show", "fullscreen menu resets and opens in order")
-assert_eq(shown_menu.subtitle, "v0.0.9 · Đã kết nối mạng", "home TitleBar shows the plugin version")
-assert_eq(shown_menu.left_icon, "info", "home TitleBar has an update icon")
-assert_true(type(shown_menu.on_left_icon) == "function", "home TitleBar update icon is tappable")
-assert_eq(shown_menu.items[4].text, "Cập nhật", "home list has an update action")
+assert_eq(shown_menu.subtitle, "Đã kết nối mạng", "home TitleBar shows network status")
+assert_eq(#shown_menu.items, 5, "home actions fit comfortably on one page")
+assert_eq(shown_menu.items[4].text, "Gửi sách qua Wi-Fi", "primary transfer action precedes settings")
+assert_eq(shown_menu.items[5].text, "Cài đặt", "settings remain available last")
+assert_eq(shown_menu.footer_slots[2].text, "v0.0.9", "home footer shows the plugin version")
+assert_eq(shown_menu.footer_slots[3].action, "update", "home footer exposes one labeled update action")
+assert_eq(shown_menu.footer_slots[4].text, "1/1", "home footer confirms all actions fit on one page")
+assert_true(type(shown_menu.on_footer) == "function", "home footer actions are handled")
 local library = shown_menu.items[3]
 local old_fm = package.loaded["apps/filemanager/filemanager"]
 local old_reader = package.loaded["apps/reader/readerui"]
@@ -326,21 +330,34 @@ menu_settings.downloadDir = function() return "/downloads" end
 local retention_settings = { novel_epub = false, novel_keep_html = true, news_delete_finished = false }
 menu_settings.get = function(key) return retention_settings[key] end
 menu_settings.set = function(key, value) retention_settings[key] = value end
+local settings_groups = BooxBook:settingsMenu()
+assert_eq(#settings_groups, 4, "settings fit on one grouped page")
+local setting_count, group_names = 0, {}
+for _, group in ipairs(settings_groups) do
+    group_names[#group_names + 1] = group.text
+    setting_count = setting_count + #group.sub_item_table
+    assert_true(#group.sub_item_table <= 5, "each settings group fits on one child page")
+end
+assert_eq(table.concat(group_names, ","), "Đọc và tải,Bộ nhớ,Nguồn và cookie,Hệ thống",
+    "settings groups follow task order")
+assert_eq(setting_count, 15, "grouping preserves every setting")
 local toggle_count = 0
-for _, item in ipairs(BooxBook:settingsMenu()) do
-    if item.text == "Lưu truyện thành EPUB" or item.text == "Giữ bản HTML khi lưu EPUB"
-        or item.text == "Tự xóa HTML báo sau khi đọc xong" then
-        toggle_count = toggle_count + 1
-        local before = item.checked_func()
-        if item.select_enabled_func then
-            assert_eq(item.select_enabled_func(), false, "retention requires EPUB")
-            retention_settings.novel_epub = true
-            assert_eq(item.select_enabled_func(), true, "retention available with EPUB")
+for _, group in ipairs(settings_groups) do
+    for _, item in ipairs(group.sub_item_table) do
+        if item.text == "Lưu truyện thành EPUB" or item.text == "Giữ bản HTML khi lưu EPUB"
+            or item.text == "Tự xóa HTML báo sau khi đọc xong" then
+            toggle_count = toggle_count + 1
+            local before = item.checked_func()
+            if item.select_enabled_func then
+                assert_eq(item.select_enabled_func(), false, "retention requires EPUB")
+                retention_settings.novel_epub = true
+                assert_eq(item.select_enabled_func(), true, "retention available with EPUB")
+            end
+            item.callback()
+            assert_eq(item.checked_func(), not before, "retention toggle changes setting")
+            item.callback()
+            assert_eq(item.checked_func(), before, "retention toggle restores setting")
         end
-        item.callback()
-        assert_eq(item.checked_func(), not before, "retention toggle changes setting")
-        item.callback()
-        assert_eq(item.checked_func(), before, "retention toggle restores setting")
     end
 end
 assert_eq(toggle_count, 3, "all three retention settings are visible")

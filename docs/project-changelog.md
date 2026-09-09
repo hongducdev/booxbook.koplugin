@@ -3,6 +3,9 @@
 ## 0.0.9 — 2026-09-09
 
 - Thêm DNS over HTTPS cho request HTTPS để tránh DNS nhà mạng chặn nguồn truyện; giữ Host/SNI gốc, thử nhiều IPv4, cache TTL và fallback DNS hệ thống.
+- Sửa một số bài báo báo `Invalid argument` khi tiêu đề dài bị cắt giữa ký tự UTF-8.
+- Gom Cài đặt thành bốn nhóm vừa một màn hình: đọc và tải, bộ nhớ, nguồn và cookie, hệ thống.
+- Tối ưu trang chủ còn năm tác vụ chính; đưa phiên bản và nút cập nhật có nhãn xuống footer.
 
 ## 0.0.8 — 2026-09-09
 

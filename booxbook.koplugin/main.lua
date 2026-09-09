@@ -60,10 +60,15 @@ function BooxBook:showMainMenu()
     local version = Update.currentVersion()
     Catalog.show{
         title = _("BooxBook"),
-        subtitle = "v" .. version .. " · " .. Network.statusText(),
-        left_icon = "info",
-        on_left_icon = function()
-            Update.checkAndPrompt()
+        subtitle = Network.statusText(),
+        footer_slots = {
+            { text = _("Quay lại"), action = "back", enabled = true },
+            { text = "v" .. version, enabled = false },
+            { text = _("Cập nhật"), action = "update", enabled = true },
+            { text = "1/1", enabled = false },
+        },
+        on_footer = function(action)
+            if action == "update" then Update.checkAndPrompt() end
         end,
         items = {
             {
@@ -129,21 +134,15 @@ function BooxBook:showMainMenu()
                 callback = function() self:showLibrary() end,
             },
             {
-                text = _("Cập nhật"),
-                callback = function()
-                    Update.checkAndPrompt()
-                end,
+                text = _("Gửi sách qua Wi-Fi"),
+                keep_menu_open = true,
+                callback = function() require("booxbook.ui.wifi-transfer").show() end,
             },
             {
                 text = _("Cài đặt"),
                 callback = function()
                     Catalog.show{ title = _("Cài đặt"), items = self:settingsMenu() }
                 end,
-            },
-            {
-                text = _("Gửi sách qua Wi-Fi"),
-                keep_menu_open = true,
-                callback = function() require("booxbook.ui.wifi-transfer").show() end,
             },
         },
     }
@@ -206,7 +205,7 @@ function BooxBook:showLibrary()
 end
 
 function BooxBook:settingsMenu()
-    return {
+    local items = {
         {
             text = _("Phiên bản") .. " " .. Update.currentVersion(),
             select_enabled = false,
@@ -323,6 +322,14 @@ function BooxBook:settingsMenu()
                 end)
             end,
         },
+    }
+    return {
+        { text = _("Đọc và tải"), sub_item_table = { items[4], items[5], items[6], items[7], items[8] } },
+        { text = _("Bộ nhớ"), sub_item_table = { items[9], items[10] } },
+        { text = _("Nguồn và cookie"), sub_item_table = {
+            items[11], items[12], items[13], items[14], items[15],
+        } },
+        { text = _("Hệ thống"), sub_item_table = { items[1], items[2], items[3] } },
     }
 end
 

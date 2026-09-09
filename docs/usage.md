@@ -72,7 +72,7 @@ tên file trong 3 giây. Không báo thành công cho file dở hoặc file bị
 
 ## Sangtacviet
 
-- **Truyện → Sangtacviet** luôn hiện trong menu. Lần đầu chạm sẽ hỏi xác nhận (cảnh báo dịch máy); sau đó mở grid. Tắt lại bằng **Cài đặt → Bật Sangtacviet**.
+- **Truyện → Sangtacviet** luôn hiện trong menu. Lần đầu chạm sẽ hỏi xác nhận (cảnh báo dịch máy); sau đó mở grid. Tắt lại bằng **Cài đặt → Nguồn và cookie → Bật Sangtacviet**.
 - Duyệt **Mới cập nhật** / **Lượt xem** dạng grid bìa; kính lúp nhận từ khóa hoặc URL `/truyen/{host}/{sty}/{bookid}/`.
 - Tải chương qua AJAX (`sajax=readchapter`) kèm Referer + cookie phiên; giãn cách ≥ 2 giây. Bỏ qua VIP; captcha / rate-limit / chương trống sau lỗi dừng cả lượt tải.
 - ID truyện là `{host}-{bookid}` (cùng bookid có thể trùng giữa nguồn gốc). Lưu HTML tại `koreader/booxbook/novels/sangtacviet/{host}-{bookid}/`. Chương id dài (fanqie) giữ dạng chuỗi, không `tonumber`. Icon menu trên mục lục mở **Tải khoảng / toàn bộ** như DocLN; tải toàn bộ có thể chậm vì giãn cách ≥ 2 giây và dừng khi captcha/rate-limit.
@@ -86,7 +86,7 @@ có trang bìa để xem offline. Nguồn không có bìa thì không tạo bìa
 lỗi hoặc định dạng chưa hỗ trợ thì giữ HTML và báo lỗi. EPUB đã tải trước đây
 cần tải lại để nhận metadata và bìa mới.
 
-- Bật **Cài đặt → Lưu truyện thành EPUB**. Mặc định vẫn là HTML.
+- Bật **Cài đặt → Đọc và tải → Lưu truyện thành EPUB**. Mặc định vẫn là HTML.
 - Không cần bật công tắc để đóng gói thủ công: trong menu mục lục chọn **Tạo EPUB từ chương đã tải**, nhập khoảng. Plugin chỉ dùng HTML đang có, báo số chương thiếu và luôn giữ HTML/index.
 - Áp dụng DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen và Truyện Full: mỗi khoảng tải xong có file
   `chapters-<từ>-<đến>.epub` trong thư mục truyện, chứa các chương tải được theo
@@ -110,7 +110,7 @@ cần tải lại để nhận metadata và bìa mới.
 
 ## Tự xóa báo đã đọc
 
-- Bật **Cài đặt → Tự xóa HTML báo sau khi đọc xong** (mặc định tắt).
+- Bật **Cài đặt → Đọc và tải → Tự xóa HTML báo sau khi đọc xong** (mặc định tắt).
 - Khi đóng bài: xóa nếu đã đánh dấu **Đã đọc**, hoặc nếu vừa tới cuối bài
   và vẫn đang ở cuối (không xóa nếu lật tới cuối rồi chọn về đầu / đọc tiếp).
 - Áp dụng cả khi mở bài từ Báo, Tin đã tải hoặc Thư viện. Chỉ xóa HTML trong

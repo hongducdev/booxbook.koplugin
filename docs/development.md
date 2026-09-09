@@ -71,7 +71,7 @@ Unit test danh mục so với snapshot `tests/fixtures/feeds-audit.md` (lần r�
 
 Version nằm trong `booxbook.koplugin/_meta.lua`. Tag `v*` (ví dụ `v0.0.1`) chạy `.github/workflows/release.yml` và đính `booxbook.koplugin.zip`.
 
-Trong plugin: **Cài đặt → Cập nhật từ GitHub** lấy release mới nhất, giải vào thư mục staging, đổi:
+Trong plugin: **Cài đặt → Hệ thống → Cập nhật từ GitHub** lấy release mới nhất, giải vào thư mục staging, đổi:
 
 1. `booxbook.koplugin` → `booxbook.koplugin.bak`
 2. staging (đã kiểm `main.lua` + `_meta.lua`) → `booxbook.koplugin`
