@@ -33,6 +33,31 @@ Tests dùng LuaJIT, file tạm thật và socket double tiêm partial I/O/lỗi;
 8 MiB chạy qua lớp transport Python tương thích LuaSocket, chưa thay thế test
 LuaSocket native/QR/Wi-Fi trên Boox. Không tự mở firewall Kindle.
 
+## Tải sách từ OneDrive
+
+`main.lua → ui/onedrive.lua → onedrive.lua → booxbook.http → received/`.
+OneDrive dùng Microsoft Device Code Flow với public client ID của ứng dụng BooxBook
+(người dùng vẫn có thể thay thế trong cài đặt),
+scope tối thiểu `Files.Read offline_access`; không có client secret. UI không poll nền:
+hiện verification URL + user code/QR, rồi người dùng chủ động kiểm tra sau khi đăng nhập.
+Access token tự refresh và Graph request chỉ retry một lần sau 401.
+Mọi request OAuth/Graph của OneDrive bật xác minh chuỗi chứng chỉ bằng CA bundle
+đóng gói trong KOReader và kiểm tra hostname từ Subject Alternative Name; redirect
+về HTTP bị từ chối. Luồng đăng nhập không dùng chế độ TLS `verify = none` của các
+nguồn nội dung công khai hiện có.
+
+Graph listing duyệt từng thư mục qua `/me/drive/root/children` và
+`/me/drive/items/{id}/children`, theo `@odata.nextLink` tối đa 20 trang và chỉ chấp
+nhận nextLink HTTPS cùng `graph.microsoft.com/v1.0`. Chỉ các định dạng sách trong
+allowlist Wi-Fi xuất hiện; không quét đệ quy, upload, sync hay thao tác file cloud.
+Download `/content` được stream vào file `.part` dưới `received/`; HTTP chung bỏ
+Authorization khi redirect sang URL preauthenticated khác host. Size 1–512 MiB phải
+khớp metadata, file đích không được tồn tại, rename thành công mới báo hoàn tất.
+
+Token nằm trong `settings/booxbook.lua`, không được log. Đây là storage plaintext,
+không phải keychain; scope read-only và hành động đăng xuất/xóa token là ranh giới
+bảo vệ thực tế trên các filesystem KOReader hỗ trợ.
+
 ## Luồng
 
 ```

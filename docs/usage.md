@@ -2,6 +2,28 @@
 
 Màn hình chính hiện phiên bản ngay dưới tiêu đề. Điều hướng dùng **Quay lại / Trước / Sau** ở chân trang.
 
+## OneDrive
+
+1. Mở **Sách & cloud → OneDrive → Đăng nhập OneDrive**. Plugin đã cấu hình public
+   client ID của ứng dụng BooxBook; không cần client secret.
+2. Quét QR hoặc mở URL đang
+   hiển thị trên điện thoại/máy tính, nhập mã, rồi chọn **Đã đăng nhập, kiểm tra**.
+3. Chọn từng thư mục để duyệt. Chọn sách, xác nhận tải; file được lưu tại
+   `koreader/booxbook/received/` và mở lại qua **Sách & cloud → Thư viện trên máy**.
+
+Mục **Cài đặt → OneDrive → Microsoft client ID** chỉ dành cho bản fork muốn dùng
+application registration riêng. Đổi client ID sẽ tự đăng xuất tài khoản hiện tại.
+
+OneDrive chỉ hiển thị EPUB, PDF, FB2, MOBI, AZW/AZW3, DJVU/DJV, TXT, RTF, DOC,
+CHM và CBZ/CBR. Khả năng đọc phụ thuộc KOReader. File từ 1 byte đến 512 MiB;
+không ghi đè sách trùng tên. Không hỗ trợ video, xem nội dung trực tiếp trên cloud,
+upload, đồng bộ, tìm kiếm, xóa hay đổi tên file OneDrive.
+
+Token đăng nhập được lưu trong file settings của KOReader và không ghi vào log.
+Kết nối OAuth/Graph xác minh chứng chỉ và hostname bằng CA bundle của KOReader.
+Đây không phải secure keychain; hãy chọn **Cài đặt → OneDrive → Đăng xuất OneDrive**
+trước khi chuyển nhượng thiết bị.
+
 ## Gửi sách qua Wi-Fi
 
 1. Kết nối máy đọc sách và điện thoại/máy tính vào cùng mạng Wi-Fi.
@@ -10,7 +32,7 @@ Màn hình chính hiện phiên bản ngay dưới tiêu đề. Điều hướng
    với mã phiên điền sẵn. Máy tính: gõ địa chỉ `http://…:8080/` đang hiển thị
    vào trình duyệt, rồi nhập mã phiên 6 chữ số trên máy đọc sách (giữ số 0 đầu).
 4. Chọn một hoặc nhiều sách, bấm **Gửi sách**. Xem tiến độ và kết quả từng file.
-5. Bấm **Dừng nhận sách**, rồi mở **Thư viện → received** để đọc.
+5. Bấm **Dừng nhận sách**, rồi mở **Sách & cloud → Thư viện trên máy → received** để đọc.
 
 Hỗ trợ EPUB, PDF, CBZ, CBR, FB2, MOBI, AZW/AZW3, DJVU/DJV, TXT, RTF, DOC, CHM;
 khả năng đọc từng định dạng phụ thuộc KOReader. Mỗi file từ 1 byte đến 512 MiB.
@@ -99,7 +121,7 @@ cần tải lại để nhận metadata và bìa mới.
 - Nếu lượt tải bị gián đoạn, chưa tạo EPUB; các HTML đã ghi vẫn dùng được. Nếu
   xuất EPUB lỗi, thông báo lỗi và giữ HTML cùng EPUB cũ. Tải lại cùng khoảng thành
   công sẽ thay EPUB của khoảng đó; các khoảng khác có file riêng.
-- **Thư viện** ở màn hình chính mở thư mục `koreader/booxbook/` bằng trình quản lý
+- **Sách & cloud → Thư viện trên máy** mở thư mục `koreader/booxbook/` bằng trình quản lý
   file KOReader, không cần mạng. Vào `news/` để tìm báo, `novels/<nguồn>/<id>/`
   để tìm truyện. Danh sách phản ánh file thực trên máy, kể cả tải từ trước.
 - Chạm file để đọc; nhấn giữ để đổi tên, xóa, sao chép, di chuyển, xem thông tin,
@@ -152,6 +174,7 @@ Chưa xác minh giao diện và CBZ WebP trên Boox thật.
 | Bài báo đã mở | `koreader/booxbook/news/<feed-id>/` |
 | Chương truyện | `koreader/booxbook/novels/<nguồn>/<id>/` |
 | Tập truyện tranh CBZ | `koreader/booxbook/comics/truyentuoitho/<bộ>/<tập>.cbz` |
+| Sách nhận qua Wi-Fi/OneDrive | `koreader/booxbook/received/` |
 | Cài đặt + cookie | `koreader/settings/booxbook.lua` |
 
 ## TVTruyen

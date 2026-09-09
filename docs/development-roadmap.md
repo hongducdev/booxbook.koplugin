@@ -1,5 +1,13 @@
 # Lộ trình phát triển
 
+## OneDrive download-only — 2026-09-09
+
+- [x] Device Code OAuth, refresh/đăng xuất và Graph folder listing.
+- [x] Chỉ hiện định dạng sách hỗ trợ; tải `.part` rồi rename, không ghi đè.
+- [x] Chạy toàn bộ LuaJIT regression suite và test OneDrive mới.
+- [ ] Smoke test đăng nhập, phân trang và tải sách thật trên Boox.
+- [ ] Thiết kế Google Drive sau khi OneDrive được xác nhận trên thiết bị.
+
 ## Gửi sách qua Wi-Fi — 2026-09-08
 
 - [x] Mục riêng, địa chỉ web, mã phiên và QR dùng widget KOReader.

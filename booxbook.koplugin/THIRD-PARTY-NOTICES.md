@@ -24,6 +24,11 @@ Truyện Full listing/search URLs, TOC pagination (`/trang-N/#list-chapter`) and
 [Nekori TruyenFull 1.0.7](https://github.com/Yuneko-dev/Nekori-plugins/blob/master/plugins/vietnamese/TruyenFull/index.ts).
 BooxBook uses its HTML/HTTP stack, not Cheerio or Nekori's filter chrome.
 
+OneDrive Device Code authentication and Microsoft Graph endpoint selection reference
+[Nekori OneDrive](https://github.com/Yuneko-dev/Nekori-plugins/tree/15be365a976cf9a4c9ebaf9976f0f57125286c89/plugins/multi/OneDrive).
+BooxBook replaces its video model with a read-only ebook browser and uses its own
+Lua HTTP, settings, validation and atomic-download paths.
+
 MIT License
 
 Copyright (c) 2021 Rajarshee Chatterjee

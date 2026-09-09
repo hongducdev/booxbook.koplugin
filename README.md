@@ -7,7 +7,7 @@
 
 Plugin [KOReader](https://github.com/koreader/koreader) để đọc báo RSS và truyện chữ trên máy đọc sách (Onyx Boox và thiết bị khác). Tải HTML về máy, đọc offline trong KOReader.
 
-**Phiên bản:** 0.0.9 (`hongducdev/booxbook.koplugin`) · giấy phép [AGPL-3.0-or-later](./LICENSE)
+**Phiên bản:** 0.0.10 (`hongducdev/booxbook.koplugin`) · giấy phép [AGPL-3.0-or-later](./LICENSE)
 
 **Website giới thiệu + hướng dẫn:** xem [`website/`](website/) (deploy tự động lên GitHub Pages qua workflow `pages.yml`). Số version và link Release trên web tự đồng bộ từ `version` trong `booxbook.koplugin/_meta.lua` lúc deploy — không sửa tay. Preview local: `pwsh -File scripts/preview-website.ps1`.
 
@@ -27,7 +27,7 @@ Dùng như trình đọc RSS / thư viện cá nhân. Không phát tán nội du
 | **Báo** | 17 tờ, 633 kênh RSS | 9 báo Việt, 8 nguồn nước ngoài; thêm RSS tùy chỉnh |
 | **Truyện** | DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full | Tìm / duyệt, tải chương, đọc lại offline |
 | **Truyện tranh** | Truyện Tuổi Thơ | Duyệt/tìm, mục lục, tải một/khoảng/toàn bộ tập, tải tiếp, đọc CBZ offline |
-| **Thư viện** | File đã tải | Mở thư mục tải bằng trình quản lý file KOReader; nhấn giữ để thao tác |
+| **Sách & cloud** | File local + OneDrive | Mở thư viện trên máy; duyệt thư mục OneDrive và tải sách về |
 | **Gửi sách qua Wi-Fi** | Điện thoại / máy tính cùng mạng | Mở web hoặc quét QR, gửi nhiều sách vào thư viện; tối đa 512 MiB/file |
 
 Cách dùng chi tiết: [hướng dẫn](docs/usage.md). Phạm vi RSS: [danh mục báo](docs/news-categories.md).
@@ -59,6 +59,9 @@ Cập nhật: mỗi bản mới đều có `booxbook.koplugin.zip` ở [Release]
 - **Tự xóa HTML báo sau khi đọc xong**: tắt mặc định. Xóa khi đóng bài đã đánh dấu đã đọc, hoặc vừa tới cuối và vẫn ở cuối; quay lại giữa bài thì giữ. Thư mục ảnh `.images` của bài bị xóa cùng HTML (chỉ khi xóa HTML thành công); tải lại bài làm mới sạch ảnh cũ sau khi ghi HTML xong.
 - **Ảnh bìa**: lưu dưới `koreader/booxbook/covers/`, trần 50MB (xóa bìa cũ nhất trước). Cài đặt hiện dung lượng ảnh và có mục **Dọn ảnh bìa và ảnh thừa** (xóa bìa, ảnh của bài đã mất, bản nháp comic quá 7 ngày).
 - **Kiểm tra cài đặt** (cần Wi-Fi): gọi `example.com`, ghi `_selftest.html` (có chữ `Tiếng Việt`) và thử EPUB vào `koreader/booxbook/`.
+- **OneDrive**: dùng sẵn public client ID của ứng dụng BooxBook, đăng nhập bằng mã trên
+  điện thoại/máy tính, rồi duyệt thư mục và tải sách vào `koreader/booxbook/received/`. Chỉ đọc cloud;
+  không upload, đồng bộ, xóa hay đổi tên file trên OneDrive.
 
 ## Phát triển
 

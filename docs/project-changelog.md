@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.0.10 — 2026-09-09
+
+- Thêm OneDrive download-only: Device Code login, duyệt từng thư mục và tải các
+  định dạng sách KOReader hỗ trợ vào `received/`; không upload, sync hay ghi đè.
+- Cấu hình sẵn public client ID BooxBook; OAuth/Graph xác minh CA và hostname.
+- Sửa Android báo `error loading CA locations`: lấy CA bundle từ runtime KOReader
+  thay vì nhầm sang thư mục dữ liệu ngoài `/sdcard/koreader`.
+- Sửa KOReader crash khi OneDrive trả về thư mục: biến chỉ số vòng lặp không còn
+  che mất hàm dịch `gettext`; thêm kiểm thử hồi quy cho dòng thư mục.
+- OneDrive tự thêm `(1)`, `(2)` khi sách trùng tên, giữ nguyên file cũ thay vì
+  báo đã tồn tại trước khi tải.
+- Gom thư viện local và provider cloud dưới mục **Sách & cloud**.
+
 ## 0.0.9 — 2026-09-09
 
 - Thêm DNS over HTTPS cho request HTTPS để tránh DNS nhà mạng chặn nguồn truyện; giữ Host/SNI gốc, thử nhiều IPv4, cache TTL và fallback DNS hệ thống.
