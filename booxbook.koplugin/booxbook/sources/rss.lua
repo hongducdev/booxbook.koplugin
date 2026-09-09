@@ -122,7 +122,10 @@ end
 local function safeName(value)
     value = plain(value):gsub("[%c<>:\"/\\|%?%*]", "-"):gsub("%s+", " ")
     value = value:gsub("^%.*", ""):gsub("[%. ]+$", "")
-    value = value:sub(1, 120):gsub("[\128-\191]+$", "")
+    value = value:sub(1, 120)
+        :gsub("[\240-\244][\128-\191]?[\128-\191]?$", "")
+        :gsub("[\224-\239][\128-\191]?$", "")
+        :gsub("[\194-\223]$", "")
     return value ~= "" and value or "article"
 end
 

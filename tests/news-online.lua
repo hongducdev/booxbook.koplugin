@@ -47,6 +47,10 @@ requests = {}
 local path = assert(Rss.loadArticle(feed, items[2]))
 assert(#requests == 1 and requests[1] == items[2].link, "only selected article requested")
 assert(#writes == 1 and writes[1].path == path and writes[1].body:find("Selected body", 1, true))
+local long_title = string.rep("a", 119) .. "ế"
+path = assert(Rss.loadArticle(feed, { title = long_title, link = "https://example.com/long", summary = "x" }))
+assert(path == "./news/online/" .. string.rep("a", 119) .. ".html",
+    "article filenames must not end with a truncated UTF-8 character")
 assert(not Rss.loadArticle(feed, { link = "file:///private" }), "non-HTTP article rejected")
 assert(not Rss.list({ url = "file:///private" }), "non-HTTP feed rejected")
 Http.get = function() return false, 503 end
