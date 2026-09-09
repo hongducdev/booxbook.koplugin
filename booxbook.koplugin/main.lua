@@ -129,9 +129,13 @@ function BooxBook:showMainMenu()
                 end,
             },
             {
-                text = _("Thư viện"),
-                keep_menu_open = true,
-                callback = function() self:showLibrary() end,
+                text = _("Sách & cloud"),
+                sub_item_table = {
+                    { text = _("Thư viện trên máy"), keep_menu_open = true,
+                        callback = function() self:showLibrary() end },
+                    { text = "OneDrive", keep_menu_open = true,
+                        callback = function() require("booxbook.ui.onedrive").open() end },
+                },
             },
             {
                 text = _("Gửi sách qua Wi-Fi"),
@@ -322,6 +326,32 @@ function BooxBook:settingsMenu()
                 end)
             end,
         },
+        {
+            text = _("Microsoft client ID"),
+            callback = function()
+                Catalog.promptText{
+                    title = _("Microsoft client ID"),
+                    hint = _("Application (client) ID của public client"),
+                    input = Settings.get("onedrive_client_id") or "",
+                    on_submit = function(value)
+                        local new_id = tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
+                        if new_id ~= (Settings.get("onedrive_client_id") or "") then
+                            Settings.set("onedrive_client_id", new_id)
+                            require("booxbook.onedrive").clearAuth()
+                        end
+                    end,
+                }
+            end,
+        },
+        {
+            text = _("Đăng xuất OneDrive"),
+            callback = function()
+                Catalog.confirm(_("Xóa thông tin đăng nhập OneDrive trên thiết bị này?"), function()
+                    require("booxbook.onedrive").clearAuth()
+                    notify(_("Đã đăng xuất OneDrive."))
+                end)
+            end,
+        },
     }
     return {
         { text = _("Đọc và tải"), sub_item_table = { items[4], items[5], items[6], items[7], items[8] } },
@@ -329,6 +359,7 @@ function BooxBook:settingsMenu()
         { text = _("Nguồn và cookie"), sub_item_table = {
             items[11], items[12], items[13], items[14], items[15],
         } },
+        { text = _("OneDrive"), sub_item_table = { items[16], items[17] } },
         { text = _("Hệ thống"), sub_item_table = { items[1], items[2], items[3] } },
     }
 end

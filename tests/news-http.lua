@@ -1,9 +1,16 @@
 local Http = require("booxbook.http")
 local RateLimit = require("booxbook.rate_limit")
 local Settings = require("booxbook.store.settings")
+local Dns = require("booxbook.doh")
 local transport = require("socket.http")
 local original_request, original_wait = transport.request, RateLimit.wait
+local original_create = Dns.create
 local requests, waits = {}, {}
+local secure_cafile
+Dns.create = function(cafile)
+    secure_cafile = cafile
+    return original_create(cafile)
+end
 transport.request = function(request)
     requests[#requests + 1] = request
     if request.url:find("redirect", 1, true) then
@@ -42,6 +49,8 @@ assert(Http.get("https://example.com/a"))
 assert(waits[#waits].delay == 2300, "honor configured request spacing")
 assert(Http.get("http://example.com/a"))
 assert(requests[#requests].create == nil, "plain HTTP keeps the default connector")
+assert(Http.get("https://graph.microsoft.com/v1.0/me", { verify_tls = true }))
+assert(secure_cafile == "data/ca-bundle.crt", "verified TLS uses KOReader runtime CA bundle")
 Settings.set("delay_ms", old_delay)
 before = #requests
 local ok, code = Http.get("https://example.com/limited")
@@ -60,5 +69,5 @@ end
 before = #waits
 assert(Http.get("https://example.com/retry"))
 assert(attempts == 2 and #waits == before + 2, "timeout retry is paced")
-transport.request, RateLimit.wait = original_request, original_wait
+transport.request, RateLimit.wait, Dns.create = original_request, original_wait, original_create
 print("Desktop UA, scoped cookies and pacing checks passed")

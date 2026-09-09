@@ -4,9 +4,8 @@ local Upload = { MAX_BYTES = 512 * 1024 * 1024 }
 local formats = { epub=true, pdf=true, cbz=true, cbr=true, fb2=true, mobi=true,
     azw=true, azw3=true, djvu=true, djv=true, txt=true, rtf=true, doc=true, chm=true }
 
-function Upload.filename(encoded)
-    if type(encoded) ~= "string" or encoded:gsub("%%(%x%x)", ""):find("%%") then return end
-    local name = encoded:gsub("%%(%x%x)", function(hex) return string.char(tonumber(hex, 16)) end)
+function Upload.safeFilename(name)
+    if type(name) ~= "string" then return end
     if #name == 0 or #name > 220 or name:find('[%z\1-\31\127/\\:*?"<>|]')
         or name:match("^[%. ]") or name:match("[%. ]$") then return end
     local stem = name:match("^([^%.]+)"):upper()
@@ -14,6 +13,13 @@ function Upload.filename(encoded)
         or stem:match("^COM%d$") or stem:match("^LPT%d$") then return end
     if not formats[(name:match("%.([^.]+)$") or ""):lower()] then return end
     return name
+end
+
+function Upload.filename(encoded)
+    if type(encoded) ~= "string" or encoded:gsub("%%(%x%x)", ""):find("%%") then return end
+    return Upload.safeFilename(encoded:gsub("%%(%x%x)", function(hex)
+        return string.char(tonumber(hex, 16))
+    end))
 end
 
 function Upload.headers(raw, authority, token)

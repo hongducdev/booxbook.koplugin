@@ -31,6 +31,11 @@ for _, bad in ipairs({ "../x.epub", "%2e%2e%2fx.pdf", "a%5cb.pdf", "a%00.pdf", "
     assert(not Upload.filename(bad), bad)
 end
 assert(Upload.filename("Ti%E1%BA%BFng%20Vi%E1%BB%87t.EPUB") == "Tiếng Việt.EPUB")
+for _, name in ipairs({ "a.epub", "a.pdf", "a.fb2", "a.mobi", "a.azw", "a.azw3",
+        "a.djvu", "a.djv", "a.txt", "a.rtf", "a.doc", "a.chm", "a.cbz", "a.cbr" }) do
+    assert(Upload.safeFilename(name) == name, name)
+end
+assert(not Upload.safeFilename("a.mp4") and not Upload.safeFilename("../a.epub"))
 for _, raw in ipairs({ headers("x.pdf", "0"), headers("x.pdf", "536870913"),
     headers("x.pdf", "-1"), headers("x.pdf", "1", "Content-Length: 1\r\n"),
     headers("x.pdf", "1", "Origin: http://evil.test\r\n"), headers("x.pdf", "1", "Transfer-Encoding: chunked\r\n"),

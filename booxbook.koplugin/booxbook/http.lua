@@ -212,7 +212,10 @@ local function requestOnce(opts)
         redirect = false,
     }
     if opts.url:match("^https://") then
-        request.create = Dns.create()
+        -- KOReader changes cwd to its runtime directory; DataStorage points to
+        -- external user data on Android, where the bundled CA file does not live.
+        local cafile = opts.verify_tls and "data/ca-bundle.crt" or nil
+        request.create = Dns.create(cafile)
     end
     if method ~= "GET" and method ~= "HEAD" then
         request.source = ltn12.source.string(body)
@@ -298,6 +301,9 @@ function Http.request(opts)
     local max_tries = 3
     local last_err
     while attempts < max_tries do
+        if opts.verify_tls and not url:match("^https://") then
+            return false, "verified TLS requires HTTPS"
+        end
         if opts.allow_url and not opts.allow_url(url) then
             return false, "URL not allowed"
         end
@@ -314,6 +320,7 @@ function Http.request(opts)
             maxtime = opts.maxtime,
             dest_file = opts.dest_file,
             max_body = opts.max_body,
+            verify_tls = opts.verify_tls,
         })
         if type(code) == "number" then
             if code == 301 or code == 302 or code == 303 or code == 307 or code == 308 then

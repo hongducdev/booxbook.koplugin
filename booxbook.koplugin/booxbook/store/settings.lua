@@ -17,6 +17,14 @@ local DEFAULTS = {
     stv_home = "https://sangtacviet.com",
     custom_rss_feeds = {},
     news_limit = 10,
+    onedrive_client_id = "262471d2-046d-45d1-a681-ea5b025d17b7",
+    onedrive_access_token = "",
+    onedrive_refresh_token = "",
+    onedrive_access_expires = 0,
+    onedrive_device_code = "",
+    onedrive_user_code = "",
+    onedrive_verification_uri = "",
+    onedrive_device_expires = 0,
 }
 
 local store

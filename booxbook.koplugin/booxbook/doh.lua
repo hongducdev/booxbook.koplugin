@@ -8,7 +8,31 @@ local DOH_IP = "1.1.1.1"
 local DOH_MAX_BODY = 64 * 1024
 local TLS_TIMEOUT = 60
 
-local function tlsSocket(host, port, connect_host, params)
+local function dnsNameMatches(pattern, host)
+    pattern, host = tostring(pattern or ""):lower(), tostring(host or ""):lower()
+    if pattern:find("\0", 1, true) or not pattern:match("^[%w%.%-%*]+$")
+        or not host:match("^[%w%.%-]+$") then return false end
+    if pattern == host then return true end
+    local suffix = pattern:match("^%*%.(.+)$")
+    if not suffix or suffix:find("*", 1, true) then return false end
+    local label = host:match("^([^.]+)%." .. suffix:gsub("([^%w])", "%%%1") .. "$")
+    return label ~= nil
+end
+
+function Dns.certificateMatchesHost(cert, host)
+    local ok, extensions = pcall(cert.extensions, cert)
+    if not ok or type(extensions) ~= "table" then return false end
+    for _, extension in pairs(extensions) do
+        if type(extension) == "table" and type(extension.dNSName) == "table" then
+            for _, name in ipairs(extension.dNSName) do
+                if dnsNameMatches(name, host) then return true end
+            end
+        end
+    end
+    return false
+end
+
+local function tlsSocket(host, port, connect_host, params, verify_host)
     local ssl = require("ssl")
     local raw, wrapped
     local ok, result = pcall(function()
@@ -19,6 +43,10 @@ local function tlsSocket(host, port, connect_host, params)
         wrapped:sni(host)
         wrapped:settimeout(TLS_TIMEOUT)
         assert(wrapped:dohandshake())
+        if verify_host then
+            assert(Dns.certificateMatchesHost(assert(wrapped:getpeercertificate()), host),
+                "TLS hostname mismatch")
+        end
         return wrapped
     end)
     if ok then return result end
@@ -38,7 +66,7 @@ local function register(conn)
     end
 end
 
-local function connector(resolve, fallback)
+local function connector(resolve, fallback, cafile)
     return function()
         local conn = { timeout = TLS_TIMEOUT }
         function conn:settimeout(timeout)
@@ -50,13 +78,14 @@ local function connector(resolve, fallback)
                 mode = "client",
                 protocol = "any",
                 options = { "all", "no_sslv2", "no_sslv3", "no_tlsv1" },
-                verify = "none",
+                verify = cafile and "peer" or "none",
+                cafile = cafile,
             }
             local addresses = resolve(host)
             local last_error
             local function tryAddresses(items)
                 for _, address in ipairs(items) do
-                    local result, err = tlsSocket(host, port, address, params)
+                    local result, err = tlsSocket(host, port, address, params, cafile ~= nil)
                     if result then
                         self.sock = result
                         self.sock:settimeout(self.timeout)
@@ -140,9 +169,9 @@ local function resolveDoh(host)
     return addresses
 end
 
-function Dns.create()
+function Dns.create(cafile)
     -- Prefer DoH so poisoned system DNS cannot silently lead to an ISP block page.
-    return connector(resolveDoh, function(host) return { host } end)
+    return connector(resolveDoh, function(host) return { host } end, cafile)
 end
 
 return Dns

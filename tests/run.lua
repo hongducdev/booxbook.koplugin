@@ -206,6 +206,8 @@ assert_eq(Settings.includeImages(), true, "images default on")
 assert_eq(Settings.get("novel_epub"), false, "EPUB defaults off")
 assert_eq(Settings.get("novel_keep_html"), true, "HTML retention defaults on")
 assert_eq(Settings.get("news_delete_finished"), false, "news cleanup defaults off")
+assert_eq(Settings.get("onedrive_client_id"), "262471d2-046d-45d1-a681-ea5b025d17b7",
+    "BooxBook OneDrive public client ID is bundled")
 Settings.set("custom_rss_feeds", { "https://example.com/feed.xml" })
 assert_eq(Settings.get("custom_rss_feeds")[1], "https://example.com/feed.xml", "custom rss round trip")
 Settings.setCookie("wattpad", "secret")
@@ -291,11 +293,14 @@ assert_eq(shown_menu.subtitle, "Đã kết nối mạng", "home TitleBar shows n
 assert_eq(#shown_menu.items, 5, "home actions fit comfortably on one page")
 assert_eq(shown_menu.items[4].text, "Gửi sách qua Wi-Fi", "primary transfer action precedes settings")
 assert_eq(shown_menu.items[5].text, "Cài đặt", "settings remain available last")
-assert_eq(shown_menu.footer_slots[2].text, "v0.0.9", "home footer shows the plugin version")
+assert_eq(shown_menu.footer_slots[2].text, "v0.0.10", "home footer shows the plugin version")
 assert_eq(shown_menu.footer_slots[3].action, "update", "home footer exposes one labeled update action")
 assert_eq(shown_menu.footer_slots[4].text, "1/1", "home footer confirms all actions fit on one page")
 assert_true(type(shown_menu.on_footer) == "function", "home footer actions are handled")
-local library = shown_menu.items[3]
+assert_eq(shown_menu.items[3].text, "Sách & cloud", "local and cloud libraries share one home action")
+assert_eq(#shown_menu.items[3].sub_item_table, 2, "book menu exposes local library and OneDrive")
+assert_eq(shown_menu.items[3].sub_item_table[2].text, "OneDrive", "OneDrive is discoverable")
+local library = shown_menu.items[3].sub_item_table[1]
 local old_fm = package.loaded["apps/filemanager/filemanager"]
 local old_reader = package.loaded["apps/reader/readerui"]
 local library_path, reader_closed
@@ -331,16 +336,16 @@ local retention_settings = { novel_epub = false, novel_keep_html = true, news_de
 menu_settings.get = function(key) return retention_settings[key] end
 menu_settings.set = function(key, value) retention_settings[key] = value end
 local settings_groups = BooxBook:settingsMenu()
-assert_eq(#settings_groups, 4, "settings fit on one grouped page")
+assert_eq(#settings_groups, 5, "settings fit on one grouped page")
 local setting_count, group_names = 0, {}
 for _, group in ipairs(settings_groups) do
     group_names[#group_names + 1] = group.text
     setting_count = setting_count + #group.sub_item_table
     assert_true(#group.sub_item_table <= 5, "each settings group fits on one child page")
 end
-assert_eq(table.concat(group_names, ","), "Đọc và tải,Bộ nhớ,Nguồn và cookie,Hệ thống",
+assert_eq(table.concat(group_names, ","), "Đọc và tải,Bộ nhớ,Nguồn và cookie,OneDrive,Hệ thống",
     "settings groups follow task order")
-assert_eq(setting_count, 15, "grouping preserves every setting")
+assert_eq(setting_count, 17, "grouping preserves every setting")
 local toggle_count = 0
 for _, group in ipairs(settings_groups) do
     for _, item in ipairs(group.sub_item_table) do
@@ -486,6 +491,7 @@ dofile("tests/comic-download.lua")
 dofile("tests/storage-cache.lua")
 dofile("tests/truyentuoitho-ui.lua")
 dofile("tests/wifi-transfer.lua")
+dofile("tests/onedrive.lua")
 
 if failures > 0 then
     io.stderr:write(tostring(failures) .. " test(s) failed\n")
