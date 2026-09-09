@@ -11,4 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update && sudo apt-get install -y luajit
-      - run: luajit tests/run.lua
+      - name: Run tests
+        run: |
+          output=$(luajit tests/run.lua 2>&1) || {
+            echo "::error::$output"
+            exit 1
+          }
+          echo "$output"
