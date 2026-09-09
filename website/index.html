@@ -349,6 +349,31 @@
   </div>
 </footer>
 
+<div class="chat-widget">
+  <section class="chat-panel" id="chat-panel" aria-label="Hỏi AI về BooxBook" hidden>
+    <div class="chat-head">
+      <div>
+        <p class="chat-kicker">Hỏi AI</p>
+        <h2>BooxBook Assistant</h2>
+      </div>
+      <button class="chat-close" id="chat-close" aria-label="Đóng khung chat">×</button>
+    </div>
+    <p class="chat-desc">Hỏi cách cài đặt, cập nhật hay lỗi thường gặp. Câu hỏi sẽ mở trên ChatGPT kèm ngữ cảnh portfolio của tác giả.</p>
+    <div class="chat-chips" role="group" aria-label="Câu hỏi gợi ý">
+      <button type="button">Cài BooxBook thế nào?</button>
+      <button type="button">Cập nhật bản mới ra sao?</button>
+      <button type="button">Không tải được chương?</button>
+      <button type="button">File EPUB là gì?</button>
+    </div>
+    <label class="chat-label" for="chat-input">Câu hỏi của bạn</label>
+    <textarea id="chat-input" rows="3" placeholder="VD: Cài BooxBook trên máy Boox thế nào?"></textarea>
+    <a class="btn btn-accent chat-go" id="chat-go" href="https://chatgpt.com/" target="_blank" rel="noopener">Hỏi trên ChatGPT</a>
+  </section>
+  <button class="chat-fab" id="chat-fab" aria-expanded="false" aria-controls="chat-panel" aria-label="Mở khung hỏi AI">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+  </button>
+</div>
+
 <script src="./main.js" defer></script>
 </body>
 </html>

@@ -170,6 +170,27 @@ tbody tr:nth-child(odd){background:rgba(178,58,38,.05)}
 .cta-card h2{margin:0; font-size:clamp(28px,3.6vw,44px)}
 .cta-card .kicker{margin-bottom:10px}
 
+/* AI chat widget */
+.chat-widget{position:fixed; right:22px; bottom:22px; z-index:60; display:grid; justify-items:end; gap:12px}
+.chat-fab{width:60px; height:60px; border-radius:50%; background:var(--accent); color:#fff; border:2px solid var(--ink); box-shadow:4px 4px 0 var(--ink); cursor:pointer; display:grid; place-items:center; transition:transform .2s ease, background .2s ease}
+.chat-fab:hover{background:var(--accent-deep); transform:translateY(-2px)}
+.chat-fab:focus-visible{outline:3px solid var(--accent); outline-offset:3px}
+.chat-panel{width:min(370px,calc(100vw - 32px)); background:var(--card); border:2px solid var(--ink); border-radius:20px; box-shadow:8px 8px 0 rgba(28,26,21,.9); padding:22px; display:grid; gap:12px; opacity:0; transform:translateY(12px) scale(.98); transition:opacity .25s ease, transform .25s ease}
+.chat-panel.open{opacity:1; transform:none}
+.chat-head{display:flex; justify-content:space-between; align-items:start; gap:12px}
+.chat-kicker{font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--accent-deep); margin:0 0 2px}
+.chat-head h2{margin:0; font-size:22px}
+.chat-close{flex:none; width:36px; height:36px; border-radius:50%; border:1.5px solid var(--ink); background:var(--paper); font-size:20px; line-height:1; cursor:pointer; color:var(--ink)}
+.chat-close:hover{background:var(--paper-2)}
+.chat-desc{margin:0; font-size:14px; color:var(--ink-soft)}
+.chat-chips{display:flex; flex-wrap:wrap; gap:8px}
+.chat-chips button{font:inherit; font-size:13.5px; font-weight:600; border:1.5px solid var(--ink); background:var(--paper); border-radius:999px; padding:8px 13px; cursor:pointer; min-height:36px}
+.chat-chips button:hover{background:var(--paper-2)}
+.chat-label{font-size:13px; font-weight:700; letter-spacing:.04em}
+.chat-panel textarea{font:inherit; font-size:15px; border:1.5px solid var(--ink); border-radius:12px; padding:10px 12px; resize:vertical; min-height:76px; background:#fff; color:var(--ink); width:100%}
+.chat-panel textarea:focus{outline:3px solid var(--accent); outline-offset:1px}
+.chat-go{width:100%}
+
 /* footer */
 footer{border-top:2px solid var(--ink); background:var(--paper-2)}
 .foot{display:flex; justify-content:space-between; gap:18px; padding-top:26px; padding-bottom:26px; font-size:14.5px; color:var(--ink-soft); flex-wrap:wrap}
@@ -243,4 +264,6 @@ footer{border-top:2px solid var(--ink); background:var(--paper-2)}
   th,td{padding:10px 12px; font-size:14px}
   .path-block code{font-size:12.5px}
   .foot{font-size:13.5px}
+  .chat-widget{right:16px; bottom:calc(16px + env(safe-area-inset-bottom))}
+  .chat-fab{width:56px; height:56px}
 }
