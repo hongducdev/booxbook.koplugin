@@ -47,15 +47,15 @@
     });
   });
 
-  // AI chat widget → opens ChatGPT with portfolio + repo context
-  var CHAT_BASE = "This is a public portfolio site published by its owner. Start by reading https://hongduc.dev/llms.txt, then tell me about Nguyen Hong Duc (hongducdev), a Front End programmer at PixelArt Team. Other sources: https://hongduc.dev, https://github.com/hongducdev, https://x.com/hongducdev. The user has a question about BooxBook (https://github.com/hongducdev/booxbook.koplugin), a KOReader plugin for offline reading on e-readers: Vietnamese RSS news (17 outlets, 633 feeds), web novels from 6 sources (DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, TruyenFull), comic CBZ, EPUB export and Wi-Fi book transfer. Install: download booxbook.koplugin.zip from the Release page, extract and copy the booxbook.koplugin folder to /sdcard/koreader/plugins/, restart KOReader, enable it under Tools, then open Tools - BooxBook. Docs: docs/usage.md and docs/news-categories.md in the repo. Answer concisely in Vietnamese. User question: ";
+  // AI chat widget → opens ChatGPT with the user's question
+  var CHAT_BASE = "https://chatgpt.com/?prompt=";
   var fab = document.getElementById("chat-fab");
   var panel = document.getElementById("chat-panel");
   var closeBtn = document.getElementById("chat-close");
   var input = document.getElementById("chat-input");
   var go = document.getElementById("chat-go");
   function chatUrl(q) {
-    return "https://chatgpt.com/?prompt=" + encodeURIComponent(CHAT_BASE + (q || "How do I install and use BooxBook?"));
+    return CHAT_BASE + encodeURIComponent(q || "How do I install and use BooxBook?");
   }
   function syncGo() { if (go && input) go.href = chatUrl(input.value.trim()); }
   function openChat() {
