@@ -18,20 +18,21 @@ pwsh -File scripts/preview-website.ps1
 
 Mở trực tiếp `index.html` cũng được nhưng sẽ thấy placeholder thô `{{BOOXBOOK_VERSION}}`.
 
-## Tự động đồng bộ version
+## Tự động đồng bộ dữ liệu
 
-`index.html` dùng 2 placeholder, nguồn sự thật duy nhất là `version` trong
-`booxbook.koplugin/_meta.lua`:
+`index.html` dùng các placeholder được workflow điền khi deploy:
 
 - `{{BOOXBOOK_VERSION}}` — số phiên bản (badge, mock menu, bước 5, CTA).
 - `{{BOOXBOOK_RELEASE_URL}}` — link đúng tag release (`.../releases/tag/vX.Y.Z`).
+- `{{BOOXBOOK_STARS}}` — số sao GitHub.
+- `{{BOOXBOOK_DOWNLOADS}}` — tổng lượt tải asset của tất cả Release.
 
-Workflow `.github/workflows/pages.yml` thay thế cả hai trước khi deploy và fail
+Workflow `.github/workflows/pages.yml` thay thế các placeholder trước khi deploy và fail
 nếu còn placeholder sót. Đổi version chỉ cần sửa `_meta.lua` — push main là web
 tự cập nhật. Đường dẫn dữ liệu (`koreader/...`, `Tools → ...`) giữ sửa tay vì
 chỉ đổi khi kiến trúc plugin đổi.
 
-Deploy: workflow `.github/workflows/pages.yml` đẩy thư mục `website/` lên GitHub Pages mỗi khi push main. Sau khi bật Pages (Settings → Pages → Source: GitHub Actions), cập nhật URL demo trong `README.md` gốc.
+Deploy: workflow `.github/workflows/pages.yml` đẩy thư mục `website/` lên GitHub Pages mỗi khi push main và chạy mỗi ngày để làm mới số sao/lượt tải. Sau khi bật Pages (Settings → Pages → Source: GitHub Actions), cập nhật URL demo trong `README.md` gốc.
 
 ## Responsive
 

@@ -49,13 +49,22 @@
 
   // AI chat widget → opens ChatGPT with the user's question
   var CHAT_BASE = "https://chatgpt.com/?prompt=";
+  var CHAT_CONTEXT = [
+    "Bạn là trợ lý hỗ trợ người dùng BooxBook, một plugin đọc báo và truyện offline cho KOReader.",
+    "Trước khi trả lời, hãy tìm kiếm và ưu tiên thông tin mới nhất từ các nguồn chính thức sau:",
+    "- Mã nguồn và tài liệu: https://github.com/hongducdev/booxbook.koplugin",
+    "- Website hướng dẫn: https://hongducdev.github.io/booxbook.koplugin/",
+    "Nếu các nguồn này không có thông tin cần thiết, hãy nói rõ thay vì đoán.",
+    "",
+    "Câu hỏi của người dùng:"
+  ].join("\n");
   var fab = document.getElementById("chat-fab");
   var panel = document.getElementById("chat-panel");
   var closeBtn = document.getElementById("chat-close");
   var input = document.getElementById("chat-input");
   var go = document.getElementById("chat-go");
   function chatUrl(q) {
-    return CHAT_BASE + encodeURIComponent(q || "How do I install and use BooxBook?");
+    return CHAT_BASE + encodeURIComponent(CHAT_CONTEXT + "\n" + (q || "Cài đặt và sử dụng BooxBook như thế nào?"));
   }
   function syncGo() { if (go && input) go.href = chatUrl(input.value.trim()); }
   function openChat() {

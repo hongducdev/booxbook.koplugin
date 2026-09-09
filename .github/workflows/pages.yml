@@ -7,6 +7,8 @@ on:
       - "website/**"
       - "booxbook.koplugin/_meta.lua"
       - ".github/workflows/pages.yml"
+  schedule:
+    - cron: "17 0 * * *"
   workflow_dispatch:
 
 permissions:
@@ -26,14 +28,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inject plugin version into website
+      - name: Inject website data
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           VER="$(grep -oP 'version\s*=\s*"\K[^"]+' booxbook.koplugin/_meta.lua)"
           test -n "$VER"
           URL="https://github.com/hongducdev/booxbook.koplugin/releases/tag/v${VER}"
-          sed -i "s/{{BOOXBOOK_VERSION}}/${VER}/g; s|{{BOOXBOOK_RELEASE_URL}}|${URL}|g" website/index.html
+          STARS="$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.stargazers_count')"
+          DOWNLOADS="$(gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/releases?per_page=100" --jq '[.[][] | .assets[].download_count] | add // 0')"
+          [[ "$STARS" =~ ^[0-9]+$ && "$DOWNLOADS" =~ ^[0-9]+$ ]]
+          sed -i "s/{{BOOXBOOK_VERSION}}/${VER}/g; s|{{BOOXBOOK_RELEASE_URL}}|${URL}|g; s/{{BOOXBOOK_STARS}}/${STARS}/g; s/{{BOOXBOOK_DOWNLOADS}}/${DOWNLOADS}/g" website/index.html
           if grep -q "{{BOOXBOOK_" website/index.html; then echo "ERROR: unreplaced placeholder"; exit 1; fi
-          echo "Injected website version ${VER}"
+          echo "Injected website version ${VER}, ${STARS} stars and ${DOWNLOADS} downloads"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

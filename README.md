@@ -1,5 +1,10 @@
 # BooxBook
 
+[![GitHub Stars](https://img.shields.io/github/stars/hongducdev/booxbook.koplugin?style=flat-square&logo=github)](https://github.com/hongducdev/booxbook.koplugin/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/hongducdev/booxbook.koplugin?style=flat-square&logo=github)](https://github.com/hongducdev/booxbook.koplugin/forks)
+[![License](https://img.shields.io/github/license/hongducdev/booxbook.koplugin?style=flat-square)](./LICENSE)
+[![Release Downloads](https://img.shields.io/github/downloads/hongducdev/booxbook.koplugin/total?style=flat-square&logo=github)](https://github.com/hongducdev/booxbook.koplugin/releases)
+
 Plugin [KOReader](https://github.com/koreader/koreader) để đọc báo RSS và truyện chữ trên máy đọc sách (Onyx Boox và thiết bị khác). Tải HTML về máy, đọc offline trong KOReader.
 
 **Phiên bản:** 0.0.8 (`hongducdev/booxbook.koplugin`) · giấy phép [AGPL-3.0-or-later](./LICENSE)
@@ -27,12 +32,12 @@ Dùng như trình đọc RSS / thư viện cá nhân. Không phát tán nội du
 
 Cách dùng chi tiết: [hướng dẫn](docs/usage.md). Phạm vi RSS: [danh mục báo](docs/news-categories.md).
 
-## Cài trên Boox (Android)
+## Cài trong KOReader
 
 Tải file từ trang Release, không copy code lẻ từ GitHub:
 
 1. Mở [Release mới nhất](https://github.com/hongducdev/booxbook.koplugin/releases/latest), kéo tới **Assets**, tải `booxbook.koplugin.zip`.
-2. Giải nén zip được thư mục `booxbook.koplugin`. Copy nguyên thư mục vào `/sdcard/koreader/plugins/booxbook.koplugin/`. Trong đó phải có `main.lua`, `_meta.lua` và thư mục `booxbook/`.
+2. Giải nén zip được thư mục `booxbook.koplugin`. Copy nguyên thư mục vào thư mục `plugins` của KOReader (trên Android thường là `/sdcard/koreader/plugins/booxbook.koplugin/`). Trong đó phải có `main.lua`, `_meta.lua` và thư mục `booxbook/`.
 3. Restart KOReader (tắt hẳn rồi mở lại).
 4. Bật plugin: **Tools → More tools → Plugin management → BooxBook**.
 5. Mở: **Tools → BooxBook**. Hiện phiên bản dưới tiêu đề là thành công.

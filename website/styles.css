@@ -53,7 +53,14 @@ h1,h2,h3{font-family:var(--font-display); line-height:1.08; letter-spacing:-.01e
 .hero h1{font-size:clamp(44px,6vw,76px); margin:0 0 18px; font-weight:650}
 .ink-accent{color:var(--accent); font-style:italic}
 .lede{font-size:19px; color:var(--ink-soft); max-width:56ch}
-.cta-row{display:flex; gap:12px; flex-wrap:wrap; margin:22px 0 30px}
+.cta-row{display:flex; gap:12px; flex-wrap:wrap; margin:22px 0 14px}
+.repo-stats{display:flex; flex-wrap:wrap; gap:10px; margin:0 0 28px}
+.repo-stat{display:grid; grid-template-columns:28px auto; align-items:center; gap:10px; min-height:56px; padding:8px 14px; border:1.5px solid var(--ink); border-radius:12px; background:var(--card); box-shadow:3px 3px 0 var(--ink); color:var(--ink); text-decoration:none; transition:transform .2s ease,box-shadow .2s ease}
+.repo-stat:hover{transform:translateY(-2px); box-shadow:4px 5px 0 var(--ink)}
+.repo-stat:focus-visible{outline:3px solid var(--accent); outline-offset:3px}
+.repo-stat svg{width:26px; height:26px; fill:none; stroke:var(--accent); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+.repo-stat strong{display:block; font-family:var(--font-mono); font-size:18px; line-height:1.1; font-variant-numeric:tabular-nums}
+.repo-stat small{display:block; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.08em; line-height:1.4; text-transform:uppercase}
 .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:0; margin:0; border-top:2px solid var(--ink); border-bottom:1px solid var(--line); padding:16px 0}
 .stats div+div{border-left:1px solid var(--line); padding-left:16px}
 .stats dt{font-family:var(--font-display); font-size:34px; font-weight:750} .stats .unit{font-size:16px}

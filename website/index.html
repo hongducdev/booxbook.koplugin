@@ -45,6 +45,16 @@
         <a class="btn btn-accent" href="#cai-dat">Cài trong 5 bước</a>
         <a class="btn btn-ghost" href="#huong-dan">Xem hướng dẫn</a>
       </div>
+      <div class="repo-stats" aria-label="Thống kê GitHub cập nhật hàng ngày">
+        <a class="repo-stat" href="https://github.com/hongducdev/booxbook.koplugin/stargazers" aria-label="{{BOOXBOOK_STARS}} lượt đánh dấu sao trên GitHub">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.8 2.8 5.7 6.3.9-4.6 4.4 1.1 6.3-5.6-3-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z" /></svg>
+          <span><strong>{{BOOXBOOK_STARS}}</strong><small>GitHub Stars</small></span>
+        </a>
+        <a class="repo-stat" href="https://github.com/hongducdev/booxbook.koplugin/releases" aria-label="{{BOOXBOOK_DOWNLOADS}} lượt tải các bản phát hành">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 20h14" /></svg>
+          <span><strong>{{BOOXBOOK_DOWNLOADS}}</strong><small>Lượt tải</small></span>
+        </a>
+      </div>
       <dl class="stats" aria-label="Số liệu nổi bật">
         <div><dt>17</dt><dd>đầu báo<br />9 Việt · 8 quốc tế</dd></div>
         <div><dt>633</dt><dd>kênh RSS<br />có bài 04/09/2026</dd></div>
@@ -124,7 +134,7 @@
     <div class="wrap section">
       <div class="sec-head">
         <p class="kicker">Cài đặt</p>
-        <h2>Tải từ Release,<br />cài trên Boox chỉ 5 bước.</h2>
+        <h2>Tải từ Release,<br />cài trong KOReader chỉ 5 bước.</h2>
         <p>Luôn tải file ở trang Release chính thức để đúng phiên bản và đủ file. Không copy code lẻ từ GitHub.</p>
       </div>
       <div class="release-box">
@@ -141,7 +151,7 @@
         </li>
         <li>
           <span class="step-n" aria-hidden="true">2</span>
-          <div><h3>Giải nén rồi copy</h3><p>Giải nén file zip sẽ được thư mục:</p><p class="path-block"><code>booxbook.koplugin/</code></p><p>Copy nguyên thư mục vào đây:</p><p class="path-block"><code>/sdcard/koreader/plugins/booxbook.koplugin/</code></p></div>
+          <div><h3>Giải nén rồi copy</h3><p>Giải nén file zip sẽ được thư mục:</p><p class="path-block"><code>booxbook.koplugin/</code></p><p>Copy nguyên thư mục vào thư mục <code>plugins</code> của KOReader. Trên Android, đường dẫn thường là:</p><p class="path-block"><code>/sdcard/koreader/plugins/booxbook.koplugin/</code></p></div>
         </li>
         <li>
           <span class="step-n" aria-hidden="true">3</span>
@@ -358,7 +368,7 @@
       </div>
       <button class="chat-close" id="chat-close" aria-label="Đóng khung chat">×</button>
     </div>
-    <p class="chat-desc">Hỏi cách cài đặt, cập nhật hay lỗi thường gặp. Câu hỏi sẽ mở trên ChatGPT kèm ngữ cảnh portfolio của tác giả.</p>
+    <p class="chat-desc">Hỏi cách cài đặt, cập nhật hay lỗi thường gặp. Câu hỏi sẽ mở trên ChatGPT kèm liên kết mã nguồn và website hướng dẫn chính thức.</p>
     <div class="chat-chips" role="group" aria-label="Câu hỏi gợi ý">
       <button type="button">Cài BooxBook thế nào?</button>
       <button type="button">Cập nhật bản mới ra sao?</button>
@@ -366,7 +376,7 @@
       <button type="button">File EPUB là gì?</button>
     </div>
     <label class="chat-label" for="chat-input">Câu hỏi của bạn</label>
-    <textarea id="chat-input" rows="3" placeholder="VD: Cài BooxBook trên máy Boox thế nào?"></textarea>
+    <textarea id="chat-input" rows="3" placeholder="VD: Cài BooxBook trong KOReader thế nào?"></textarea>
     <a class="btn btn-accent chat-go" id="chat-go" href="https://chatgpt.com/" target="_blank" rel="noopener">Hỏi trên ChatGPT</a>
   </section>
   <button class="chat-fab" id="chat-fab" aria-expanded="false" aria-controls="chat-panel" aria-label="Mở khung hỏi AI">
