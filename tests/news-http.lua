@@ -16,6 +16,7 @@ RateLimit.wait = function(host, delay) waits[#waits + 1] = { host = host, delay 
 assert(Http.USER_AGENT:find("Windows NT", 1, true), "RSS needs desktop UA instead of Android")
 local opts = { headers = { ["USER-AGENT"] = "Explicit Agent", Cookie = "session=kept; device_env=1" } }
 assert(Http.get("https://vnexpress.net/rss/thoi-su.rss", opts))
+assert(type(requests[#requests].create) == "function", "HTTPS requests use DNS fallback connector")
 local headers = requests[#requests].headers
 assert(headers["user-agent"] == "Explicit Agent" and headers["USER-AGENT"] == nil,
     "case-insensitive UA override, no duplicate headers")
@@ -39,6 +40,8 @@ local old_delay = Settings.get("delay_ms")
 Settings.set("delay_ms", 2300)
 assert(Http.get("https://example.com/a"))
 assert(waits[#waits].delay == 2300, "honor configured request spacing")
+assert(Http.get("http://example.com/a"))
+assert(requests[#requests].create == nil, "plain HTTP keeps the default connector")
 Settings.set("delay_ms", old_delay)
 before = #requests
 local ok, code = Http.get("https://example.com/limited")

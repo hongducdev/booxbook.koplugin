@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.9 — 2026-09-09
+
+- Thêm DNS over HTTPS cho request HTTPS để tránh DNS nhà mạng chặn nguồn truyện; giữ Host/SNI gốc, thử nhiều IPv4, cache TTL và fallback DNS hệ thống.
+
 ## 0.0.8 — 2026-09-09
 
 - Báo **Đã nhận sách** và tên file trên KOReader sau khi lưu hoàn tất.

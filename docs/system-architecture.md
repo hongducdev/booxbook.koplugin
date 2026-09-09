@@ -99,6 +99,7 @@ Mỗi adapter trả:
 - Mọi màn hình fullscreen dùng chung TitleBar X và chân **Quay lại / Trước / trang / Sau**. Không dùng Menu chevron của KOReader.
 - Hành động online hoãn sau khi chọn menu, có Wi-Fi và Trapper. Ghi HTML qua file tạm rồi rename.
 - Cổng mạng (`booxbook.network.whenOnline`): nếu đã online/connected thì chạy ngay; chỉ gọi `beforeWifiAction` khi cả hai false.
+- HTTPS đi qua DoH Cloudflare với bootstrap `1.1.1.1`, giữ hostname gốc cho Host/SNI, cache A record theo TTL và fallback DNS hệ thống nếu DoH không dùng được.
 - Sangtacviet tắt (`stv_enabled = false`) đến khi xác nhận cảnh báo. 18+ tắt; ảnh bật (`adult_content`, `include_images`).
 - Truyện: **một HTML mỗi chương**. Range kiểm tra entry + file trước request, trả `existing` để mở/báo bỏ qua; entry mất file được tải lại. Index ghi từng chương qua file tạm, giữ `index.json.bak` hợp lệ gần nhất và chỉ fallback khi schema/id đúng. Bật `novel_epub` để tự tạo EPUB theo khoảng; action thủ công đóng gói các HTML đã tải với `keep_html=true`. Bộ ghi mở lại archive trước rename; nếu FAT từ chối đè file đích thì replace an toàn.
 

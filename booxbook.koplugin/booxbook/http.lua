@@ -4,6 +4,7 @@ local socket = require("socket")
 
 local RateLimit = require("booxbook.rate_limit")
 local Settings = require("booxbook.store.settings")
+local Dns = require("booxbook.doh")
 
 local Http = {
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
@@ -210,6 +211,9 @@ local function requestOnce(opts)
         end,
         redirect = false,
     }
+    if opts.url:match("^https://") then
+        request.create = Dns.create()
+    end
     if method ~= "GET" and method ~= "HEAD" then
         request.source = ltn12.source.string(body)
     end

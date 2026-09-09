@@ -7,7 +7,7 @@
 
 Plugin [KOReader](https://github.com/koreader/koreader) để đọc báo RSS và truyện chữ trên máy đọc sách (Onyx Boox và thiết bị khác). Tải HTML về máy, đọc offline trong KOReader.
 
-**Phiên bản:** 0.0.8 (`hongducdev/booxbook.koplugin`) · giấy phép [AGPL-3.0-or-later](./LICENSE)
+**Phiên bản:** 0.0.9 (`hongducdev/booxbook.koplugin`) · giấy phép [AGPL-3.0-or-later](./LICENSE)
 
 **Website giới thiệu + hướng dẫn:** xem [`website/`](website/) (deploy tự động lên GitHub Pages qua workflow `pages.yml`). Số version và link Release trên web tự đồng bộ từ `version` trong `booxbook.koplugin/_meta.lua` lúc deploy — không sửa tay. Preview local: `pwsh -File scripts/preview-website.ps1`.
 

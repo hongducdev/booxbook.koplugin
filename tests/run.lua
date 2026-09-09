@@ -444,6 +444,7 @@ package.loaded["booxbook.ui.catalog"] = nil
 dofile("tests/news-online.lua")
 dofile("tests/news-categories.lua")
 dofile("tests/news-images.lua")
+dofile("tests/doh.lua")
 dofile("tests/news-http.lua")
 dofile("tests/docln.lua")
 dofile("tests/wattpad.lua")
