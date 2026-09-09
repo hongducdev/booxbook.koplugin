@@ -89,6 +89,12 @@ function Update.needsUpdate(remote, local_ver)
     return Update.compare(remote, local_ver) > 0
 end
 
+local Check = require("booxbook.update-check")
+Update.CHECK_INTERVAL = Check.CHECK_INTERVAL
+Update.shouldCheck = Check.shouldCheck
+Update.lastCheck = Check.lastCheck
+Update.noteChecked = Check.noteChecked
+
 function Update.pluginDir()
     if Update._plugin_dir then
         return Update._plugin_dir

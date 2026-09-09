@@ -43,6 +43,7 @@ Source.register(require("booxbook.sources.metruyencv"))
 Source.register(require("booxbook.sources.tvtruyen"))
 Source.register(require("booxbook.sources.truyenfull"))
 Source.register(require("booxbook.sources.truyentuoitho"))
+Source.register(require("booxbook.sources.truyenqq"))
 Source.register(require("booxbook.sources.sangtacviet"))
 
 return Source

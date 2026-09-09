@@ -81,10 +81,11 @@ function UI.list(kind, query, page, grid, last_screen)
         local CoverGrid = require("booxbook.ui.cover-grid")
         local items, size = result.items or {}, CoverGrid.PAGE_SIZE
         local offset = last_screen and math.floor(math.max(0, #items - 1) / size) * size + 1 or 1
-        local payload = { title = "Truyện Tuổi Thơ" .. (query and (" — " .. query) or ""),
+        local base = Source.id == "truyenqq" and "https://truyenqq.net" or "https://truyentuoitho.com"
+        local payload = { title = ((Source.id == "truyenqq") and "TruyenQQ" or "Truyện Tuổi Thơ") .. (query and (" — " .. query) or ""),
             items = items, offset = offset, site_page = page, has_more = result.has_more,
-            source_id = Source.id, base_url = "https://truyentuoitho.com",
-            cover_referer = "https://truyentuoitho.com/", cover_delay_ms = 1600,
+            source_id = Source.id, base_url = base,
+            cover_referer = base .. "/", cover_delay_ms = 1600,
             on_search = UI.promptSearch, on_select = UI.showSeries }
         if grid then grid:setPage(payload) else grid = CoverGrid.show(payload) end
         local function turn(direction)
@@ -212,8 +213,13 @@ function UI.openOffline()
     end)
 end
 
-function UI.openSource()
-    Catalog.show{ title = "Truyện Tuổi Thơ", on_search = UI.promptSearch, items = {
+function UI.openSource(source_id)
+    if source_id == "truyenqq" then
+        local ok, QQ = pcall(require, "booxbook.sources.truyenqq")
+        if ok and QQ then Source = QQ end
+    end
+    local title = (Source.id == "truyenqq") and "TruyenQQ" or "Truyện Tuổi Thơ"
+    Catalog.show{ title = title, on_search = UI.promptSearch, items = {
         { text = _("Tìm truyện / nhập URL"), callback = UI.promptSearch },
         { text = _("Mới cập nhật"), callback = function() UI.list("latest") end },
         { text = _("Lượt xem"), callback = function() UI.list("popular") end },

@@ -1,5 +1,13 @@
 # Lộ trình phát triển
 
+## Google Drive + Digest + Follow-up — 2026-09-10
+
+- [x] Google Drive download-only: Device flow, refresh/đăng xuất, duyệt thư mục, tải `.part` + rename, không ghi đè.
+- [x] Digest báo ngày: gom tối đa 20 HTML mới nhất thành EPUB trong `received/`.
+- [x] Theo dõi truyện (kiểm tra thủ công), tìm sách offline + quota, OPDS `/opds` (file ≤32MB), hàng đợi `/queue`, TruyenQQ, sao lưu cài đặt, check cập nhật 24h.
+- [x] LuaJIT regression suite xanh gồm test Drive/digest/follow/library/OPDS/queue mới.
+- [ ] Smoke test trên Boox: đăng nhập Drive, tải sách, digest, OPDS/queue, CBZ TruyenQQ.
+
 ## OneDrive download-only — 2026-09-09
 
 - [x] Device Code OAuth, refresh/đăng xuất và Graph folder listing.

@@ -22,6 +22,10 @@ button:disabled{opacity:.5;cursor:wait}progress{width:100%;accent-color:#294c34}
 <button id="send">Gửi sách</button></form>
 <label for="progress">Tiến độ file hiện tại</label><progress id="progress" max="100" value="0"></progress>
 <p id="status" role="status" aria-live="polite">Sẵn sàng nhận sách.</p><ul id="results"></ul>
+<form id="queueform"><label for="qurl">Hoặc gửi link để máy đọc tải sau (hàng đợi)</label>
+<input id="qurl" type="text" inputmode="url" placeholder="https://…" autocomplete="off" spellcheck="false">
+<button id="queuebtn" type="submit">Thêm vào hàng đợi</button></form>
+<p>Đọc trên app hỗ trợ OPDS: mở catalog tại <code>/opds</code> cùng địa chỉ này.</p>
 <footer>Giữ màn hình “Gửi sách qua Wi-Fi” mở trên máy đọc. Tìm sách tại Thư viện → received.
 Chỉ dùng trong mạng tin cậy; đóng màn hình nhận sách khi xong.</footer></main>
 <script>
@@ -52,4 +56,10 @@ form.addEventListener('submit',async e=>{
  catch(error){status.textContent='Không gửi được sách. Hãy thử lại.'}
  finally{button.disabled=files.disabled=token.disabled=false}
 });
+const qf=document.getElementById('queueform'),qu=document.getElementById('qurl'),qb=document.getElementById('queuebtn');
+qf.addEventListener('submit',async e=>{e.preventDefault();qb.disabled=true;
+ try{const r=await fetch('/queue',{method:'POST',headers:{'X-BooxBook-Token':token.value.trim(),'Content-Type':'text/plain'},body:qu.value.trim()});
+  status.textContent=r.status===201?'Đã thêm vào hàng đợi.':await r.text();}
+ catch(error){status.textContent='Không thêm được vào hàng đợi.'}
+ finally{qb.disabled=false}});
 </script></html>]=]

@@ -25,6 +25,16 @@ local DEFAULTS = {
     onedrive_user_code = "",
     onedrive_verification_uri = "",
     onedrive_device_expires = 0,
+    gdrive_client_id = "",
+    gdrive_access_token = "",
+    gdrive_refresh_token = "",
+    gdrive_access_expires = 0,
+    gdrive_device_code = "",
+    gdrive_user_code = "",
+    gdrive_verification_uri = "",
+    gdrive_device_expires = 0,
+    followed_series = {},
+    update_last_check = 0,
 }
 
 local store

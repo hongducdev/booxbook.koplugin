@@ -43,6 +43,21 @@ function Upload.headers(raw, authority, token)
         return nil, 400, _("Kiểu truyền không được hỗ trợ.")
     end
     if method == "GET" and path == "/" then return { page = true } end
+    if method == "GET" and path == "/opds" then return { opds = true } end
+    if method == "GET" then
+        local encoded = path:match("^/opds/file/(.+)$")
+        if encoded then
+            local name = Upload.filename(encoded)
+            if not name then return nil, 404, _("Không tìm thấy.") end
+            return { opds_file = name }
+        end
+    end
+    if method == "POST" and path == "/queue" then
+        if headers["x-booxbook-token"] ~= token then return nil, 401, _("Mã phiên không đúng. Xem lại máy đọc sách.") end
+        local length = tonumber(headers["content-length"] or "")
+        if not length or length < 1 or length > 2048 then return nil, 413, _("URL quá dài.") end
+        return { queue = true, remaining = length }
+    end
     if method ~= "POST" or path ~= "/upload" then return nil, 404, _("Không tìm thấy.") end
     if headers["x-booxbook-token"] ~= token then return nil, 401, _("Mã phiên không đúng. Xem lại máy đọc sách.") end
     local length = headers["content-length"] or ""

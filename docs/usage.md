@@ -24,6 +24,20 @@ Kết nối OAuth/Graph xác minh chứng chỉ và hostname bằng CA bundle c�
 Đây không phải secure keychain; hãy chọn **Cài đặt → OneDrive → Đăng xuất OneDrive**
 trước khi chuyển nhượng thiết bị.
 
+## Google Drive
+
+1. Tạo OAuth client (Desktop app) trên Google Cloud, bật Drive API.
+2. Nhập client ID dạng `xxx.apps.googleusercontent.com` tại
+   **Cài đặt → OneDrive → Google client ID**.
+3. Mở **Sách & cloud → Google Drive → Đăng nhập Google Drive**, quét QR/mở URL,
+   nhập mã, rồi chọn **Đã đăng nhập, kiểm tra**.
+4. Duyệt từng thư mục, chọn sách và xác nhận tải về `koreader/booxbook/received/`.
+   File trùng tên được đánh số `(1)`, `(2)`; không ghi đè.
+
+Chỉ đọc (scope `drive.readonly`); không upload, đồng bộ, xóa hay đổi tên file
+trên Drive. Đăng xuất tại **Cài đặt → OneDrive → Đăng xuất Google Drive**
+trước khi chuyển nhượng thiết bị.
+
 ## Gửi sách qua Wi-Fi
 
 1. Kết nối máy đọc sách và điện thoại/máy tính vào cùng mạng Wi-Fi.
@@ -50,6 +64,11 @@ hoặc ứng dụng đang dùng cổng đó rồi mở lại. Chưa xác nhận 
 
 Sau khi mỗi file được ghi hoàn tất, KOReader hiện thông báo **Đã nhận sách** kèm
 tên file trong 3 giây. Không báo thành công cho file dở hoặc file bị từ chối.
+
+**OPDS và hàng đợi:** app đọc sách hỗ trợ OPDS mở catalog tại `http://…:8080/opds`
+cùng địa chỉ (tải file ≤32MB; file lớn hơn copy qua USB). Form **hàng đợi** trên
+trang web nhận URL `http(s)` (cần mã phiên) để lưu vào `received/queue.txt`
+cho máy đọc tải sau.
 
 ## Báo RSS
 
@@ -140,9 +159,24 @@ cần tải lại để nhận metadata và bìa mới.
 - KOReader cập nhật lịch sử, bộ sưu tập và metadata khi xóa. Ảnh tải kèm vẫn giữ.
 - Không quét xóa báo cũ hàng loạt. Có thể tải lại bài từ danh sách online.
 
-## Truyện Tuổi Thơ — CBZ
+## Digest báo ngày (EPUB)
 
-1. Vào **Truyện → Truyện Tuổi Thơ**. Chọn **Mới cập nhật**, **Lượt xem**, **Truyện mới** hoặc **Thịnh hành** để duyệt grid bìa, lật trang bằng mũi tên.
+- Mở **Cài đặt → Hệ thống → Tạo digest báo (EPUB)**: gom tối đa 20 bài báo HTML
+  mới tải nhất thành một EPUB trong `koreader/booxbook/received/digest-YYYYMMDD.epub`.
+- Chỉ dùng bài đã tải trên máy, không cần mạng. Mở xem trước 10 tiêu đề trước khi tạo.
+
+## Truyện đang theo dõi + Tìm sách offline
+
+- Trong mục lục một bộ truyện, chọn **Theo dõi truyện này** (cuối danh sách).
+  Mở **Truyện → Truyện đang theo dõi** để kiểm tra thủ công số chương mới từng bộ;
+  không poll nền để tiết kiệm pin e-ink.
+- **Sách & cloud → Tìm sách offline**: tìm theo tên trong toàn bộ sách đã tải,
+  xem tổng số file/dung lượng, mở trực tiếp 50 kết quả mới nhất.
+
+## Truyện Tuổi Thơ — CBZ (+ TruyenQQ)
+
+1. Vào **Truyện → Truyện Tuổi Thơ** (hoặc **TruyenQQ**, chung giao diện Madara).
+   Chọn **Mới cập nhật**, **Lượt xem**, **Truyện mới** hoặc **Thịnh hành** để duyệt grid bìa, lật trang bằng mũi tên.
 2. **Tìm truyện / nhập URL** nhận tên truyện, URL bộ hoặc URL một tập, ví dụ `https://truyentuoitho.com/manga/tieu-hoa-thuong/tap-28/`.
 3. Chọn bộ để xem thông tin và **Danh sách tập**. Chọn tập hoặc **Mở tập bất kỳ** (số thứ tự mục lục) để tải/mở CBZ.
 4. Icon menu bên trái mục lục có **Tải khoảng tập**, **Tải toàn bộ tập**. Mỗi tập là một CBZ riêng. Xác nhận số tập trước khi tải nhiều tập.

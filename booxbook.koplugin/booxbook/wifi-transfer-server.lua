@@ -114,6 +114,60 @@ function Server:consume(client, chunk)
         if boundary > 8192 then return respond(client, 431, _("Header quá dài.")) end
         local request, code, message = Upload.headers(client.buffer:sub(1, boundary + 3), self.authority, self.token)
         if request and request.page then return respond(client, 200, page, true) end
+        if request and request.opds then
+            local ok_opds, Opds = pcall(require, "booxbook.opds")
+            local files = {}
+            if ok_opds and Opds then
+                local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
+                if ok_lfs and lfs and lfs.dir then
+                    for name in lfs.dir(self.dir) do
+                        if name ~= "." and name ~= ".." and Upload.safeFilename(name) then
+                            files[#files + 1] = { name = name }
+                        end
+                    end
+                end
+                local ok_cat, xml = pcall(Opds.catalog, files, "/opds")
+                if ok_cat and type(xml) == "string" then
+                    client.output = "HTTP/1.1 200 Result\r\nContent-Type: application/atom+xml; charset=utf-8\r\nContent-Length: "
+                        .. #xml .. "\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n" .. xml
+                    client.sent = 0
+                    client.buffer = nil
+                    return
+                end
+            end
+            return respond(client, 500, _("Không tạo được OPDS."))
+        end
+        if request and request.opds_file then
+            local path = self.dir .. "/" .. request.opds_file
+            local file = io.open(path, "rb")
+            if not file then return respond(client, 404, _("Không tìm thấy.")) end
+            local size = file:seek("end")
+            file:seek("set", 0)
+            if not size or size < 1 or size > 32 * 1024 * 1024 then
+                file:close()
+                return respond(client, 413, _("File quá lớn cho OPDS, hãy copy qua USB."))
+            end
+            local body = file:read("*a") or ""
+            file:close()
+            client.output = "HTTP/1.1 200 Result\r\nContent-Type: application/octet-stream\r\nContent-Length: "
+                .. #body .. "\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n" .. body
+            client.sent = 0
+            client.buffer = nil
+            return
+        end
+        if request and request.queue then
+            client.request = request
+            client.request.queue_body = ""
+            chunk = client.buffer:sub(boundary + 4)
+            client.buffer = nil
+            if chunk ~= "" then
+                -- Fall through to queue accumulation below.
+                self:consume(client, "")
+                if not client.closed then self:consume(client, chunk) end
+                return
+            end
+            return
+        end
         local peer = client.peer or "unknown"
         local failures = self.failed_auth[peer] or 0
         if failures >= 5 then
@@ -128,6 +182,25 @@ function Server:consume(client, chunk)
         if not ok then return respond(client, code, message) end
         chunk = client.buffer:sub(boundary + 4)
         client.buffer = nil
+    end
+    if client.request.queue then
+        client.request.queue_body = (client.request.queue_body or "") .. (chunk or "")
+        if #client.request.queue_body > client.request.remaining then
+            return respond(client, 413, _("URL quá dài."))
+        end
+        if #client.request.queue_body >= client.request.remaining then
+            local ok_opds, Opds = pcall(require, "booxbook.opds")
+            local url, err
+            if ok_opds and Opds then url, err = Opds.normalizeQueueUrl(client.request.queue_body) end
+            if not url then return respond(client, 400, _("URL không hợp lệ.")) end
+            local queue_path = self.dir .. "/queue.txt"
+            local file = io.open(queue_path, "ab")
+            if not file then return respond(client, 500, _("Không ghi được hàng đợi.")) end
+            file:write(url .. "\n")
+            file:close()
+            return respond(client, 201, _("Đã thêm vào hàng đợi."))
+        end
+        return
     end
     local ok, result = Upload.write(client.request, chunk)
     if not ok then return respond(client, 500, result) end

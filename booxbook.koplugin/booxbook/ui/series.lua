@@ -61,6 +61,9 @@ function SeriesUI.show(series, opts)
             sub_item_table = chapterItems(volume, opts.on_chapter),
         }
     end
+    if opts.on_follow then
+        items[#items + 1] = { text = opts.follow_label or _("Theo dõi truyện này"), keep_menu_open = true, callback = opts.on_follow }
+    end
     if #items == 0 then
         UIManager:show(InfoMessage:new{
             text = _("Không có chương."),

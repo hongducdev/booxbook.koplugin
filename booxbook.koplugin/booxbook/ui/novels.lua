@@ -306,6 +306,8 @@ function Novels.showSeries(ref, adapter)
                 end, _("Đóng gói"))
             end,
             on_offline = function() Novels.showOffline(series) end,
+            follow_label = require("booxbook.ui.follow").followLabel(series),
+            on_follow = function() require("booxbook.ui.follow").toggle(series) end,
         })
     end)
 end

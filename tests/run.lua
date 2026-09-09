@@ -117,8 +117,9 @@ assert_true(wrapped:find('charset="utf-8"', 1, true), "wrap charset")
 
 assert_eq(Source.get("docln").kind, "novel", "DocLN adapter registered")
 assert_eq(Source.get("docln").name, "DocLN", "source get")
-assert_eq(#Source.list(), 8, "source list")
+assert_eq(#Source.list(), 9, "source list")
 assert_eq(Source.get("truyentuoitho").kind, "comic", "TruyenTuoiTho registered")
+assert_eq(Source.get("truyenqq").kind, "comic", "TruyenQQ registered")
 assert_eq(Source.get("metruyencv").kind, "novel", "MeTruyenCV registered")
 assert_eq(Source.get("truyenfull").kind, "novel", "TruyenFull registered")
 assert_eq(Source.get("wattpad").kind, "novel", "Wattpad adapter registered")
@@ -298,8 +299,9 @@ assert_eq(shown_menu.footer_slots[3].action, "update", "home footer exposes one 
 assert_eq(shown_menu.footer_slots[4].text, "1/1", "home footer confirms all actions fit on one page")
 assert_true(type(shown_menu.on_footer) == "function", "home footer actions are handled")
 assert_eq(shown_menu.items[3].text, "Sách & cloud", "local and cloud libraries share one home action")
-assert_eq(#shown_menu.items[3].sub_item_table, 2, "book menu exposes local library and OneDrive")
-assert_eq(shown_menu.items[3].sub_item_table[2].text, "OneDrive", "OneDrive is discoverable")
+assert_eq(#shown_menu.items[3].sub_item_table, 4, "book menu exposes library, search and clouds")
+assert_eq(shown_menu.items[3].sub_item_table[3].text, "OneDrive", "OneDrive is discoverable")
+assert_eq(shown_menu.items[3].sub_item_table[4].text, "Google Drive", "Google Drive is discoverable")
 local library = shown_menu.items[3].sub_item_table[1]
 local old_fm = package.loaded["apps/filemanager/filemanager"]
 local old_reader = package.loaded["apps/reader/readerui"]
@@ -345,7 +347,7 @@ for _, group in ipairs(settings_groups) do
 end
 assert_eq(table.concat(group_names, ","), "Đọc và tải,Bộ nhớ,Nguồn và cookie,OneDrive,Hệ thống",
     "settings groups follow task order")
-assert_eq(setting_count, 17, "grouping preserves every setting")
+assert_eq(setting_count, 21, "grouping preserves every setting")
 local toggle_count = 0
 for _, group in ipairs(settings_groups) do
     for _, item in ipairs(group.sub_item_table) do
@@ -419,8 +421,10 @@ assert_true(truyen ~= nil, "Truyện menu entry exists")
 truyen.callback()
 scheduled()
 assert_eq(shown_menu.title, "Truyện", "Truyện catalog opens")
-assert_eq(#shown_menu.items, 7, "Truyện lists six novel sources and comic trial")
+assert_eq(#shown_menu.items, 9, "Truyện lists six novel sources, two comics and follow list")
 assert_eq(shown_menu.items[7].text, "Truyện Tuổi Thơ", "comic source discoverable")
+assert_eq(shown_menu.items[8].text, "TruyenQQ", "second comic source discoverable")
+assert_eq(shown_menu.items[9].text, "Truyện đang theo dõi", "follow list discoverable")
 assert_eq(shown_menu.items[6].text, "Truyện Full", "TruyenFull discoverable")
 assert_eq(shown_menu.items[5].text, "TVTruyen", "TVTruyen discoverable")
 assert_eq(shown_menu.items[4].text, "MeTruyenCV", "MeTruyenCV discoverable")
@@ -492,6 +496,10 @@ dofile("tests/storage-cache.lua")
 dofile("tests/truyentuoitho-ui.lua")
 dofile("tests/wifi-transfer.lua")
 dofile("tests/onedrive.lua")
+dofile("tests/follow.lua")
+dofile("tests/library.lua")
+dofile("tests/followup-features.lua")
+dofile("tests/gdrive.lua")
 
 if failures > 0 then
     io.stderr:write(tostring(failures) .. " test(s) failed\n")

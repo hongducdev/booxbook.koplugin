@@ -124,6 +124,12 @@ function BooxBook:showMainMenu()
                             { text = _("Truyện Tuổi Thơ"), keep_menu_open = true, callback = function()
                                 require("booxbook.ui.truyentuoitho").openSource()
                             end },
+                            { text = "TruyenQQ", keep_menu_open = true, callback = function()
+                                require("booxbook.ui.truyentuoitho").openSource("truyenqq")
+                            end },
+                            { text = _("Truyện đang theo dõi"), keep_menu_open = true, callback = function()
+                                require("booxbook.ui.follow").open()
+                            end },
                         } }
                     end)
                 end,
@@ -133,8 +139,12 @@ function BooxBook:showMainMenu()
                 sub_item_table = {
                     { text = _("Thư viện trên máy"), keep_menu_open = true,
                         callback = function() self:showLibrary() end },
+                    { text = _("Tìm sách offline"), keep_menu_open = true,
+                        callback = function() require("booxbook.ui.library").open() end },
                     { text = "OneDrive", keep_menu_open = true,
                         callback = function() require("booxbook.ui.onedrive").open() end },
+                    { text = "Google Drive", keep_menu_open = true,
+                        callback = function() require("booxbook.ui.gdrive").open() end },
                 },
             },
             {
@@ -352,6 +362,54 @@ function BooxBook:settingsMenu()
                 end)
             end,
         },
+        {
+            text = _("Google client ID"),
+            callback = function()
+                Catalog.promptText{
+                    title = _("Google client ID"),
+                    hint = _("xxx.apps.googleusercontent.com"),
+                    input = Settings.get("gdrive_client_id") or "",
+                    on_submit = function(value)
+                        local new_id = tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
+                        if new_id ~= (Settings.get("gdrive_client_id") or "") then
+                            Settings.set("gdrive_client_id", new_id)
+                            require("booxbook.gdrive").clearAuth()
+                        end
+                    end,
+                }
+            end,
+        },
+        {
+            text = _("Sao lưu cài đặt"),
+            callback = function()
+                local Backup = require("booxbook.backup")
+                local body = Backup.export(function(key) return Settings.get(key) end)
+                if not body then notify(_("Không sao lưu được.")); return end
+                local dir = Settings.downloadDir() .. "/received"
+                if not Settings.ensureDir(dir) then notify(_("Không mở được thư mục tải.")); return end
+                local path = dir .. "/" .. Backup.filename()
+                local file = io.open(path, "wb")
+                if not file then notify(_("Không ghi được file sao lưu.")); return end
+                file:write(body)
+                file:close()
+                notify(_("Đã sao lưu: ") .. path)
+            end,
+        },
+        {
+            text = _("Tạo digest báo (EPUB)"),
+            callback = function()
+                require("booxbook.ui.digest").open()
+            end,
+        },
+        {
+            text = _("Đăng xuất Google Drive"),
+            callback = function()
+                Catalog.confirm(_("Xóa thông tin đăng nhập Google Drive trên thiết bị này?"), function()
+                    require("booxbook.gdrive").clearAuth()
+                    notify(_("Đã đăng xuất Google Drive."))
+                end)
+            end,
+        },
     }
     return {
         { text = _("Đọc và tải"), sub_item_table = { items[4], items[5], items[6], items[7], items[8] } },
@@ -359,8 +417,8 @@ function BooxBook:settingsMenu()
         { text = _("Nguồn và cookie"), sub_item_table = {
             items[11], items[12], items[13], items[14], items[15],
         } },
-        { text = _("OneDrive"), sub_item_table = { items[16], items[17] } },
-        { text = _("Hệ thống"), sub_item_table = { items[1], items[2], items[3] } },
+        { text = _("OneDrive"), sub_item_table = { items[16], items[17], items[18], items[21] } },
+        { text = _("Hệ thống"), sub_item_table = { items[1], items[2], items[3], items[19], items[20] } },
     }
 end
 
