@@ -36,4 +36,33 @@ function Backup.filename()
     return "booxbook-backup-" .. os.date("%Y%m%d-%H%M%S") .. ".json"
 end
 
+function Backup.isBackupName(name)
+    return type(name) == "string"
+        and name:match("^booxbook%-backup%-%d+%-%d+%.json$") ~= nil
+end
+
+-- Newest first. listFn(dir) -> array of names; injected so tests never touch lfs.
+function Backup.list(dir, listFn)
+    if type(dir) ~= "string" then return {} end
+    if type(listFn) ~= "function" then
+        local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
+        if not ok_lfs or not lfs or not lfs.dir then return {} end
+        listFn = function(path)
+            local names = {}
+            local ok, iter, state = pcall(lfs.dir, path)
+            if not ok or not iter then return names end
+            for name in iter, state do names[#names + 1] = name end
+            return names
+        end
+    end
+    local ok, names = pcall(listFn, dir)
+    if not ok or type(names) ~= "table" then return {} end
+    local out = {}
+    for _, name in ipairs(names) do
+        if Backup.isBackupName(name) then out[#out + 1] = name end
+    end
+    table.sort(out, function(a, b) return a > b end)
+    return out
+end
+
 return Backup

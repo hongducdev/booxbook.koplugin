@@ -299,7 +299,7 @@ assert_eq(shown_menu.footer_slots[3].action, "update", "home footer exposes one 
 assert_eq(shown_menu.footer_slots[4].text, "1/1", "home footer confirms all actions fit on one page")
 assert_true(type(shown_menu.on_footer) == "function", "home footer actions are handled")
 assert_eq(shown_menu.items[3].text, "Sách & cloud", "local and cloud libraries share one home action")
-assert_eq(#shown_menu.items[3].sub_item_table, 4, "book menu exposes library, search and clouds")
+assert_eq(#shown_menu.items[3].sub_item_table, 5, "book menu exposes library, search, clouds and queue")
 assert_eq(shown_menu.items[3].sub_item_table[3].text, "OneDrive", "OneDrive is discoverable")
 assert_eq(shown_menu.items[3].sub_item_table[4].text, "Google Drive", "Google Drive is discoverable")
 local library = shown_menu.items[3].sub_item_table[1]
@@ -347,7 +347,7 @@ for _, group in ipairs(settings_groups) do
 end
 assert_eq(table.concat(group_names, ","), "Đọc và tải,Bộ nhớ,Nguồn và cookie,OneDrive,Hệ thống",
     "settings groups follow task order")
-assert_eq(setting_count, 21, "grouping preserves every setting")
+assert_eq(setting_count, 22, "grouping preserves every setting")
 local toggle_count = 0
 for _, group in ipairs(settings_groups) do
     for _, item in ipairs(group.sub_item_table) do
@@ -501,6 +501,8 @@ dofile("tests/follow.lua")
 dofile("tests/library.lua")
 dofile("tests/followup-features.lua")
 dofile("tests/gdrive.lua")
+dofile("tests/batch1.lua")
+dofile("tests/ui-open.lua")
 
 if failures > 0 then
     io.stderr:write(tostring(failures) .. " test(s) failed\n")

@@ -50,20 +50,46 @@ function BooxBook:addToMainMenu(menu_items)
             UIManager:nextTick(function()
                 Catalog.clearStack()
                 self:showMainMenu()
+                self:maybeCheckUpdate()
             end)
         end,
         keep_menu_open = true,
     }
 end
 
+function BooxBook:maybeCheckUpdate()
+    if not Network.ifOnline then return end
+    local checked = Network.ifOnline(function()
+        if not Update.shouldCheck(Update.lastCheck()) then return end
+        local ok_release, release = pcall(Update.fetchLatest)
+        if not ok_release or not release then return end
+        Update.noteChecked()
+        if Update.needsUpdate(release.version, Update.currentVersion()) then
+            Settings.set("update_available", release.version)
+            notify(_("Có bản BooxBook mới: ") .. tostring(release.version)
+                .. _(" — vào Cài đặt → Hệ thống → Cập nhật từ GitHub."))
+        else
+            Settings.set("update_available", "")
+        end
+    end)
+    if checked == nil then return end
+end
+
 function BooxBook:showMainMenu()
     local version = Update.currentVersion()
+    local version_text = "v" .. version
+    if type(Settings.get) == "function" then
+        local ok, marker = pcall(Settings.get, "update_available")
+        if ok and marker ~= nil and marker ~= "" then
+            version_text = version_text .. _(" • mới!")
+        end
+    end
     Catalog.show{
         title = _("BooxBook"),
         subtitle = Network.statusText(),
         footer_slots = {
             { text = _("Quay lại"), action = "back", enabled = true },
-            { text = "v" .. version, enabled = false },
+            { text = version_text, enabled = false },
             { text = _("Cập nhật"), action = "update", enabled = true },
             { text = "1/1", enabled = false },
         },
@@ -145,6 +171,8 @@ function BooxBook:showMainMenu()
                         callback = function() require("booxbook.ui.onedrive").open() end },
                     { text = "Google Drive", keep_menu_open = true,
                         callback = function() require("booxbook.ui.gdrive").open() end },
+                    { text = _("Hàng đợi Wi-Fi"), keep_menu_open = true,
+                        callback = function() require("booxbook.ui.queue").open() end },
                 },
             },
             {
@@ -410,15 +438,48 @@ function BooxBook:settingsMenu()
                 end)
             end,
         },
+        {
+            text = _("Khôi phục cài đặt"),
+            callback = function()
+                local Backup = require("booxbook.backup")
+                local dir = Settings.downloadDir() .. "/received"
+                local files = Backup.list(dir)
+                if #files == 0 then
+                    notify(_("Không tìm thấy file sao lưu trong received/."))
+                    return
+                end
+                local rows = {}
+                -- NOTE: never name the loop index `_`; it would shadow gettext `_()`.
+                for _index, name in ipairs(files) do
+                    local current = name
+                    rows[#rows + 1] = { text = current, keep_menu_open = true, callback = function()
+                        Catalog.confirm(_("Ghi đè cài đặt hiện tại bằng bản sao lưu này?") .. "\n" .. current, function()
+                            local file = io.open(dir .. "/" .. current, "rb")
+                            if not file then notify(_("Không đọc được file sao lưu.")); return end
+                            local body = file:read("*a") or ""
+                            file:close()
+                            local data, err = Backup.parse(body)
+                            if not data then
+                                notify(_("File sao lưu không hợp lệ: ") .. tostring(err))
+                                return
+                            end
+                            for key, value in pairs(data) do Settings.set(key, value) end
+                            notify(_("Đã khôi phục cài đặt. Mở lại menu để thấy thay đổi."))
+                        end)
+                    end }
+                end
+                Catalog.show{ title = _("Khôi phục cài đặt"), items = rows }
+            end,
+        },
     }
     return {
         { text = _("Đọc và tải"), sub_item_table = { items[4], items[5], items[6], items[7], items[8] } },
-        { text = _("Bộ nhớ"), sub_item_table = { items[9], items[10] } },
+        { text = _("Bộ nhớ"), sub_item_table = { items[9], items[10], items[19], items[22] } },
         { text = _("Nguồn và cookie"), sub_item_table = {
             items[11], items[12], items[13], items[14], items[15],
         } },
         { text = _("OneDrive"), sub_item_table = { items[16], items[17], items[18], items[21] } },
-        { text = _("Hệ thống"), sub_item_table = { items[1], items[2], items[3], items[19], items[20] } },
+        { text = _("Hệ thống"), sub_item_table = { items[1], items[2], items[3], items[20] } },
     }
 end
 

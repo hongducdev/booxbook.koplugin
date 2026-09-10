@@ -33,6 +33,23 @@ function Network.statusText()
     return _("Có liên kết mạng (chưa chắc Internet)")
 end
 
+-- Passive gate: runs the callback only when already online/connected.
+-- Never prompts for Wi-Fi (unlike whenOnline). For silent periodic checks.
+function Network.ifOnline(callback)
+    if type(callback) ~= "function" then
+        return false
+    end
+    if call("isOnline") then
+        callback()
+        return true
+    end
+    if call("isConnected") then
+        callback()
+        return true
+    end
+    return false
+end
+
 function Network.whenOnline(callback)
     if type(callback) ~= "function" then
         return
