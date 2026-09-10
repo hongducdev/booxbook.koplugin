@@ -150,14 +150,8 @@ cần tải lại để nhận metadata và bìa mới.
 - Nếu lượt tải bị gián đoạn, chưa tạo EPUB; các HTML đã ghi vẫn dùng được. Nếu
   xuất EPUB lỗi, thông báo lỗi và giữ HTML cùng EPUB cũ. Tải lại cùng khoảng thành
   công sẽ thay EPUB của khoảng đó; các khoảng khác có file riêng.
-- **Sách & cloud → Thư viện trên máy** mở thư mục `koreader/booxbook/` bằng trình quản lý
-  file KOReader, không cần mạng. Vào `news/` để tìm báo, `novels/<nguồn>/<id>/`
-  để tìm truyện. Danh sách phản ánh file thực trên máy, kể cả tải từ trước.
-- Chạm file để đọc; nhấn giữ để đổi tên, xóa, sao chép, di chuyển, xem thông tin,
-  thêm bộ sưu tập hoặc đổi trạng thái đọc theo KOReader. Khi mở từ sách đang đọc,
-  KOReader đóng sách và lưu trạng thái trước khi chuyển sang Thư viện.
-- Đổi tên/di chuyển/xóa HTML bằng KOReader không sửa `index.json` của truyện;
-  khi đó mở file ở vị trí mới qua Thư viện thay vì danh sách chương offline cũ.
+- **Sách & cloud → Thư mục trên máy** hiển thị danh mục sách đã tải trên máy (Truyện chữ, Truyện tranh, Sách đã nhận, Báo & tin tức) dưới dạng giao diện trực quan của BooxBook, không cần mạng. Chạm vào bộ truyện để xem danh sách chương/tập và mở đọc ngay. Cuối danh mục có mục **Mở trong Trình quản lý file** dành cho ai cần thao tác file nâng cao (xóa, đổi tên, di chuyển).
+- Đổi tên/di chuyển/xóa HTML bằng KOReader không sửa `index.json` của truyện; khi đó mở file ở vị trí mới qua Thư mục trên máy hoặc tìm kiếm offline.
 
 ## Tự xóa báo đã đọc
 
@@ -180,9 +174,7 @@ cần tải lại để nhận metadata và bìa mới.
 - Trong mục lục một bộ truyện, chọn **Theo dõi truyện này** (cuối danh sách).
   Mở **Truyện → Truyện đang theo dõi** để kiểm tra thủ công số chương mới từng bộ;
   không poll nền để tiết kiệm pin e-ink.
-- **Sách & cloud → Tìm sách offline**: tìm theo tên trong toàn bộ sách đã tải,
-  xem tổng số file/dung lượng, mở trực tiếp 50 kết quả mới nhất.
-
+- **Sách & cloud → Tìm sách offline**: tìm kiếm tức thì theo tên truyện, tác giả hoặc tên file trong toàn bộ kho sách đã tải (hỗ trợ tiếng Việt không dấu và không phân biệt hoa thường), xem tổng số file và dung lượng, mở trực tiếp sách/chương để đọc ngay khi chạm vào kết quả. Có thể chạm vào icon kính lúp trên thanh tiêu đề để tìm kiếm lại bất cứ lúc nào.
 ## Truyện Tuổi Thơ — CBZ
 
 1. Vào **Truyện → Truyện Tuổi Thơ**. Chọn **Mới cập nhật**, **Lượt xem**,

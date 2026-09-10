@@ -163,10 +163,10 @@ function BooxBook:showMainMenu()
             {
                 text = _("Sách & cloud"),
                 sub_item_table = {
-                    { text = _("Thư viện trên máy"), keep_menu_open = true,
+                    { text = _("Thư mục trên máy"), keep_menu_open = true,
                         callback = function() self:showLibrary() end },
                     { text = _("Tìm sách offline"), keep_menu_open = true,
-                        callback = function() require("booxbook.ui.library").open() end },
+                        callback = function() require("booxbook.ui.library").searchPrompt() end },
                     { text = "OneDrive", keep_menu_open = true,
                         callback = function() require("booxbook.ui.onedrive").open() end },
                     { text = "Google Drive", keep_menu_open = true,
@@ -237,22 +237,11 @@ function BooxBook:onCloseDocument()
 end
 
 function BooxBook:showLibrary()
-    UIManager:nextTick(function()
-        local dir = Settings.downloadDir()
-        if not Settings.ensureDir(dir) then
-            notify(_("Không mở được thư mục tải."))
-            return
-        end
-        local FileManager = require("apps/filemanager/filemanager")
-        local ReaderUI = require("apps/reader/readerui")
-        Catalog.clearStack()
-        if ReaderUI.instance then ReaderUI.instance:onClose() end
-        if FileManager.instance then
-            FileManager.instance.file_chooser:changeToPath(dir)
-        else
-            FileManager:showFiles(dir)
-        end
-    end)
+    require("booxbook.ui.library").open()
+end
+
+function BooxBook:openFileManager()
+    require("booxbook.ui.library").openFileManager()
 end
 
 function BooxBook:settingsMenu()

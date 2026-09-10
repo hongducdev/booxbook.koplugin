@@ -27,7 +27,7 @@ Dùng như trình đọc RSS / thư viện cá nhân. Không phát tán nội du
 | **Báo** | 17 tờ, 633 kênh RSS | 9 báo Việt, 8 nguồn nước ngoài; thêm RSS tùy chỉnh |
 | **Truyện** | DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full | Tìm / duyệt, tải chương, đọc lại offline |
 | **Truyện tranh** | Truyện Tuổi Thơ | Duyệt/tìm, mục lục, tải một/khoảng/toàn bộ tập, tải tiếp, đọc CBZ offline |
-| **Sách & cloud** | File local + OneDrive | Mở thư viện trên máy; duyệt thư mục OneDrive và tải sách về |
+| **Sách & cloud** | File local + OneDrive | Duyệt thư mục trên máy, tìm sách offline; duyệt thư mục OneDrive và tải sách về |
 | **Gửi sách qua Wi-Fi** | Điện thoại / máy tính cùng mạng | Mở web hoặc quét QR, gửi nhiều sách vào thư viện; tối đa 512 MiB/file |
 
 Cách dùng chi tiết: [hướng dẫn](docs/usage.md). Phạm vi RSS: [danh mục báo](docs/news-categories.md).

@@ -264,6 +264,9 @@ package.loaded["booxbook.ui.catalog"] = {
         shown_menu = options
         menu_events[#menu_events + 1] = "show"
     end,
+    promptText = function(opts)
+        return opts
+    end,
 }
 package.loaded["booxbook.epub"] = {}
 package.loaded["booxbook.html"] = {}
@@ -294,7 +297,7 @@ assert_eq(shown_menu.subtitle, "Đã kết nối mạng", "home TitleBar shows n
 assert_eq(#shown_menu.items, 5, "home actions fit comfortably on one page")
 assert_eq(shown_menu.items[4].text, "Gửi sách qua Wi-Fi", "primary transfer action precedes settings")
 assert_eq(shown_menu.items[5].text, "Cài đặt", "settings remain available last")
-assert_eq(shown_menu.footer_slots[2].text, "v0.0.10", "home footer shows the plugin version")
+assert_eq(shown_menu.footer_slots[2].text, "v0.0.11", "home footer shows the plugin version")
 assert_eq(shown_menu.footer_slots[3].action, "update", "home footer exposes one labeled update action")
 assert_eq(shown_menu.footer_slots[4].text, "1/1", "home footer confirms all actions fit on one page")
 assert_true(type(shown_menu.on_footer) == "function", "home footer actions are handled")
@@ -302,7 +305,8 @@ assert_eq(shown_menu.items[3].text, "Sách & cloud", "local and cloud libraries 
 assert_eq(#shown_menu.items[3].sub_item_table, 5, "book menu exposes library, search, clouds and queue")
 assert_eq(shown_menu.items[3].sub_item_table[3].text, "OneDrive", "OneDrive is discoverable")
 assert_eq(shown_menu.items[3].sub_item_table[4].text, "Google Drive", "Google Drive is discoverable")
-local library = shown_menu.items[3].sub_item_table[1]
+local home_menu = shown_menu
+local library = home_menu.items[3].sub_item_table[1]
 local old_fm = package.loaded["apps/filemanager/filemanager"]
 local old_reader = package.loaded["apps/reader/readerui"]
 local library_path, reader_closed
@@ -381,21 +385,24 @@ assert_eq(BooxBook.finished_news_path, nil, "finished state reset after close")
 BooxBook.ui = nil
 package.loaded["booxbook.news-cleanup"] = old_cleanup
 library.callback()
+assert_eq(shown_menu.title, "Thư mục trên máy", "library opens simplified native catalog")
+BooxBook:openFileManager()
 assert_eq(library_path, nil, "library navigation deferred")
 scheduled()
 assert_eq(library_path, "/downloads", "library opens actual download folder")
 fm.instance = { file_chooser = { changeToPath = function(_, path) library_path = path end } }
 fm.showFiles = function() error("must reuse existing manager") end
 library_path = nil
-library.callback(); scheduled()
+BooxBook:openFileManager(); scheduled()
 assert_eq(library_path, "/downloads", "existing file manager reused")
 fm.instance = nil
 fm.showFiles = function(_, path) assert(reader_closed); library_path = path end
 reader.instance = { onClose = function() reader_closed = true end }
-library.callback(); scheduled()
+BooxBook:openFileManager(); scheduled()
 assert_true(reader_closed, "reader closed normally before library to save reading state")
 package.loaded["apps/filemanager/filemanager"] = old_fm
 package.loaded["apps/reader/readerui"] = old_reader
+shown_menu = home_menu
 assert_eq(shown_menu.items[1].keep_menu_open, true, "news navigation keeps its parent menu")
 shown_menu.items[1].callback()
 assert_eq(shown_menu.title, "BooxBook", "news screen is deferred")
