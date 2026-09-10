@@ -222,6 +222,24 @@ Chưa xác minh giao diện và CBZ WebP trên Boox thật.
 3. Nguồn này chặn rate khá gắt (HTTP 429): gặp thì thử lại sau hoặc đổi mạng,
    plugin không tự retry dồn dập. Ảnh chỉ từ `truyenqqko.com` và CDN
    `hinhhinh.com` / `truyenvua.com`. Giới hạn 600 trang/tập như trên.
+4. **Đọc tiếp nối tập / chương**: xem mục Đọc tiếp nối tập/chương bên dưới.
+
+## Đọc tiếp nối tập/chương
+
+Khi đọc tới trang cuối của một tập CBZ trong `comics/` hoặc chương EPUB/HTML trong
+`novels/`, plugin hiện hộp thoại đọc tiếp (sách ở `news/`, `received/` giữ nguyên
+hộp thoại mặc định của KOReader):
+
+- Tập/chương tiếp theo **đã tải trên máy** → hỏi mở đọc tiếp ngay.
+- **Chưa tải** → hỏi tải tiếp và tự động mở sau khi tải/đóng gói xong.
+- Đã tới tập/chương mới nhất → báo đã đọc hết, không hỏi tải nữa.
+- Sách ngoài thư mục BooxBook giữ nguyên hộp thoại mặc định của KOReader.
+
+Cơ chế: truyện tranh dùng file kề `<tập>.cbz.meta.json` + `manifest.json` của bộ
+(khi thiếu manifest thì không ghi sidecar terminal để lần sau vẫn dò được mục lục
+mới); truyện chữ dùng
+`index.json` (nhận `chapters-<từ>-<đến>.epub`, `chapter-<n>.html`, `book.epub`).
+`next_url` lạ nguồn/khác bộ bị chặn. Mất mạng khi dò mục lục → hộp **Thử lại?**.
 
 ## Dữ liệu trên máy
 
@@ -230,6 +248,7 @@ Chưa xác minh giao diện và CBZ WebP trên Boox thật.
 | Bài báo đã mở | `koreader/booxbook/news/<feed-id>/` |
 | Chương truyện | `koreader/booxbook/novels/<nguồn>/<id>/` |
 | Tập truyện tranh CBZ | `koreader/booxbook/comics/<truyentuoitho|truyenqq>/<bộ>/<tập>.cbz` |
+| Metadata đọc tiếp CBZ | `koreader/booxbook/comics/<nguồn>/<bộ>/<tập>.cbz.meta.json` + `manifest.json` |
 | Sách nhận qua Wi-Fi/OneDrive | `koreader/booxbook/received/` |
 | Cài đặt + cookie | `koreader/settings/booxbook.lua` |
 

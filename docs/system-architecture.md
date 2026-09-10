@@ -208,6 +208,35 @@ Staging giữ khi lỗi/hủy; thành công xóa các trang đã dùng. CBZ dư�
 `comics/truyentuoitho/<series>/<chapter>.cbz`, mở offline qua FileManager.
 Đã xác minh ReaderUI/WebP và fit-page trên điện thoại Samsung Android; chưa xác minh Boox/Kindle/Kobo.
 
+## TruyenQQ CBZ
+
+Cùng pipeline `comic-download`/`comic-cbz` như Truyện Tuổi Thơ nhưng qua adapter riêng
+`truyenqqko.com`: series `/truyen-tranh/<slug>-<id>`, chapter `/truyen-tranh/<slug>-chap-<n>`.
+Parser custom (không phải Madara), chỉ nhận ảnh từ `truyenqqko.com` (+ `m.`/`st.`)
+và CDN `hinhhinh.com` / `truyenvua.com`; HTTP 429 báo thử lại sau, không retry dồn dập. Lưu dưới
+`comics/truyenqq/<series>/<chapter>.cbz`. Giới hạn 600 trang/tập như trên.
+
+## Đọc tiếp nối (EndOfBook)
+
+`main.lua:onEndOfBook` ủy quyền cho `booxbook/continuation.lua`; `return true`
+(nuốt dialog KOReader) khi đã hiện hộp của mình, khi guard `prompted_path` còn hiệu
+lực (chống hỏi lặp trong cùng một lần mở), hoặc khi đã kích hoạt `bootstrapOnline`
+dị bộ (hộp hiện sau khi fetch xong). Còn lại `return nil` để dialog mặc định hiện.
+`onCloseDocument` gọi `Continuation.reset()` xóa guard.
+
+Comic: `resolveComicNext` đọc sidecar `<tập>.cbz.meta.json` (giới hạn 64 KiB), fallback
+`buildMetaFromPath` từ `manifest.json` (giới hạn 512 KiB) + ghi bù sidecar. `next_url`
+phải qua `adapterFor` cùng `source_id` và cùng series, ngược lại fail-closed. Thiếu meta
+→ `bootstrapOnline` fetch `getSeries` → `writeManifest` → resolve lại; lỗi thì hộp
+**Thử lại?**. `Download.chapter` không ghi sidecar khi auto-meta thiếu `next_url`
+(`shouldWriteMeta`) để lần sau vẫn dò được mục lục mới; riêng `resolveComicNext` vẫn
+cache sidecar khi `manifest.json` đã có (kể cả tập cuối → báo hết bộ luôn).
+
+Novel: `resolveNovelNext` đọc `novels/<nguồn>/<id>/index.json`, nhận
+`chapters-<từ>-<đến>.epub` / `chapter-<n>.html` / `book.epub`; `next_entry.file` tồn tại
+mới là đã tải. Chưa tải → `Novels.downloadChapter` (validate nguồn/id/số chương, báo
+hết truyện khi vượt số chương mục lục mới).
+
 ## Liên kết
 
 - [Quy ước phát triển](development.md)

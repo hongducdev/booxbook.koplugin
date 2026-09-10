@@ -12,6 +12,12 @@
   tự đóng gói EPUB khi tải lại toàn chương-cũ — đều verified trên Samsung + test hồi quy.
 - [x] TruyenQQ viết lại cho `truyenqqko.com` (adapter + UI + download riêng, truyenqq.net cũ
   chặn 429/anti-bot) + tổng quát `comic-download` theo adapter.
+- [x] Tự động tiếp nối tập đọc (EndOfBook) cho cả truyện tranh (CBZ) và tiểu thuyết (EPUB/HTML):
+  hỏi mở hoặc tải tiếp tập kế tiếp qua sidecar `.meta.json` + `manifest.json` (comic)
+  và `index.json` (novel).
+- [x] Fix tiếp nối: giữ dialog KOReader mặc định cho sách ngoài BooxBook, không ghi
+  sidecar terminal khi thiếu manifest, chặn `next_url` cross-series, validate
+  `Novels.downloadChapter` + báo hết truyện khi quá số chương mục lục mới.
 - [ ] Smoke test trên Boox: đăng nhập Drive, tải sách, digest, OPDS/queue, CBZ TruyenQQ,
   khôi phục sao lưu, badge cập nhật.
 

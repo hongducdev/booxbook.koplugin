@@ -58,7 +58,7 @@
       <dl class="stats" aria-label="Số liệu nổi bật">
         <div><dt>17</dt><dd>đầu báo<br />9 Việt · 8 quốc tế</dd></div>
         <div><dt>633</dt><dd>kênh RSS<br />có bài 04/09/2026</dd></div>
-        <div><dt>6+1</dt><dd>nguồn truyện<br />chữ + tranh CBZ</dd></div>
+        <div><dt>6+2</dt><dd>nguồn truyện<br />chữ + tranh CBZ</dd></div>
         <div><dt>512<span class="unit">MiB</span></dt><dd>giới hạn file<br />gửi qua Wi-Fi</dd></div>
       </dl>
       <p class="fineprint">Dùng như trình đọc RSS / thư viện cá nhân. Không phát tán nội dung đã tải. Không vượt VIP, paywall hay captcha.</p>
@@ -70,7 +70,7 @@
         <ul class="device-menu">
           <li><strong>Báo</strong><span>17 tờ · 633 kênh</span></li>
           <li><strong>Truyện</strong><span>DocLN · Wattpad · STV · MTCV · TVT · TF</span></li>
-          <li><strong>Truyện Tuổi Thơ</strong><span>CBZ từng tập</span></li>
+          <li><strong>Truyện tranh</strong><span>Tuổi Thơ · TruyenQQ, CBZ từng tập</span></li>
           <li><strong>Thư viện</strong><span>koreader/booxbook/</span></li>
           <li><strong>Gửi sách qua Wi-Fi</strong><span>QR + mã 6 số</span></li>
         </ul>
@@ -82,8 +82,8 @@
 
   <div class="ticker" aria-hidden="true">
     <div class="ticker-track">
-      <span>VnExpress · Tuổi Trẻ · Thanh Niên · Dân Trí · Tiền Phong · VietnamPlus · BBC · Guardian · DW · Sky News · Al Jazeera · France 24 · ABC News · DocLN · Wattpad · Sangtacviet · MeTruyenCV · TVTruyen · Truyện Full · Truyện Tuổi Thơ ·&nbsp;</span>
-      <span>VnExpress · Tuổi Trẻ · Thanh Niên · Dân Trí · Tiền Phong · VietnamPlus · BBC · Guardian · DW · Sky News · Al Jazeera · France 24 · ABC News · DocLN · Wattpad · Sangtacviet · MeTruyenCV · TVTruyen · Truyện Full · Truyện Tuổi Thơ ·&nbsp;</span>
+      <span>VnExpress · Tuổi Trẻ · Thanh Niên · Dân Trí · Tiền Phong · VietnamPlus · BBC · Guardian · DW · Sky News · Al Jazeera · France 24 · ABC News · DocLN · Wattpad · Sangtacviet · MeTruyenCV · TVTruyen · Truyện Full · Truyện Tuổi Thơ · TruyenQQ ·&nbsp;</span>
+      <span>VnExpress · Tuổi Trẻ · Thanh Niên · Dân Trí · Tiền Phong · VietnamPlus · BBC · Guardian · DW · Sky News · Al Jazeera · France 24 · ABC News · DocLN · Wattpad · Sangtacviet · MeTruyenCV · TVTruyen · Truyện Full · Truyện Tuổi Thơ · TruyenQQ ·&nbsp;</span>
     </div>
   </div>
 
@@ -112,9 +112,9 @@
         <code class="path">novels/&lt;nguồn&gt;/&lt;id&gt;/ + index.json</code>
       </article>
       <article class="feat feat-side">
-        <p class="feat-tag">Truyện tranh · CBZ</p>
-        <h3>Truyện Tuổi Thơ từng tập.</h3>
-        <p>Duyệt Mới cập nhật / Lượt xem, tải một / khoảng / toàn bộ tập, tải tiếp khi dở. Mỗi tập một file CBZ, mặc định hiển thị vừa trang.</p>
+        <p class="feat-tag">Truyện tranh · CBZ · 2 nguồn</p>
+        <h3>Truyện Tuổi Thơ + TruyenQQ từng tập.</h3>
+        <p>Duyệt Mới cập nhật / Lượt xem, tải một / khoảng / toàn bộ tập, tải tiếp khi dở. Mỗi tập một file CBZ, mặc định hiển thị vừa trang. Đọc tới cuối tập được hỏi mở / tải tiếp tập kế.</p>
       </article>
       <article class="feat feat-wide">
         <div>
@@ -209,16 +209,18 @@
           <li>Mở nguồn (DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full), tìm từ khóa hoặc dán URL truyện.</li>
           <li>Icon menu góc trái mục lục → <strong>Tải khoảng chương / Tải toàn bộ / Tạo EPUB từ chương đã tải</strong>. Hoặc <strong>Mở chương bất kỳ</strong> theo số thứ tự mục lục.</li>
           <li>Tải lại cùng khoảng tự bỏ qua chương còn file; <code>index.json.bak</code> cứu khi index chính hỏng.</li>
+          <li>Đọc tới cuối chương được hỏi mở tiếp (đã tải) hoặc tải tiếp chương kế.</li>
           <li>Sangtacviet tắt mặc định — lần đầu mở sẽ hỏi xác nhận. Cookie từng nguồn dán từ trình duyệt trong Cài đặt.</li>
         </ol>
       </article>
       <article id="panel-tranh" role="tabpanel" aria-labelledby="tab-tranh" hidden>
-        <h3>Truyện Tuổi Thơ → tải CBZ từng tập</h3>
+        <h3>Truyện Tuổi Thơ / TruyenQQ → tải CBZ từng tập</h3>
         <ol>
-          <li>Vào <strong>Truyện → Truyện Tuổi Thơ</strong>, duyệt Mới cập nhật / Lượt xem / Truyện mới / Thịnh hành, hoặc tìm tên / dán URL bộ &amp; tập.</li>
+          <li>Vào <strong>Truyện → Truyện Tuổi Thơ / TruyenQQ</strong>, duyệt Mới cập nhật / Lượt xem / Truyện mới / Thịnh hành, hoặc tìm tên / dán URL bộ &amp; tập.</li>
           <li>Icon menu mục lục → <strong>Tải khoảng tập / Tải toàn bộ tập</strong>. Mỗi tập một CBZ riêng.</li>
           <li>Chạm thông báo tiến độ để tạm dừng / hủy / tiếp tục. Chọn lại tập để tải tiếp trang thiếu.</li>
-          <li>Đọc offline ở <strong>Thư viện → comics → truyentuoitho → tên bộ → tập.cbz</strong>.</li>
+          <li>Đọc tới cuối tập được hỏi mở tiếp (đã tải) hoặc tải tiếp tập kế; hết bộ thì báo đã đọc hết.</li>
+          <li>Đọc offline ở <strong>Thư viện → comics → truyentuoitho / truyenqq → tên bộ → tập.cbz</strong>.</li>
         </ol>
       </article>
       <article id="panel-epub" role="tabpanel" aria-labelledby="tab-epub" hidden>
@@ -304,7 +306,7 @@
           <ul class="paths">
             <li><span>Báo đã mở</span><code>koreader/booxbook/news/&lt;feed-id&gt;/</code></li>
             <li><span>Chương truyện</span><code>koreader/booxbook/novels/&lt;nguồn&gt;/&lt;id&gt;/</code></li>
-            <li><span>CBZ tranh</span><code>koreader/booxbook/comics/truyentuoitho/…</code></li>
+            <li><span>CBZ tranh</span><code>koreader/booxbook/comics/&lt;truyentuoitho|truyenqq&gt;/…</code></li>
             <li><span>Cài đặt + cookie</span><code>koreader/settings/booxbook.lua</code></li>
           </ul>
         </div>
@@ -332,8 +334,12 @@
         <div class="faq-a" id="faq-a3" role="region" aria-labelledby="faq-q3"><div class="faq-a-in"><p>Thường do chương khóa/VIP, captcha/rate-limit (HTTP 403/429) hoặc mất mạng. Plugin dừng lượt tải và giữ file đã lưu — thử lại sau, kiểm tra cookie, đồng hồ thiết bị và Wi-Fi.</p></div></div>
       </div>
       <div class="faq-item">
-        <button class="faq-q" aria-expanded="false" aria-controls="faq-a4" id="faq-q4"><span>Phát triển / test thế nào?</span><span class="faq-icon" aria-hidden="true"></span></button>
-        <div class="faq-a" id="faq-a4" role="region" aria-labelledby="faq-q4"><div class="faq-a-in"><p>LuaJIT, không thêm native library. Chạy <code>luajit tests/run.lua</code>. Rà RSS thật: <code>pwsh -File scripts/news-feeds-live.ps1 -All</code>. Xem <a href="https://github.com/hongducdev/booxbook.koplugin/blob/main/docs/development.md">quy ước</a> và <a href="https://github.com/hongducdev/booxbook.koplugin/blob/main/docs/system-architecture.md">kiến trúc</a>.</p></div></div>
+        <button class="faq-q" aria-expanded="false" aria-controls="faq-a4" id="faq-q4"><span>Đọc hết tập / chương rồi sao?</span><span class="faq-icon" aria-hidden="true"></span></button>
+        <div class="faq-a" id="faq-a4" role="region" aria-labelledby="faq-q4"><div class="faq-a-in"><p>Tới trang cuối, plugin hỏi mở tiếp nếu tập/chương kế đã tải, hỏi tải tiếp nếu chưa — hết bộ thì báo đã đọc hết. Mất mạng khi dò mục lục thì bấm <strong>Thử lại</strong>.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq-a5" id="faq-q5"><span>Phát triển / test thế nào?</span><span class="faq-icon" aria-hidden="true"></span></button>
+        <div class="faq-a" id="faq-a5" role="region" aria-labelledby="faq-q5"><div class="faq-a-in"><p>LuaJIT, không thêm native library. Chạy <code>luajit tests/run.lua</code>. Rà RSS thật: <code>pwsh -File scripts/news-feeds-live.ps1 -All</code>. Xem <a href="https://github.com/hongducdev/booxbook.koplugin/blob/main/docs/development.md">quy ước</a> và <a href="https://github.com/hongducdev/booxbook.koplugin/blob/main/docs/system-architecture.md">kiến trúc</a>.</p></div></div>
       </div>
     </div>
   </section>
