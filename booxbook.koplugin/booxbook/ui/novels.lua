@@ -149,6 +149,13 @@ function Novels.download(series, first, last, confirmed, open_after)
             UIManager:nextTick(function() Catalog.clearStack(); ReaderUI:showReader(path) end)
             return
         end
+        -- Re-download with everything already on disk: still honor the EPUB
+        -- switch by packaging the existing HTML instead of going silent.
+        if Settings.get("novel_epub") == true and not result.error
+            and #result.saved == 0 and #existing > 0 then
+            Novels.packageSaved(series, first, last)
+            return
+        end
         local items = {}
         for position, saved in ipairs(result.saved) do
             local current = saved
@@ -286,7 +293,10 @@ function Novels.showOffline(series)
 end
 
 function Novels.showSeries(ref, adapter)
-    online(_("Đang lấy mục lục…"), function() return (adapter or Docln).getSeries(ref) end, function(series)
+    adapter = adapter or Docln
+    online(_("Đang lấy mục lục…"), function() return adapter.getSeries(ref) end, function(series)
+        -- DocLN series carry id but no source_id; normalize so follow works.
+        series.source_id = series.source_id or adapter.id or "docln"
         local total = #(series.chapters or {})
         SeriesUI.show(series, {
             on_go = function(number) Novels.download(series, number, number, false, true) end,

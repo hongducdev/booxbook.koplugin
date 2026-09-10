@@ -122,10 +122,11 @@ function Epub.write(path, book)
         return false, "no chapters"
     end
 
-    local cover, cover_err
+    -- A bad cover (WebP, oversize, login page) must never sink the book:
+    -- skip it and export the text, like article images that fail to load.
+    local cover
     if book.cover_path then
-        cover, cover_err = Metadata.cover(book.cover_path)
-        if not cover then return false, cover_err end
+        cover = Metadata.cover(book.cover_path)
     end
     -- Metadata must describe only resources actually embedded in this archive.
     local metadata = {}

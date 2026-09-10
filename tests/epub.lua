@@ -106,7 +106,14 @@ assert(entries['OEBPS/cover.png'] == cover_bytes)
 assert(entries['OEBPS/cover.xhtml']:find('src="cover.png"', 1, true))
 assert(entries['OEBPS/toc.ncx']:find('content="source-book-1"', 1, true))
 cover_file = assert(old_open(cover_path, 'wb')); cover_file:write('<html>login</html>'); cover_file:close()
-assert(not Epub.write('book.epub', book), 'reject error pages masquerading as covers')
+assert(Epub.write('book.epub', book), 'error page as cover must not sink the book')
+opf = entries["OEBPS/content.opf"]
+assert(not opf:find('cover-image', 1, true), 'bad cover leaves no cover metadata')
+assert(entries['OEBPS/cover.png'] == nil and entries['OEBPS/cover.xhtml'] == nil,
+    'bad cover embeds no cover files')
+cover_file = assert(old_open(cover_path, 'wb')); cover_file:write('RIFFxxxxWEBP'); cover_file:close()
+assert(Epub.write('book.epub', book), 'webp cover must not sink the book')
+assert(not entries["OEBPS/content.opf"]:find('cover-image', 1, true), 'webp cover skipped')
 old_remove(cover_path)
 book.cover_path = nil
 fail = "exists-once"

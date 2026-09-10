@@ -61,8 +61,10 @@ assert(denied == 401, "queue rejects wrong token")
 
 local QQ = require("booxbook.sources.truyenqq")
 assert(QQ.id == "truyenqq" and QQ.kind == "comic", "second comic source registered")
-local ref = assert(QQ.parseSeriesRef("https://truyenqq.net/manga/one-piece/"))
-assert(ref.id == "one-piece", "truyenqq parses series slug")
+local ref = assert(QQ.parseSeriesRef("https://truyenqqko.com/truyen-tranh/yeu-than-ky-746"))
+assert(ref.id == "yeu-than-ky-746", "truyenqq parses series slug")
 assert(QQ.parseSeriesRef("https://truyentuoitho.com/manga/x/") == nil, "truyenqq rejects other host")
+assert(QQ.parseSeriesRef("https://truyenqqko.com/truyen-tranh/a-chap-1") == nil,
+    "truyenqq series ref rejects chapter urls")
 
 print("Follow-up features checks passed")

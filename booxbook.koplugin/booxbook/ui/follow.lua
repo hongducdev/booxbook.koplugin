@@ -21,7 +21,10 @@ local function saved()
 end
 
 function UI.toggle(series)
-    if type(series) ~= "table" or not series.source_id or not series.id then return end
+    if type(series) ~= "table" or not series.source_id or not series.id then
+        notify(_("Không theo dõi được truyện này (thiếu thông tin bộ truyện)."))
+        return
+    end
     local data = saved()
     if Follow.isFollowed(data, series.source_id, series.id) then
         Follow.unfollow(data, series.source_id, series.id)
@@ -43,22 +46,36 @@ function UI.followLabel(series)
 end
 
 local function checkOne(entry, done)
-    local adapter = Source.get(entry.source_id)
+    local adapter = entry and Source.get(entry.source_id)
     if not adapter or not adapter.getSeries then
         done(entry, nil, _("Nguồn không hỗ trợ kiểm tra."))
         return
     end
+    local ref = entry.url ~= nil and entry.url ~= "" and entry.url or entry.id
+    if ref == nil or ref == "" then
+        done(entry, nil, _("Thiếu liên kết bộ truyện đã lưu."))
+        return
+    end
     Network.whenOnline(function()
+        -- Mirror Novels.online: blocking work inside Trapper:wrap, result
+        -- delivered on a later tick so no widget call escapes the tap handler.
+        local new_count, err_msg, live
         Trapper:wrap(function()
             Trapper:info(_("Đang kiểm tra: ") .. (entry.title or entry.id))
-            local ok, series = pcall(adapter.getSeries, entry.url ~= "" and entry.url or entry.id)
+            local ok, series = pcall(adapter.getSeries, ref)
             Trapper:clear()
-            if not ok or not series then
-                done(entry, nil, tostring(series))
-                return
+            if not ok or type(series) ~= "table" then
+                err_msg = tostring(series)
+            else
+                live = type(series.chapters) == "table" and #series.chapters or 0
+                new_count = Follow.checkUpdate(entry, live)
             end
-            local live = type(series.chapters) == "table" and #series.chapters or 0
-            done(entry, Follow.checkUpdate(entry, live), nil, live)
+        end)
+        UIManager:nextTick(function()
+            local ok, err = pcall(done, entry, new_count, err_msg, live)
+            if not ok then
+                pcall(notify, _("Kiểm tra thất bại: ") .. tostring(err))
+            end
         end)
     end)
 end
@@ -72,7 +89,8 @@ function UI.open()
         return
     end
     local items = {}
-    for _, entry in ipairs(list) do
+    -- NOTE: never name the loop index `_` here; it would shadow gettext `_()`.
+    for _index, entry in ipairs(list) do
         local current = entry
         items[#items + 1] = {
             text = current.title or current.id,
