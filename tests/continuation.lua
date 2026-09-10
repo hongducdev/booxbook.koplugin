@@ -139,6 +139,7 @@ local function mapped(path)
     if type(path) ~= "string" then return path end
     if not paths[path] then
         paths[path] = os.tmpname()
+        old_remove(paths[path])
     end
     return paths[path]
 end
