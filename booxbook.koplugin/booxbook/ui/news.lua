@@ -13,6 +13,7 @@ local function CoverGrid()
 end
 
 local Settings = require("booxbook.store.settings")
+local Opml = require("booxbook.opml")
 
 local News = {}
 
@@ -65,6 +66,141 @@ function News.addCustomFeed()
             notify(_("Đã thêm nguồn RSS."))
         end,
     }
+end
+
+local function openFile(path)
+    local file, err = io.open(path, "rb")
+    if not file then return nil, err end
+    local data = file:read("*a")
+    file:close()
+    return data
+end
+
+local function writeFile(path, data)
+    local file, err = io.open(path, "wb")
+    if not file then return false, err end
+    local ok, write_err = file:write(data)
+    file:close()
+    if not ok then return false, write_err end
+    return true
+end
+
+local function lfsModule()
+    local ok, lfs = pcall(require, "libs/libkoreader-lfs")
+    if ok then return lfs end
+    ok, lfs = pcall(require, "lfs")
+    if ok then return lfs end
+    return nil
+end
+
+local function trimPath(path)
+    return tostring(path or ""):gsub("[/\\]+$", "")
+end
+
+local function listOpmlFiles()
+    local lfs = lfsModule()
+    if not lfs then return nil, _("Không đọc được thư mục OPML.") end
+
+    local base = trimPath(Settings.downloadDir())
+    local roots = {
+        { label = "received", path = base .. "/received" },
+        { label = "backup", path = base .. "/backup" },
+    }
+    local items = {}
+    for _, root in ipairs(roots) do
+        if lfs.attributes(root.path, "mode") == "directory" then
+            for name in lfs.dir(root.path) do
+                local lower = name:lower()
+                if name ~= "." and name ~= ".." and (lower:match("%.opml$") or lower:match("%.xml$")) then
+                    local path = root.path .. "/" .. name
+                    if lfs.attributes(path, "mode") == "file" then
+                        items[#items + 1] = {
+                            text = root.label .. "/" .. name,
+                            path = path,
+                        }
+                    end
+                end
+            end
+        end
+    end
+    table.sort(items, function(a, b) return a.text:lower() < b.text:lower() end)
+    return items
+end
+
+local function currentFeedSet()
+    local feeds = Settings.get("custom_rss_feeds") or {}
+    local seen = {}
+    for _, url in ipairs(feeds) do
+        if type(url) == "string" then seen[url] = true end
+    end
+    return feeds, seen
+end
+
+local function importOpmlPath(path)
+    local data, err = openFile(path)
+    if not data then
+        notify(_("Không đọc được file OPML: ") .. tostring(err))
+        return
+    end
+
+    local imported = Opml.parse(data)
+    local feeds, seen = currentFeedSet()
+    local added = 0
+    for _, feed in ipairs(imported) do
+        local url = tostring(feed.xmlUrl or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        if url:match("^https?://") and not seen[url] then
+            seen[url] = true
+            feeds[#feeds + 1] = url
+            added = added + 1
+        end
+    end
+    if added > 0 then
+        Settings.set("custom_rss_feeds", feeds)
+    end
+    notify(string.format(_("Đã nhập %d nguồn RSS từ OPML."), added))
+end
+
+function News.importOpml()
+    local files, err = listOpmlFiles()
+    if not files then
+        notify(err)
+        return
+    end
+    if #files == 0 then
+        notify(_("Không tìm thấy file OPML trong received hoặc backup."))
+        return
+    end
+
+    local items = {}
+    for _, file in ipairs(files) do
+        local current = file
+        items[#items + 1] = {
+            text = current.text,
+            keep_menu_open = true,
+            callback = function()
+                UIManager:nextTick(function() importOpmlPath(current.path) end)
+            end,
+        }
+    end
+    Catalog.show{ title = _("Nhập file OPML"), items = items }
+end
+
+function News.exportOpml()
+    local base = trimPath(Settings.downloadDir())
+    local backup_dir = base .. "/backup"
+    if not Settings.ensureDir(backup_dir) then
+        notify(_("Không tạo được thư mục backup."))
+        return
+    end
+
+    local path = backup_dir .. "/booxbook-feeds.opml"
+    local xml = Opml.generate(Settings.get("custom_rss_feeds") or {}, "BooxBook RSS Feeds")
+    local ok, err = writeFile(path, xml)
+    if not ok then
+        notify(_("Không xuất được file OPML: ") .. tostring(err))
+        return
+    end
+    notify(_("Đã xuất file OPML: ") .. path)
 end
 local function feedSourceId(feed)
     local value = tostring(feed and (feed.id or feed.title or feed.url) or "rss")
@@ -250,6 +386,8 @@ function News.menu()
     end }
     items[#items + 1] = { text = _("Số bài mỗi danh mục"), keep_menu_open = true, callback = News.setLimit }
     items[#items + 1] = { text = _("Thêm RSS tùy chỉnh"), keep_menu_open = true, callback = News.addCustomFeed }
+    items[#items + 1] = { text = _("Nhập file OPML"), keep_menu_open = true, callback = News.importOpml }
+    items[#items + 1] = { text = _("Xuất file OPML"), keep_menu_open = true, callback = News.exportOpml }
     return items
 end
 

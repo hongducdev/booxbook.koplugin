@@ -17,21 +17,38 @@ local function newsFile(path)
     if lfs.attributes(resolved, "mode") == "file" then return resolved end
 end
 
+local function readProgress(ui)
+    if not ui then return nil end
+    if ui.paging and type(ui.paging.getLastPercent) == "function" then
+        local ok, val = pcall(ui.paging.getLastPercent, ui.paging)
+        if ok and type(val) == "number" then return val end
+    end
+    if ui.rolling and type(ui.rolling.getLastPercent) == "function" then
+        local ok, val = pcall(ui.rolling.getLastPercent, ui.rolling)
+        if ok and type(val) == "number" then return val end
+    end
+    local settings = ui.doc_settings
+    if settings and type(settings.readSetting) == "function" then
+        local p = settings:readSetting("percent_finished")
+        if type(p) == "number" then return p end
+    end
+    return nil
+end
+
 local function stillAtEnd(percent)
     if type(percent) ~= "number" then return false end
     if percent > 1 then return percent >= 99 end
     return percent >= 0.99
 end
 
-function Cleanup.afterClose(ui, finished_path)
-    if Settings.get("news_delete_finished") ~= true then return end
+function Cleanup.afterClose(ui)
+    if Settings.get("news_delete_finished") ~= true or not ui then return end
     local path = ui.document and ui.document.file
     local settings = ui.doc_settings
     local summary = settings and settings:readSetting("summary") or {}
-    local percent = settings and settings:readSetting("percent_finished")
-    -- EndOfBook alone is not enough: "Go to beginning" must not delete on a later close.
+    local percent = readProgress(ui)
     local marked = summary.status == "complete"
-    local left_at_end = finished_path == path and stillAtEnd(percent)
+    local left_at_end = stillAtEnd(percent)
     if not marked and not left_at_end then return end
     local target = newsFile(path)
     if not target then return end

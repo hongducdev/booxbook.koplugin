@@ -205,7 +205,6 @@ Settings.load()
 assert_eq(Settings.sangtacvietEnabled(), false, "stv default off")
 assert_eq(Settings.includeImages(), true, "images default on")
 assert_eq(Settings.get("novel_epub"), false, "EPUB defaults off")
-assert_eq(Settings.get("novel_keep_html"), true, "HTML retention defaults on")
 assert_eq(Settings.get("news_delete_finished"), false, "news cleanup defaults off")
 assert_eq(Settings.get("onedrive_client_id"), "262471d2-046d-45d1-a681-ea5b025d17b7",
     "BooxBook OneDrive public client ID is bundled")
@@ -297,7 +296,7 @@ assert_eq(shown_menu.subtitle, "Đã kết nối mạng", "home TitleBar shows n
 assert_eq(#shown_menu.items, 5, "home actions fit comfortably on one page")
 assert_eq(shown_menu.items[4].text, "Gửi sách qua Wi-Fi", "primary transfer action precedes settings")
 assert_eq(shown_menu.items[5].text, "Cài đặt", "settings remain available last")
-assert_eq(shown_menu.footer_slots[2].text, "v0.0.11", "home footer shows the plugin version")
+assert_eq(shown_menu.footer_slots[2].text, "v0.0.12", "home footer shows the plugin version")
 assert_eq(shown_menu.footer_slots[3].action, "update", "home footer exposes one labeled update action")
 assert_eq(shown_menu.footer_slots[4].text, "1/1", "home footer confirms all actions fit on one page")
 assert_true(type(shown_menu.on_footer) == "function", "home footer actions are handled")
@@ -338,7 +337,7 @@ BooxBook:onReaderReady(comic_config)
 assert_eq(#layout_events, 2, "other documents unchanged")
 BooxBook.ui = nil
 menu_settings.downloadDir = function() return "/downloads" end
-local retention_settings = { novel_epub = false, novel_keep_html = true, news_delete_finished = false }
+local retention_settings = { novel_epub = false, news_delete_finished = false }
 menu_settings.get = function(key) return retention_settings[key] end
 menu_settings.set = function(key, value) retention_settings[key] = value end
 local settings_groups = BooxBook:settingsMenu()
@@ -351,19 +350,14 @@ for _, group in ipairs(settings_groups) do
 end
 assert_eq(table.concat(group_names, ","), "Đọc và tải,Bộ nhớ,Nguồn và cookie,OneDrive,Hệ thống",
     "settings groups follow task order")
-assert_eq(setting_count, 22, "grouping preserves every setting")
+assert_eq(setting_count, 21, "grouping preserves every setting")
 local toggle_count = 0
 for _, group in ipairs(settings_groups) do
     for _, item in ipairs(group.sub_item_table) do
-        if item.text == "Lưu truyện thành EPUB" or item.text == "Giữ bản HTML khi lưu EPUB"
+        if item.text == "Lưu truyện thành EPUB"
             or item.text == "Tự xóa HTML báo sau khi đọc xong" then
             toggle_count = toggle_count + 1
             local before = item.checked_func()
-            if item.select_enabled_func then
-                assert_eq(item.select_enabled_func(), false, "retention requires EPUB")
-                retention_settings.novel_epub = true
-                assert_eq(item.select_enabled_func(), true, "retention available with EPUB")
-            end
             item.callback()
             assert_eq(item.checked_func(), not before, "retention toggle changes setting")
             item.callback()
@@ -371,17 +365,16 @@ for _, group in ipairs(settings_groups) do
         end
     end
 end
-assert_eq(toggle_count, 3, "all three retention settings are visible")
+assert_eq(toggle_count, 2, "both retention settings are visible")
 local old_cleanup = package.loaded["booxbook.news-cleanup"]
 local closed_news
-package.loaded["booxbook.news-cleanup"] = { afterClose = function(ui, finished_path)
-    closed_news = { ui, finished_path }
+package.loaded["booxbook.news-cleanup"] = { afterClose = function(ui)
+    closed_news = ui
 end }
 BooxBook.ui = { document = { file = "/downloads/news/feed/article.html" } }
 BooxBook:onEndOfBook()
 BooxBook:onCloseDocument()
-assert_eq(closed_news[2], BooxBook.ui.document.file, "reader lifecycle passes finished article")
-assert_eq(BooxBook.finished_news_path, nil, "finished state reset after close")
+assert_eq(closed_news, BooxBook.ui, "reader lifecycle delegates to news cleanup")
 BooxBook.ui = nil
 package.loaded["booxbook.news-cleanup"] = old_cleanup
 library.callback()
@@ -511,6 +504,14 @@ dofile("tests/gdrive.lua")
 dofile("tests/batch1.lua")
 dofile("tests/ui-open.lua")
 dofile("tests/continuation.lua")
+dofile("tests/morning-sync.lua")
+dofile("tests/opml.lua")
+dofile("tests/reading-state.lua")
+dofile("tests/fulltext-search.lua")
+dofile("tests/quota-cleanup.lua")
+dofile("tests/cloud-upload.lua")
+dofile("tests/opds-library.lua")
+dofile("tests/features-integration.lua")
 
 if failures > 0 then
     io.stderr:write(tostring(failures) .. " test(s) failed\n")

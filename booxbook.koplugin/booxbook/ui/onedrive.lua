@@ -6,6 +6,8 @@ local _ = require("gettext")
 local Catalog = require("booxbook.ui.catalog")
 local Network = require("booxbook.network")
 local OneDrive = require("booxbook.onedrive")
+local Backup = require("booxbook.backup")
+local Settings = require("booxbook.store.settings")
 
 local UI = {}
 
@@ -74,6 +76,16 @@ function UI.download(item)
     end)
 end
 
+function UI.uploadBackup()
+    online(_("Đang tải bản sao lưu lên OneDrive..."), function()
+        local body, err = Backup.export(Settings.get)
+        if not body then return nil, err end
+        return OneDrive.uploadFile(Backup.filename(), body, "application/json")
+    end, function()
+        notify(_("Đã tải bản sao lưu lên OneDrive."))
+    end)
+end
+
 function UI.showFolder(folder_id, title)
     online(_("Đang lấy danh sách OneDrive..."), function() return OneDrive.list(folder_id) end, function(entries)
         local items = {}
@@ -87,7 +99,8 @@ function UI.showFolder(folder_id, title)
                     keep_menu_open = true, callback = function() UI.download(current) end }
             end
         end
-        if #items == 0 then items[1] = { text = _("Không có sách hỗ trợ trong thư mục này."), select_enabled = false } end
+        items[#items + 1] = { text = _("Tải lên bản sao lưu & theo dõi"),
+            keep_menu_open = true, callback = UI.uploadBackup }
         Catalog.show{ title = title or "OneDrive", items = items }
     end)
 end

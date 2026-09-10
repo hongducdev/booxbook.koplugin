@@ -49,7 +49,56 @@ function UI.searchPrompt(default_query)
         end,
     }
 end
+function UI.searchFullTextPrompt(default_query)
+    Catalog.promptText{
+        title = _("Tìm toàn văn offline"),
+        hint = _("Nhập từ khóa nội dung cần tìm..."),
+        input = default_query or "",
+        on_submit = function(value)
+            UI.showFullTextResults(value)
+        end,
+    }
+end
 
+function UI.showFullTextResults(query)
+    local q_clean = (query or ""):match("^%s*(.-)%s*$")
+    if q_clean == "" then return end
+
+    local root = Settings.downloadDir()
+    local Trapper = require("ui/trapper")
+    local results
+    Trapper:wrap(function()
+        Trapper:info(_("Đang tìm kiếm nội dung..."))
+        results = Library.searchFullText(root, q_clean, { max_matches = 30 })
+        Trapper:clear()
+    end)
+
+    if not results or #results == 0 then
+        notify(_("Không tìm thấy nội dung phù hợp: ") .. q_clean)
+        return
+    end
+
+    local items = {}
+    for i = 1, #results do
+        local match = results[i]
+        local title = match.path:match("([^/\\]+)$") or match.path
+        local display_text = match.snippet and (match.snippet .. "  (" .. title .. ")") or title
+        items[#items + 1] = {
+            text = display_text,
+            keep_menu_open = true,
+            callback = function()
+                UI.openBook(match.path)
+            end,
+        }
+    end
+
+    Catalog.show{
+        title = _("Kết quả tìm toàn văn"),
+        subtitle = string.format(_("Từ khóa: \"%s\" · %d kết quả"), q_clean, #results),
+        on_search = function() UI.searchFullTextPrompt(query) end,
+        items = items,
+    }
+end
 function UI.showSearchResults(query)
     local root = Settings.downloadDir()
     local files = Library.collect(root)
@@ -91,6 +140,13 @@ function UI.showSearchResults(query)
             keep_menu_open = true,
             callback = function()
                 UI.searchPrompt(query)
+            end,
+        }
+        items[#items + 1] = {
+            text = _("Tìm toàn văn nội dung cho: ") .. q_clean,
+            keep_menu_open = true,
+            callback = function()
+                UI.showFullTextResults(q_clean)
             end,
         }
     end
@@ -317,6 +373,13 @@ function UI.showCategories()
         keep_menu_open = true,
         callback = function()
             UI.openFileManager()
+        end,
+    }
+    items[#items + 1] = {
+        text = _("Tìm toàn văn offline"),
+        keep_menu_open = true,
+        callback = function()
+            UI.searchFullTextPrompt()
         end,
     }
 

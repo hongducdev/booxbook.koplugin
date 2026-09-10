@@ -40,7 +40,7 @@ function Export.finish(series, dir, first, last, index, result, Json, explicit)
     local html_files = result.saved
     local epub = { title = title .. " (EPUB)", path = target }
     -- Cancelled-run packaging always keeps HTML so the user can still resume.
-    if result.keep_html == true or Settings.get("novel_keep_html") ~= false then
+    if result.keep_html == true then
         table.insert(result.saved, 1, epub)
         return
     end
@@ -89,5 +89,4 @@ function Export.finish(series, dir, first, last, index, result, Json, explicit)
         pcall(Storage.removeSidecar, saved.path)
     end
 end
-
 return Export

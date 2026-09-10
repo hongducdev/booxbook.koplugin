@@ -257,5 +257,234 @@ function Storage.sweepOrphanSidecars(root)
     scan(root, 1)
     return swept
 end
+-- Remove empty subdirectories under root (e.g. empty feed folders in news).
+function Storage.sweepEmptyDirs(root)
+    if type(root) ~= "string" or not Storage.canList() then return 0 end
+    local lfs = lfsModule()
+    local ok_root, root_mode = pcall(lfs.attributes, root, "mode")
+    if not (ok_root and root_mode == "directory") then return 0 end
+    local swept = 0
+    local names = listedNames(root) or {}
+    for _, name in ipairs(names) do
+        local dir = root .. "/" .. name
+        local ok_dir, dmode = pcall(lfs.attributes, dir, "mode")
+        if ok_dir and dmode == "directory" then
+            local children = listedNames(dir) or {}
+            if #children == 0 then
+                if Storage.emptyDir(dir) then
+                    swept = swept + 1
+                end
+            end
+        end
+    end
+    return swept
+end
+
+
+local function collectCategoryFiles(root)
+    local lfs = lfsModule()
+    if type(root) ~= "string" or not (lfs and lfs.dir and lfs.attributes) then
+        return {}, 0, 0
+    end
+
+    local files, bytes, count = {}, 0, 0
+    local function scan(dir)
+        local names = listedNames(dir)
+        if not names then return end
+        for _, name in ipairs(names) do
+            local path = dir .. "/" .. name
+            local ok_attr, mode = pcall(lfs.attributes, path, "mode")
+            if ok_attr and mode == "file" then
+                local filename = name:lower()
+                local is_metadata = filename == "index.json" or filename == "index.json.bak"
+                    or filename == "manifest.json" or filename:match("%.meta%.json$")
+                local ok_size, size = pcall(lfs.attributes, path, "size")
+                local ok_time, mtime = pcall(lfs.attributes, path, "modification")
+                size = (ok_size and type(size) == "number") and size or 0
+                if not (ok_time and type(mtime) == "number") then
+                    mtime = math.huge
+                end
+                files[#files + 1] = { path = path, size = size, mtime = mtime, is_metadata = is_metadata }
+                bytes = bytes + size
+                count = count + 1
+            elseif ok_attr and mode == "directory" then
+                scan(path)
+            end
+        end
+    end
+
+    scan(root)
+    return files, bytes, count
+end
+
+function Storage.categorySize(category_dir)
+    local _, bytes, count = collectCategoryFiles(category_dir)
+    return bytes, count
+end
+
+function Storage.trimCategoryFifo(dir, max_bytes, is_eviction_allowed)
+    local current = Storage.categorySize(dir)
+    if is_eviction_allowed ~= true then
+        return 0, current
+    end
+
+    max_bytes = tonumber(max_bytes) or 0
+    if max_bytes <= 0 then
+        return 0, current
+    end
+
+    local files, bytes = collectCategoryFiles(dir)
+    if bytes <= max_bytes then
+        return 0, bytes
+    end
+
+    table.sort(files, function(a, b)
+        if a.mtime == b.mtime then return a.path < b.path end
+        return a.mtime < b.mtime
+    end)
+
+    local freed = 0
+    for _, entry in ipairs(files) do
+        if bytes <= max_bytes then break end
+        if not entry.is_metadata and os.remove(entry.path) then
+            bytes = bytes - entry.size
+            freed = freed + entry.size
+        end
+    end
+    return freed, bytes
+end
+
+function Storage.sweepStaleDigests(received_dir, max_days)
+    if type(received_dir) ~= "string" then return 0 end
+    local lfs = lfsModule()
+    if not (lfs and lfs.dir and lfs.attributes) then return 0 end
+    max_days = tonumber(max_days) or 30
+    local max_age = max_days * 86400
+    local now = os.time()
+    local swept = 0
+    local names = listedNames(received_dir)
+    if not names then return 0 end
+    for _, name in ipairs(names) do
+        if name:match("^digest%-.*%.epub$") then
+            local path = received_dir .. "/" .. name
+            local ok_mode, mode = pcall(lfs.attributes, path, "mode")
+            local ok_time, mtime = pcall(lfs.attributes, path, "modification")
+            if ok_mode and mode == "file" and ok_time and type(mtime) == "number"
+                and now - mtime > max_age and os.remove(path) then
+                swept = swept + 1
+            end
+        end
+    end
+    return swept
+end
+
+function Storage.sweepOrphanParts(root_dir, max_age_seconds)
+    if type(root_dir) ~= "string" then return 0 end
+    local lfs = lfsModule()
+    if not (lfs and lfs.dir and lfs.attributes) then return 0 end
+    max_age_seconds = tonumber(max_age_seconds) or 86400
+    local now = os.time()
+    local swept = 0
+
+    local function scan(dir)
+        local names = listedNames(dir)
+        if not names then return end
+        for _, name in ipairs(names) do
+            local path = dir .. "/" .. name
+            local ok_attr, mode = pcall(lfs.attributes, path, "mode")
+            if ok_attr and mode == "directory" then
+                scan(path)
+            elseif ok_attr and mode == "file" and name:match("%.part$") then
+                local ok_time, mtime = pcall(lfs.attributes, path, "modification")
+                if ok_time and type(mtime) == "number"
+                    and now - mtime > max_age_seconds and os.remove(path) then
+                    swept = swept + 1
+                end
+            end
+        end
+    end
+
+    scan(root_dir)
+    return swept
+end
+
+local function settingValue(settings_getter, key, default)
+    local value
+    if type(settings_getter) == "function" then
+        value = settings_getter(key)
+    elseif type(settings_getter) == "table" and type(settings_getter.get) == "function" then
+        local ok
+        ok, value = pcall(settings_getter.get, key)
+        if not ok then
+            ok, value = pcall(settings_getter.get, settings_getter, key)
+        end
+        if not ok then value = nil end
+    else
+        local ok_settings, Settings = pcall(require, "booxbook.store.settings")
+        if ok_settings and Settings and type(Settings.get) == "function" then
+            value = Settings.get(key)
+        end
+    end
+    if value == nil then return default end
+    return value
+end
+
+local function quotaBytes(settings_getter, key)
+    local mb = tonumber(settingValue(settings_getter, key, 0)) or 0
+    if mb <= 0 then return nil end
+    return mb * 1024 * 1024
+end
+
+function Storage.runGlobalMaintenance(download_dir, settings_getter)
+    local stats = {
+        stale_digests = 0,
+        orphan_parts = 0,
+        orphan_sidecars = 0,
+        quotas = {},
+    }
+    if type(download_dir) ~= "string" or download_dir == "" then
+        return stats
+    end
+
+    stats.stale_digests = Storage.sweepStaleDigests(download_dir .. "/received", 30)
+    stats.orphan_parts = Storage.sweepOrphanParts(download_dir, 86400)
+    stats.orphan_sidecars = Storage.sweepOrphanSidecars(download_dir .. "/news")
+
+    local categories = {
+        { name = "news", key = "quota_news_mb", allowed = true },
+        { name = "received", key = "quota_received_mb", allowed = true },
+        { name = "novels", key = "quota_novels_mb", evict_key = "quota_novels_evict" },
+        { name = "comics", key = "quota_comics_mb", evict_key = "quota_comics_evict" },
+    }
+
+    for _, category in ipairs(categories) do
+        local dir = download_dir .. "/" .. category.name
+        local max_bytes = quotaBytes(settings_getter, category.key)
+        local allowed = category.allowed == true
+        if category.evict_key then
+            allowed = settingValue(settings_getter, category.evict_key, false) == true
+        end
+        if max_bytes then
+            local freed, remaining = Storage.trimCategoryFifo(dir, max_bytes, allowed)
+            stats.quotas[category.name] = {
+                freed = freed,
+                remaining = remaining,
+                max_bytes = max_bytes,
+                eviction_allowed = allowed,
+            }
+        else
+            local bytes = Storage.categorySize(dir)
+            stats.quotas[category.name] = {
+                freed = 0,
+                remaining = bytes,
+                max_bytes = 0,
+                eviction_allowed = allowed,
+            }
+        end
+        Storage.sweepEmptyDirs(dir)
+    end
+
+    return stats
+end
 
 return Storage

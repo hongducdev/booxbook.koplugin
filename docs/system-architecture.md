@@ -38,7 +38,7 @@ LuaSocket native/QR/Wi-Fi trên Boox. Không tự mở firewall Kindle.
 `main.lua → ui/onedrive.lua → onedrive.lua → booxbook.http → received/`.
 OneDrive dùng Microsoft Device Code Flow với public client ID của ứng dụng BooxBook
 (người dùng vẫn có thể thay thế trong cài đặt),
-scope tối thiểu `Files.Read offline_access`; không có client secret. UI không poll nền:
+scope `Files.ReadWrite offline_access` (hỗ trợ upload sao lưu); không có client secret. UI không poll nền:
 hiện verification URL + user code/QR, rồi người dùng chủ động kiểm tra sau khi đăng nhập.
 Access token tự refresh và Graph request chỉ retry một lần sau 401.
 Mọi request OAuth/Graph của OneDrive bật xác minh chuỗi chứng chỉ bằng CA bundle
@@ -126,22 +126,23 @@ Mỗi adapter trả:
 - Cổng mạng (`booxbook.network.whenOnline`): nếu đã online/connected thì chạy ngay; chỉ gọi `beforeWifiAction` khi cả hai false.
 - HTTPS đi qua DoH Cloudflare với bootstrap `1.1.1.1`, giữ hostname gốc cho Host/SNI, cache A record theo TTL và fallback DNS hệ thống nếu DoH không dùng được.
 - Sangtacviet tắt (`stv_enabled = false`) đến khi xác nhận cảnh báo. 18+ tắt; ảnh bật (`adult_content`, `include_images`).
-- Truyện: **một HTML mỗi chương**. Range kiểm tra entry + file trước request, trả `existing` để mở/báo bỏ qua; entry mất file được tải lại. Index ghi từng chương qua file tạm, giữ `index.json.bak` hợp lệ gần nhất và chỉ fallback khi schema/id đúng. Bật `novel_epub` để tự tạo EPUB theo khoảng; action thủ công đóng gói các HTML đã tải với `keep_html=true`. Bộ ghi mở lại archive trước rename; nếu FAT từ chối đè file đích thì replace an toàn.
+- Truyện: **một HTML mỗi chương**. Range kiểm tra entry + file trước request, trả `existing` để mở/báo bỏ qua; entry mất file được tải lại. Index ghi từng chương qua file tạm, giữ `index.json.bak` hợp lệ gần nhất và chỉ fallback khi schema/id đúng. Bật `novel_epub` để tự tạo EPUB theo khoảng; tạo EPUB thành công sẽ tự động xóa HTML và ảnh sidecar. Đóng gói sau khi hủy tải (`keep_html=true` / `packagePartial`) luôn giữ lại HTML để resume.
 
 ## DocLN
 
-`novel-export.lua` xử lý đóng gói và giữ/xóa HTML. `packageSaved` chọn HTML
+`novel-export.lua` xử lý đóng gói và xóa HTML. `packageSaved` chọn HTML
 theo số mục lục từ index, bỏ qua file thiếu/entry EPUB và không gọi adapter.
-Khi `novel_keep_html=false`,
-ghi tham chiếu EPUB vào index trước khi xóa HTML; lỗi xóa dừng ngay và trả
+Khi tạo EPUB thành công, ghi tham chiếu EPUB vào index trước khi xóa HTML; lỗi xóa dừng ngay và trả
 những HTML còn lại vào index. Đóng gói sau khi hủy tải (`keep_html=true` /
 `packagePartial`) luôn giữ HTML để resume. ConfirmBox hủy tải hiện trước
 list/toast (`cancel_callback`) để không bị fullscreen menu che. Offline deduplicate theo path; tên file chỉ nhận
 `tên.ext`, từ chối `.` / `..` / `../`.
+`BooxBook.purgeImageCache()` dọn dẹp ảnh bìa cache, quét toàn bộ thư mục ảnh sidecar mồ côi dưới `news/` và `novels/`, quét xóa file HTML thừa đã được đóng gói vào EPUB qua `Download.sweepOrphanHtml`, xóa thư mục rỗng trong `news/`, và quét bản nháp comic quá 7 ngày qua `Download.sweepStale(7)`.
 `news-cleanup.lua` nhận CloseDocument từ plugin, đợi tick sau mới gọi native
 FileManager:deleteFile. Chỉ nhận HTML dưới news sau kiểm tra realpath; yêu cầu
-`news_delete_finished=true` và (`summary.status=complete` hoặc EndOfBook mà
-`percent_finished` vẫn ≥ 0.99).
+`news_delete_finished=true` và (`summary.status=complete` hoặc đọc đến cuối bài
+với progress ≥ 0.99 / live `getLastPercent()` ≥ 99%).
+
 
 Thư viện dùng `FileManager.instance.file_chooser:changeToPath` hoặc
 `FileManager:showFiles` sau khi đóng Catalog và ReaderUI đang mở. Không sao chép
@@ -236,6 +237,16 @@ Novel: `resolveNovelNext` đọc `novels/<nguồn>/<id>/index.json`, nhận
 `chapters-<từ>-<đến>.epub` / `chapter-<n>.html` / `book.epub`; `next_entry.file` tồn tại
 mới là đã tải. Chưa tải → `Novels.downloadChapter` (validate nguồn/id/số chương, báo
 hết truyện khi vượt số chương mục lục mới).
+
+## Tự động hóa & Tính năng nâng cao (0.0.12)
+
+- **Morning Sync** (`morning-sync.lua`): Tự động kiểm tra chương mới và tạo digest ngày mới vào mỗi buổi sáng. Chạy thụ động qua `Network.ifOnline` (không bao giờ hiện hộp thoại bật Wi-Fi); chia tick qua `UIManager:nextTick` và bọc tác vụ mạng bằng `Trapper:wrap`. Dùng rotating cursor tránh bỏ sót các truyện theo dõi phía sau và con trỏ `(mtime, path)` bảo đảm không bỏ sót bài báo nào.
+- **OPML RSS** (`opml.lua`): Phân tích XML OPML 2.0 dạng phẳng/lồng nhau, trích xuất `xmlUrl`, giải mã entities và tạo file xuất chuẩn. Tích hợp menu nhập/xuất trong Báo.
+- **Lịch sử & Tiến độ đọc** (`reading-state.lua`): Lưu trữ bền vững hai lớp (lớp 1 trong `Settings` theo key `<kind>:<source>:<id>`, lớp 2 phản chiếu vào `index.json` và `manifest.json`). `comic-download.lua` bảo toàn trạng thái đọc khi làm mới mục lục. Thư viện hiển thị nhãn `[Đang đọc %]` và `[Đã xong]`.
+- **Tìm kiếm toàn văn** (`fulltext-search.lua`): Quét nội dung HTML/txt cục bộ, áp dụng accent-folding tiếng Việt, giới hạn trần bộ nhớ/kết quả (mặc định tối đa 30 kết quả, đọc 256KB/file), trích xuất snippet nổi bật hiển thị trên UI thư viện.
+- **Hạn ngạch & Dọn dẹp** (`storage.lua`): Quản lý quota độc lập từng danh mục (`news`: 300MB, `received`: 500MB, `novels`/`comics`: mặc định không giới hạn). Tự động dọn FIFO cho báo/file nhận khi vượt trần nhưng bảo vệ truyện trừ khi bật opt-in. Quét sạch digest > 30 ngày và `.part` mồ côi > 24 giờ.
+- **Cloud Upload** (`onedrive.lua`, `gdrive.lua`, `http.lua`): Bổ sung `Http.put` và multipart POST. Upload thủ công bản sao lưu cài đặt và danh sách theo dõi lên OneDrive và Google Drive. Nhận diện token cũ thiếu quyền và nhắc nhở đăng nhập lại.
+- **OPDS Toàn thư viện** (`opds.lua`, `wifi-upload.lua`): Mở rộng máy chủ Wi-Fi cấp danh mục Atom OPDS 1.2 cho toàn bộ thư viện sách với MIME type chuẩn (`.epub`, `.cbz`, `.html`, `.pdf`). `Upload.safeRelativePath` chặn triệt để tấn công directory traversal; nâng trần stream file lên 512MB.
 
 ## Liên kết
 

@@ -8,7 +8,7 @@ local Upload = require("booxbook.wifi-upload")
 local OneDrive = { MAX_BYTES = Upload.MAX_BYTES, MAX_PAGES = 20 }
 local LOGIN = "https://login.microsoftonline.com/common/oauth2/v2.0/"
 local GRAPH = "https://graph.microsoft.com/v1.0/"
-local SCOPE = "Files.Read offline_access"
+local SCOPE = "Files.ReadWrite offline_access"
 
 local function trim(value)
     return tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -169,6 +169,31 @@ function OneDrive.graph(url, retry)
     local data = decode(body)
     if not ok or not data then return nil, message(data, "Microsoft Graph lỗi (" .. tostring(code) .. ").") end
     return data
+end
+
+local function uploadReauthError()
+    OneDrive.clearAuth()
+    return nil, "OneDrive cần đăng nhập lại để cấp quyền tải lên bản sao lưu."
+end
+
+function OneDrive.uploadFile(filename, content, mime)
+    local name = trim(filename)
+    if name == "" or name:find("[/\\]") then return nil, "Tên bản sao lưu không hợp lệ." end
+    local token, err = OneDrive.accessToken()
+    if not token then return nil, err end
+    local url = GRAPH .. "me/drive/root:/BooxBook/" .. encode(name) .. ":/content"
+    local ok, code, body = Http.put(url, content or "", {
+        headers = {
+            authorization = "Bearer " .. token,
+            ["content-type"] = mime or "application/octet-stream",
+        },
+        delay_ms = 0,
+        verify_tls = true,
+    })
+    local data = decode(body)
+    if ok then return data or true end
+    if code == 401 or code == 403 then return uploadReauthError() end
+    return nil, message(data, "Không tải bản sao lưu lên OneDrive (" .. tostring(code) .. ").")
 end
 
 function OneDrive.list(folder_id)

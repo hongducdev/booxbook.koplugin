@@ -551,10 +551,7 @@ top_widget = nil
 
 local handled_main = BooxBook:onEndOfBook()
 assert(handled_main == true, "BooxBook:onEndOfBook returns true to consume event")
-assert(BooxBook.finished_news_path == cbz1_path, "preserves finished_news_path for news cleanup")
-
 BooxBook:onCloseDocument()
-assert(BooxBook.finished_news_path == nil, "onCloseDocument clears news path")
 assert(Continuation.prompted_path == nil, "onCloseDocument resets continuation guard")
 
 -- 7. Regression: unresolvable BooxBook file must NOT swallow EndOfBook

@@ -132,7 +132,7 @@ end
 local explicit
 Export.finish = function(_, _, first, last, _, result, _, force)
     explicit = force
-    assert(first == 1 and last == 3 and result.keep_html and #result.saved == 1 and #result.skipped == 2)
+    assert(first == 1 and last == 3 and not result.keep_html and #result.saved == 1 and #result.skipped == 2)
     table.insert(result.saved, 1, { title = "Book EPUB", path = "book.epub" })
 end
 local package_series = { source_id = "docln", id = "truyen-1", url = "/truyen/1", title = "Book", chapters = {

@@ -8,6 +8,7 @@ local Html = require("booxbook.html")
 local Export = require("booxbook.novel-export")
 local Parser = require("booxbook.sources.docln-parser")
 local Settings = require("booxbook.store.settings")
+local Storage = require("booxbook.store.storage")
 local has_gettext, gettext = pcall(require, "gettext")
 local _ = has_gettext and gettext or function(text) return text end
 local Download = {}
@@ -296,7 +297,7 @@ function Download.packageSaved(series, first, last)
             by_number[number] = { id = chapter_id, entry = entry }
         end
     end
-    local result = { saved = {}, skipped = {}, keep_html = true }
+    local result = { saved = {}, skipped = {} }
     for number = first, last do
         local found = by_number[number]
         local entry = found and found.entry
@@ -318,6 +319,62 @@ function Download.packageSaved(series, first, last)
     if #result.saved == 0 then return nil, _("Khoảng đã chọn không có chương HTML đã tải.") end
     Export.finish(series, dir, first, last, index, result, Json, true)
     return result
+end
+-- Remove orphan HTML chapter files whose chapter in index.json points to an
+-- existing, verified EPUB file. Also removes associated image sidecars.
+-- Reuses chapterFileName and safeEntry to safely locate files.
+function Download.sweepOrphanHtml(novels_root)
+    if type(novels_root) ~= "string" then return 0 end
+    local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
+    if not (ok_lfs and lfs and lfs.dir and lfs.attributes) then return 0 end
+    local ok_mode, mode = pcall(lfs.attributes, novels_root, "mode")
+    if not (ok_mode and mode == "directory") then return 0 end
+    local json_ok, Json = pcall(require, "json")
+    if not (json_ok and Json and Json.decode) then return 0 end
+    local swept = 0
+    local ok_sources, source_iter, source_state = pcall(lfs.dir, novels_root)
+    if not (ok_sources and source_iter) then return 0 end
+    for source in source_iter, source_state do
+        if source ~= "." and source ~= ".." then
+            local source_dir = novels_root .. "/" .. source
+            local ok_s, smode = pcall(lfs.attributes, source_dir, "mode")
+            if ok_s and smode == "directory" then
+                local ok_series, series_iter, series_state = pcall(lfs.dir, source_dir)
+                if ok_series and series_iter then
+                    for series in series_iter, series_state do
+                        if series ~= "." and series ~= ".." then
+                            local series_dir = source_dir .. "/" .. series
+                            local ok_ser, sermode = pcall(lfs.attributes, series_dir, "mode")
+                            if ok_ser and sermode == "directory" then
+                                local index_path = series_dir .. "/index.json"
+                                local index = readIndex(index_path, Json, series, true)
+                                if index and type(index.chapters) == "table" then
+                                    for chapter_id, entry in pairs(index.chapters) do
+                                        if safeEntry(entry) and entry.file:lower():match("%.epub$") then
+                                            local epub_path = series_dir .. "/" .. entry.file
+                                            if fileExists(epub_path) then
+                                                local html_name = chapterFileName(tostring(chapter_id))
+                                                if html_name then
+                                                    local html_path = series_dir .. "/" .. html_name
+                                                    if fileExists(html_path) then
+                                                        if os.remove(html_path) then
+                                                            swept = swept + 1
+                                                            pcall(Storage.removeSidecar, html_path)
+                                                        end
+                                                    end
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return swept
 end
 
 return Download

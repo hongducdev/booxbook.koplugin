@@ -12,7 +12,7 @@ local GDrive = { MAX_BYTES = 512 * 1024 * 1024, MAX_PAGES = 20 }
 local DEVICE = "https://oauth2.googleapis.com/device/code"
 local TOKEN = "https://oauth2.googleapis.com/token"
 local API = "https://www.googleapis.com/drive/v3/"
-local SCOPE = "https://www.googleapis.com/auth/drive.readonly"
+local SCOPE = "https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file"
 local FOLDER_MIME = "application/vnd.google-apps.folder"
 
 local FORMATS = { epub = true, pdf = true, cbz = true, cbr = true, fb2 = true,
@@ -231,6 +231,39 @@ local function apiGet(url, retry)
         return nil, message(data, "Google Drive lỗi (" .. tostring(code) .. ").")
     end
     return data
+end
+
+local function uploadReauthError()
+    GDrive.clearAuth()
+    return nil, "Google Drive cần đăng nhập lại để cấp quyền tải lên bản sao lưu."
+end
+
+function GDrive.uploadFile(filename, content, mime)
+    local name = trim(filename)
+    if name == "" or name:find("[/\\]") then return nil, "Tên bản sao lưu không hợp lệ." end
+    local token, err = GDrive.accessToken()
+    if not token then return nil, err end
+    local boundary = "BooxBookBoundary" .. tostring(os.time())
+    local metadata = Json.encode({ name = name })
+    local body = "--" .. boundary .. "\r\n"
+        .. "Content-Type: application/json; charset=UTF-8\r\n\r\n"
+        .. metadata .. "\r\n"
+        .. "--" .. boundary .. "\r\n"
+        .. "Content-Type: " .. (mime or "application/octet-stream") .. "\r\n\r\n"
+        .. (content or "") .. "\r\n"
+        .. "--" .. boundary .. "--\r\n"
+    local ok, code, response = Http.post("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", body, {
+        headers = {
+            authorization = "Bearer " .. token,
+            ["content-type"] = "multipart/related; boundary=" .. boundary,
+        },
+        delay_ms = 0,
+        verify_tls = true,
+    })
+    local data = decode(response)
+    if ok then return data or true end
+    if code == 401 or code == 403 then return uploadReauthError() end
+    return nil, message(data, "Không tải bản sao lưu lên Google Drive (" .. tostring(code) .. ").")
 end
 
 function GDrive.list(folder_id, page_token)

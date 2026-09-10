@@ -210,7 +210,7 @@ function Library.collect(root, opts)
 
     local max_depth = tonumber(opts.max_depth) or 5
     local series_cache = {}
-
+    local reading_cache = {}
     local function getSeriesTitle(dir, category, series_id)
         if series_cache[dir] then return series_cache[dir] end
         local title = series_id
@@ -282,6 +282,31 @@ function Library.collect(root, opts)
                         end
                     end
 
+                    local badge = ""
+                    local reading_status, read_percent
+                    local prog = reading_cache[dir]
+                    if prog == nil then
+                        local ok_rs, ReadingState = pcall(require, "booxbook.reading-state")
+                        if ok_rs and ReadingState and ReadingState.resolveTarget and ReadingState.getProgress then
+                            local target = ReadingState.resolveTarget(path)
+                            if target then
+                                prog = ReadingState.getProgress(target.kind, target.source_id, target.series_id, target.dir)
+                            end
+                        end
+                        reading_cache[dir] = prog or false
+                    end
+                    if prog and prog ~= false then
+                        reading_status = prog.status
+                        read_percent = prog.read_percent
+                        local ok_rs, ReadingState = pcall(require, "booxbook.reading-state")
+                        if ok_rs and ReadingState and ReadingState.formatStatusBadge then
+                            badge = ReadingState.formatStatusBadge(prog)
+                        end
+                    end
+                    if badge ~= "" then
+                        display_title = display_title .. " " .. badge
+                    end
+
                     out[#out + 1] = {
                         name = name,
                         title = display_title,
@@ -290,6 +315,8 @@ function Library.collect(root, opts)
                         path = path,
                         size = size,
                         mtime = mtime,
+                        status = reading_status,
+                        read_percent = read_percent,
                     }
                 end
             end
@@ -299,5 +326,11 @@ function Library.collect(root, opts)
     scan(root, 1, nil, nil)
     return out
 end
+function Library.searchFullText(root, query, opts)
+    local ok, FulltextSearch = pcall(require, "booxbook.fulltext-search")
+    if not ok or not FulltextSearch then return {} end
+    return FulltextSearch.searchTree(root, query, opts)
+end
+
 
 return Library

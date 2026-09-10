@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.0.12 — 2026-09-10
+
+- **Tự động kiểm tra truyện & gom digest sáng** (`morning-sync.lua`): kiểm tra chương mới
+  cho truyện theo dõi và gom bài báo đã tải thành digest EPUB mỗi sáng qua cổng thụ động
+  `Network.ifOnline` (không bật Wi-Fi hay hiện hộp thoại); dùng rotating cursor tránh bỏ sót
+  và con trỏ `(mtime, path)` không bỏ sót bài báo nào.
+- **Nhập/xuất OPML RSS** (`opml.lua`): hỗ trợ định dạng chuẩn OPML 2.0, phân tích outline lồng
+  nhau và giải mã entity; thêm menu "Nhập file OPML" và "Xuất file OPML" trong Báo.
+- **Lịch sử & trạng thái đọc thống nhất** (`reading-state.lua`): lưu tiến độ hai lớp
+  (Settings bền vững + mirror `index.json`/`manifest.json`), hiển thị nhãn `[Đang đọc %]` và
+  `[Đã xong]`; bảo toàn trạng thái khi làm mới mục lục truyện tranh.
+- **Tìm kiếm toàn văn offline** (`fulltext-search.lua`): quét nội dung HTML/txt cục bộ,
+  hỗ trợ tìm kiếm tiếng Việt không dấu/có dấu, giới hạn bộ nhớ/kết quả chặt chẽ cho máy e-ink,
+  hiển thị đoạn trích ngữ cảnh (snippet) nổi bật trên giao diện thư viện.
+- **Hạn ngạch bộ nhớ & dọn rác toàn cục** (`storage.lua`): quản lý quota riêng biệt cho
+  `news` (300MB), `received` (500MB), `novels` và `comics` (mặc định không giới hạn); tự động
+  xóa FIFO cho báo/file nhận khi vượt trần nhưng tuyệt đối bảo vệ truyện chữ/tranh trừ khi
+  chủ động bật opt-in; tự động dọn digest > 30 ngày và file `.part` mồ côi > 24 giờ.
+- **Tải bản sao lưu lên OneDrive & Google Drive** (`onedrive.lua`, `gdrive.lua`): hỗ trợ
+  upload thủ công bản sao lưu cài đặt và danh sách theo dõi; nâng cấp scope Microsoft sang
+  `Files.ReadWrite` và Google sang `drive.readonly` + `drive.file`; có cơ chế nhận diện và
+  nhắc nhở đăng nhập lại khi token cũ thiếu quyền.
+- **Phục vụ OPDS toàn thư viện** (`opds.lua`, `wifi-transfer-server.lua`): mở rộng máy chủ
+  Wi-Fi phục vụ toàn bộ thư viện sách (truyện chữ, truyện tranh, báo chí, sách nhận) với MIME
+  chuẩn cho các app MoonReader/KOReader mobile; nâng hạn mức 512MB và chặn triệt để path traversal.
+
 ## 0.0.11 — 2026-09-10
 
 - Đọc tiếp nối tập/chương (EndOfBook): tới trang cuối CBZ/EPUB/HTML thì hỏi mở tiếp

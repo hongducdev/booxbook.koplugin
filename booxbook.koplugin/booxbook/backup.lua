@@ -1,6 +1,6 @@
 -- Backup/restore settings + followed list as one JSON file in received/.
 -- Only explicit user action reads/writes. No cloud upload here.
-local Backup = { KEYS = { "novel_epub", "novel_keep_html", "news_delete_finished",
+local Backup = { KEYS = { "novel_epub", "news_delete_finished",
     "adult_content", "include_images", "news_limit", "followed_series" } }
 
 function Backup.export(getFn)

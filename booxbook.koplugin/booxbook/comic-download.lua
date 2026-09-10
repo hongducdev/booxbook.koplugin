@@ -128,7 +128,16 @@ function Download.savedPath(url)
     if existing then
         existing:close()
         local valid, err = Cbz.verify(path)
-        if valid then return path end
+        if valid then
+            local Source = adapterFor(url)
+            local ref = Source and Source.parseRef(url)
+            if ref then
+                local dir = path:match("^(.*)/[^/]+$")
+                local staging = dir .. "/." .. ref.chapter .. "-pages"
+                pcall(Storage.emptyDir, staging)
+            end
+            return path
+        end
         return nil, _("CBZ cũ bị lỗi; hãy di chuyển hoặc xóa trong Thư viện trước khi tải lại. ") .. tostring(err)
     end
 end
@@ -158,12 +167,22 @@ function Download.writeManifest(dir, series)
     local json_ok, Json = pcall(require, "json")
     if not json_ok or not Json or not Json.encode then return false end
 
+    local existing = Download.readManifest(dir)
+    local reading_state = existing and existing.reading_state
+    if not reading_state then
+        local ok_rs, ReadingState = pcall(require, "booxbook.reading-state")
+        if ok_rs and ReadingState and ReadingState.getProgress then
+            reading_state = ReadingState.getProgress("comic", Source.id, ref_first.series, dir)
+        end
+    end
+
     local manifest = {
         source_id = Source.id,
         id = ref_first.series,
         title = series.title,
         url = series.url,
         chapters = chapters,
+        reading_state = reading_state,
     }
     local ok, encoded = pcall(Json.encode, manifest)
     if not ok or type(encoded) ~= "string" then return false end

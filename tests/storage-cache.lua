@@ -163,8 +163,44 @@ ensureDir("/dl/comics/truyentuoitho/series/.tap-empty-pages")
 assert(Download.sweepStale(7) >= 1, "empty leftover staging reclaimed")
 assert(dirs["/dl/comics/truyentuoitho/series/.tap-empty-pages"] == nil)
 os.time = old_time
-Settings.downloadDir = old_dir
 
+-- Test valid existing CBZ in savedPath cleans residual staging, invalid preserves it
+local Cbz = require("booxbook.comic-cbz")
+local old_verify = Cbz.verify
+local comic_url = "https://truyentuoitho.com/manga/series/tap-3/"
+local cbz_path = "/dl/comics/truyentuoitho/series/tap-3.cbz"
+local staging_tap3 = "/dl/comics/truyentuoitho/series/.tap-3-pages"
+ensureDir(staging_tap3)
+addFile(staging_tap3 .. "/0001", 10, 100)
+addFile(cbz_path, 100, 100)
+
+local saved_io_open = io.open
+io.open = function(path, mode)
+    if files[path] then
+        return {
+            read = function() return "data" end,
+            seek = function() return files[path].size end,
+            close = function() end,
+        }
+    end
+    return nil, "no such file"
+end
+
+-- When CBZ verification fails, residual staging is PRESERVED
+Cbz.verify = function() return false, "corrupt" end
+Settings.downloadDir = function() return "/dl" end
+local res_saved, err_saved = Download.savedPath(comic_url)
+assert(res_saved == nil and err_saved:find("CBZ cũ bị lỗi"), "corrupt CBZ rejected")
+assert(dirs[staging_tap3] ~= nil, "residual staging preserved on invalid CBZ")
+
+-- When CBZ verification succeeds, residual staging is CLEANED
+Cbz.verify = function() return true end
+res_saved = Download.savedPath(comic_url)
+assert(res_saved == cbz_path, "valid CBZ returned")
+assert(dirs[staging_tap3] == nil, "residual staging cleaned on valid CBZ")
+Cbz.verify = old_verify
+Settings.downloadDir = old_dir
+io.open = saved_io_open
 -- pruneSidecar also drops crashed Html.writeFile leftovers (`N.ext.part`).
 ensureDir("/dl/news/feed/part.html.images")
 addFile("/dl/news/feed/part.html.images/1.gif", 5, 100)
@@ -207,6 +243,86 @@ assert(files["/dl/news/feed/live.html.images/1.gif"] == nil, "commit removes sid
 Http.get = old_http
 Settings.set("include_images", previous_images)
 
+-- Storage.sweepEmptyDirs sweeps empty directories, keeps non-empty
+ensureDir("/dl/news/empty_feed")
+ensureDir("/dl/news/non_empty_feed")
+addFile("/dl/news/non_empty_feed/article.html", 10, 100)
+local swept_empty = Storage.sweepEmptyDirs("/dl/news")
+assert(swept_empty == 1, "empty feed dir swept")
+assert(dirs["/dl/news/empty_feed"] == nil, "empty feed dir removed")
+assert(dirs["/dl/news/non_empty_feed"] ~= nil, "non-empty feed dir kept")
+
+-- Novel Download.sweepOrphanHtml removes HTML/sidecars for EPUB-packaged chapters only
+local NovelDownload = require("booxbook.novel-download")
+local s_dir = "/dl/novels/docln/series1"
+ensureDir(s_dir)
+local index_data = {
+    id = "series1",
+    chapters = {
+        ["1"] = { file = "chapters-1-10.epub", title = "Chương 1" },
+        ["2"] = { file = "ch-000000000002.html", title = "Chương 2" },
+        ["3"] = { file = "nonexistent.epub", title = "Chương 3" },
+        ["4"] = { file = "../escaped.epub", title = "Chương 4" },
+    },
+}
+local saved_json = package.loaded["json"]
+package.loaded["json"] = {
+    decode = function(s) if s == "index_raw" then return index_data end end,
+    encode = function() return "index_raw" end,
+}
+files[s_dir .. "/index.json"] = { size = 9, mtime = 100 }
+dirs[s_dir]["index.json"] = true
+addFile(s_dir .. "/chapters-1-10.epub", 500, 100)
+addFile(s_dir .. "/ch-000000000001.html", 20, 100)
+ensureDir(s_dir .. "/ch-000000000001.html.images")
+addFile(s_dir .. "/ch-000000000001.html.images/1.jpg", 10, 100)
+addFile(s_dir .. "/ch-000000000002.html", 20, 100)
+addFile(s_dir .. "/ch-000000000003.html", 20, 100)
+addFile(s_dir .. "/ch-000000000004.html", 20, 100)
+addFile(s_dir .. "/ch-000000000005.html.part", 20, 100)
+
+-- Bad series with corrupt index.json must retain all HTML
+local s_bad = "/dl/novels/docln/bad_series"
+ensureDir(s_bad)
+addFile(s_bad .. "/ch-000000000001.html", 20, 100)
+files[s_bad .. "/index.json"] = { size = 5, mtime = 100 }
+dirs[s_bad]["index.json"] = true
+
+local saved_io_open = io.open
+io.open = function(path, mode)
+    if path == s_dir .. "/index.json" then
+        return {
+            read = function(_, what) return "index_raw" end,
+            close = function() end,
+        }
+    end
+    if path == s_bad .. "/index.json" then
+        return {
+            read = function(_, what) return "{bad_json" end,
+            close = function() end,
+        }
+    end
+    if files[path] then
+        return {
+            read = function() return "data" end,
+            seek = function() return files[path].size end,
+            close = function() end,
+        }
+    end
+    return nil, "no such file"
+end
+
+local swept_novels = NovelDownload.sweepOrphanHtml("/dl/novels")
+assert(swept_novels == 1, "only packaged HTML swept")
+assert(files[s_dir .. "/ch-000000000001.html"] == nil, "chapter 1 HTML deleted because EPUB exists")
+assert(dirs[s_dir .. "/ch-000000000001.html.images"] == nil, "chapter 1 sidecar deleted")
+assert(files[s_dir .. "/ch-000000000002.html"] ~= nil, "chapter 2 HTML kept (active in index)")
+assert(files[s_dir .. "/ch-000000000003.html"] ~= nil, "chapter 3 HTML kept (EPUB missing on disk)")
+assert(files[s_dir .. "/ch-000000000004.html"] ~= nil, "chapter 4 HTML kept (path traversal rejected)")
+assert(files[s_dir .. "/ch-000000000005.html.part"] ~= nil, "part files kept for resume")
+assert(files[s_bad .. "/ch-000000000001.html"] ~= nil, "HTML kept when index.json is corrupt")
+io.open = saved_io_open
+package.loaded["json"] = saved_json
 os.remove = saved_os_remove
 package.loaded["libs/libkoreader-lfs"] = saved_lfs_koreader
 package.loaded["lfs"] = saved_lfs

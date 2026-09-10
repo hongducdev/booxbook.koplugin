@@ -22,6 +22,31 @@ function Upload.filename(encoded)
     end))
 end
 
+local function urldecode(encoded)
+    if type(encoded) ~= "string" or encoded:gsub("%%(%x%x)", ""):find("%%") then return end
+    return encoded:gsub("%%(%x%x)", function(hex)
+        return string.char(tonumber(hex, 16))
+    end)
+end
+
+function Upload.safeRelativePath(encoded_path)
+    if type(encoded_path) ~= "string" or #encoded_path > 1024 then return end
+    -- Reject encoded directory separators and encoded null bytes before decoding
+    if encoded_path:find("%%2[Ff]") or encoded_path:find("%%5[Cc]") or encoded_path:find("%%00") then return end
+    local path = urldecode(encoded_path)
+    if not path or path == "" then return end
+    if path:find("\0", 1, true) or path:find("\\", 1, true) then return end
+    if path:sub(1, 1) == "/" or path:match("^%a:") then return end
+    local parts = {}
+    for segment in path:gmatch("[^/]+") do
+        if segment == "." or segment == ".." or segment == "" then return end
+        parts[#parts + 1] = segment
+    end
+    if #parts == 0 or table.concat(parts, "/") ~= path then return end
+    return path
+end
+
+
 function Upload.headers(raw, authority, token)
     local first, rest = raw:match("^([^\r\n]+)\r\n(.*)$")
     if not first then return nil, 400, _("Yêu cầu không hợp lệ.") end
@@ -47,9 +72,9 @@ function Upload.headers(raw, authority, token)
     if method == "GET" then
         local encoded = path:match("^/opds/file/(.+)$")
         if encoded then
-            local name = Upload.filename(encoded)
-            if not name then return nil, 404, _("Không tìm thấy.") end
-            return { opds_file = name }
+            local relpath = Upload.safeRelativePath(encoded)
+            if not relpath then return nil, 404, _("Không tìm thấy.") end
+            return { opds_file = relpath }
         end
     end
     if method == "POST" and path == "/queue" then

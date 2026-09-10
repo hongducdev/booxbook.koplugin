@@ -384,6 +384,14 @@ function Http.post(url, body, opts)
     return Http.request(opts)
 end
 
+function Http.put(url, body, opts)
+    opts = opts or {}
+    opts.url = url
+    opts.method = "PUT"
+    opts.body = body
+    return Http.request(opts)
+end
+
 function Http.downloadToFile(url, dest, opts)
     local request = {}
     for key, value in pairs(opts or {}) do

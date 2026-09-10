@@ -31,23 +31,70 @@ local ui = { document = { file = "/downloads/news/feed/article.html" },
 local path = ui.document.file
 local function reset() pending, deleted, refreshed = nil, nil, false end
 Settings.set("news_delete_finished", false)
-Cleanup.afterClose(ui, path)
+Cleanup.afterClose(ui)
 assert(not pending, "disabled option keeps finished news")
 Settings.set("news_delete_finished", true)
+percent = 0.5
 Cleanup.afterClose(ui)
 assert(not pending, "unfinished news retained")
-percent = 0.2
-Cleanup.afterClose(ui, path)
-assert(not pending, "EndOfBook then leave last page keeps article")
 percent = 1
-Cleanup.afterClose(ui, path)
+Cleanup.afterClose(ui)
+assert(pending and not deleted, "finished news at 100% deletes without EndOfBook")
+pending()
+assert(deleted == path and refreshed, "finished news at 100% deleted through native file manager")
+reset()
+percent = 0.2
+Cleanup.afterClose(ui)
+assert(not pending, "partial progress keeps article")
+percent = 1
+Cleanup.afterClose(ui)
 assert(pending and not deleted, "deletion waits for reader close")
 pending()
 assert(deleted == path and refreshed, "finished article deleted through native file manager")
 reset()
 status = "complete"
+percent = 0.2
 Cleanup.afterClose(ui)
 assert(pending, "explicit finished status works without EndOfBook")
+pending()
+assert(deleted == path, "explicit complete status deletes article")
+reset()
+status = "reading"
+percent = 0.2
+-- Live progress from ui.paging/rolling overrides stale doc_settings percent_finished
+local ui_live_paging = {
+    document = { file = path },
+    doc_settings = { readSetting = function(_, key)
+        if key == "percent_finished" then return 0.2 end
+    end },
+    paging = { getLastPercent = function() return 1 end },
+}
+Cleanup.afterClose(ui_live_paging)
+assert(pending, "live paging:getLastPercent overrides stale persisted percent")
+pending(); assert(deleted == path); reset()
+
+local ui_live_rolling = {
+    document = { file = path },
+    doc_settings = { readSetting = function(_, key)
+        if key == "percent_finished" then return 0.2 end
+    end },
+    rolling = { getLastPercent = function() return 1 end },
+}
+Cleanup.afterClose(ui_live_rolling)
+assert(pending, "live rolling:getLastPercent overrides stale persisted percent")
+pending(); assert(deleted == path); reset()
+-- Inverse safety: live progress 0.2 overrides stale doc_settings percent_finished = 1
+local ui_live_back = {
+    document = { file = path },
+    doc_settings = { readSetting = function(_, key)
+        if key == "percent_finished" then return 1 end
+    end },
+    paging = { getLastPercent = function() return 0.2 end },
+}
+Cleanup.afterClose(ui_live_back)
+assert(not pending, "live partial progress overrides stale 100% persisted percent")
+percent = 1
+Cleanup.afterClose(ui)
 Settings.set("news_delete_finished", false)
 pending()
 assert(not deleted, "recheck option before deletion")
@@ -55,20 +102,20 @@ Settings.set("news_delete_finished", true)
 for _, other in ipairs({ "/downloads/novels/book.html", "/downloads/news-other/feed/book.html",
     "/downloads/news/feed/book.epub", "/downloads/news/feed/book.html.images/1.html" }) do
     reset(); ui.document.file = other
-    Cleanup.afterClose(ui, other)
+    Cleanup.afterClose(ui)
     assert(not pending, "cleanup must be restricted to news HTML")
 end
 ui.document.file = path
 aliases[path] = "/outside/article.html"
-reset(); Cleanup.afterClose(ui, path)
+reset(); Cleanup.afterClose(ui)
 assert(not pending, "symlink escaping news root rejected")
 aliases[path] = nil
-reset(); Cleanup.afterClose(ui, path)
+reset(); Cleanup.afterClose(ui)
 aliases[path] = "/outside/article.html"
 pending()
 assert(not deleted, "recheck canonical path before deleting")
 aliases[path] = nil
-reset(); Cleanup.afterClose(ui, path)
+reset(); Cleanup.afterClose(ui)
 reader.instance = ui
 pending()
 assert(not deleted, "do not delete reopened document")
@@ -76,7 +123,7 @@ reader.instance = nil
 -- /sdcard and /storage/emulated/0 may identify the same news file on Android.
 reset(); aliases[path] = "/storage/news/feed/article.html"
 aliases["/downloads/news"] = "/storage/news"
-Cleanup.afterClose(ui, path); assert(pending); pending()
+Cleanup.afterClose(ui); assert(pending); pending()
 assert(deleted == "/storage/news/feed/article.html")
 Settings.set("news_delete_finished", false)
 Settings.downloadDir = old_dir
@@ -105,12 +152,12 @@ Settings.set("news_delete_finished", true)
 local CleanupSidecar = require("booxbook.news-cleanup")
 ui.document.file = path
 pending, deleted, sidecar_calls = nil, nil, {}
-CleanupSidecar.afterClose(ui, path)
+CleanupSidecar.afterClose(ui)
 assert(pending); pending()
 assert(deleted == path and #sidecar_calls == 1, "sidecar removed after HTML delete")
 delete_ok = false
 pending, deleted, sidecar_calls = nil, nil, {}
-CleanupSidecar.afterClose(ui, path)
+CleanupSidecar.afterClose(ui)
 assert(pending); pending()
 assert(deleted == path and #sidecar_calls == 0, "failed HTML delete keeps sidecar")
 Settings.set("news_delete_finished", false)

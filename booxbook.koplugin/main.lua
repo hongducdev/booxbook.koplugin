@@ -29,7 +29,6 @@ function BooxBook:onDispatcherRegisterActions()
 end
 
 function BooxBook:init()
-    self.finished_news_path = nil
     Settings.load()
     self:onDispatcherRegisterActions()
     self.ui.menu:registerToMainMenu(self)
@@ -51,6 +50,7 @@ function BooxBook:addToMainMenu(menu_items)
                 Catalog.clearStack()
                 self:showMainMenu()
                 self:maybeCheckUpdate()
+                self:maybeMorningSync()
             end)
         end,
         keep_menu_open = true,
@@ -75,6 +75,16 @@ function BooxBook:maybeCheckUpdate()
     if checked == nil then return end
 end
 
+function BooxBook:maybeMorningSync()
+    local ok_ms, MorningSync = pcall(require, "booxbook.morning-sync")
+    if ok_ms and MorningSync and MorningSync.runIfDue then
+        pcall(MorningSync.runIfDue, nil, nil, function(res)
+            if res and res.status == "synced" and (res.new_chapters or 0) > 0 then
+                notify(string.format(_("Buổi sáng: có %d chương mới."), res.new_chapters))
+            end
+        end)
+    end
+end
 function BooxBook:showMainMenu()
     local version = Update.currentVersion()
     local version_text = "v" .. version
@@ -219,7 +229,12 @@ function BooxBook:onReaderReady(config)
 end
 
 function BooxBook:onEndOfBook()
-    self.finished_news_path = self.ui.document and self.ui.document.file
+    local ok_rs, RS = pcall(require, "booxbook.reading-state")
+    if ok_rs and RS and self.ui and self.ui.document and self.ui.document.file then
+        local p = self.ui.paging and (self.ui.paging.current_page or self.ui.paging.page) or 1
+        local total = (self.ui.document.getPageCount and self.ui.document:getPageCount()) or 1
+        pcall(RS.recordProgress, self.ui.document.file, p, total, true)
+    end
     local ok, Continuation = pcall(require, "booxbook.continuation")
     if ok and Continuation then
         local handled = Continuation.onEndOfBook(self.ui)
@@ -228,8 +243,13 @@ function BooxBook:onEndOfBook()
 end
 
 function BooxBook:onCloseDocument()
-    require("booxbook.news-cleanup").afterClose(self.ui, self.finished_news_path)
-    self.finished_news_path = nil
+    require("booxbook.news-cleanup").afterClose(self.ui)
+    local ok_rs, RS = pcall(require, "booxbook.reading-state")
+    if ok_rs and RS and self.ui and self.ui.document and self.ui.document.file then
+        local p = self.ui.paging and (self.ui.paging.current_page or self.ui.paging.page) or 1
+        local total = (self.ui.document.getPageCount and self.ui.document:getPageCount()) or 1
+        pcall(RS.recordProgress, self.ui.document.file, p, total, false)
+    end
     local ok, Continuation = pcall(require, "booxbook.continuation")
     if ok and Continuation then
         Continuation.reset()
@@ -270,14 +290,6 @@ function BooxBook:settingsMenu()
             end,
         },
         {
-            text = _("Giữ bản HTML khi lưu EPUB"),
-            select_enabled_func = function() return Settings.get("novel_epub") == true end,
-            checked_func = function() return Settings.get("novel_keep_html") ~= false end,
-            callback = function()
-                Settings.set("novel_keep_html", Settings.get("novel_keep_html") == false)
-            end,
-        },
-        {
             text = _("Tự xóa HTML báo sau khi đọc xong"),
             checked_func = function() return Settings.get("news_delete_finished") == true end,
             callback = function()
@@ -307,9 +319,9 @@ function BooxBook:settingsMenu()
             select_enabled = false,
         },
         {
-            text = _("Dọn ảnh bìa và ảnh thừa"),
+            text = _("Dọn HTML và ảnh thừa (báo, truyện)"),
             callback = function()
-                Catalog.confirm(_("Xóa ảnh bìa đã lưu, ảnh của bài đã xóa và bản nháp comic quá 7 ngày? Sách/truyện đã tải không bị ảnh hưởng."), function()
+                Catalog.confirm(_("Xóa ảnh bìa đã lưu, ảnh thừa của báo/truyện, HTML chương đã đóng gói vào EPUB và bản nháp comic quá 7 ngày? Sách/truyện đã tải không bị ảnh hưởng."), function()
                     notify(BooxBook.purgeImageCache())
                 end)
             end,
@@ -509,19 +521,35 @@ function BooxBook.purgeImageCache()
         local ok_clear, result = pcall(Covers.clear)
         cleared = ok_clear and result == true
     end
-    local swept_news, swept_comics = 0, 0
+    local swept_news, swept_novels, swept_html, swept_comics = 0, 0, 0, 0
     local ok_storage, Storage = pcall(require, "booxbook.store.storage")
     if ok_storage and Storage then
-        local ok_sweep, swept = pcall(Storage.sweepOrphanSidecars, Settings.downloadDir() .. "/news")
-        swept_news = (ok_sweep and tonumber(swept)) or 0
+        local download_dir = Settings.downloadDir()
+        local ok_sweep_news, s_news = pcall(Storage.sweepOrphanSidecars, download_dir .. "/news")
+        swept_news = (ok_sweep_news and tonumber(s_news)) or 0
+        local ok_sweep_novels, s_novels = pcall(Storage.sweepOrphanSidecars, download_dir .. "/novels")
+        swept_novels = (ok_sweep_novels and tonumber(s_novels)) or 0
+        if Storage.sweepEmptyDirs then
+            pcall(Storage.sweepEmptyDirs, download_dir .. "/news")
+        end
+        if Storage.runGlobalMaintenance then
+            pcall(Storage.runGlobalMaintenance, download_dir, Settings.get)
+        end
+    end
+    local ok_novel, NovelDownload = pcall(require, "booxbook.novel-download")
+    if ok_novel and NovelDownload and NovelDownload.sweepOrphanHtml then
+        local ok_sweep_html, s_html = pcall(NovelDownload.sweepOrphanHtml, Settings.downloadDir() .. "/novels")
+        swept_html = (ok_sweep_html and tonumber(s_html)) or 0
     end
     local ok_dl, Download = pcall(require, "booxbook.comic-download")
     if ok_dl and Download and Download.sweepStale then
         local ok_sweep, swept = pcall(Download.sweepStale, 7)
         swept_comics = (ok_sweep and tonumber(swept)) or 0
     end
+    local total_sidecars = swept_news + swept_novels
     return (cleared and _("Đã xóa ảnh bìa") or _("Không xóa được ảnh bìa"))
-        .. " · " .. tostring(swept_news) .. " " .. _("thư mục ảnh thừa")
+        .. " · " .. tostring(total_sidecars) .. " " .. _("thư mục ảnh thừa")
+        .. " · " .. tostring(swept_html) .. " " .. _("file HTML thừa")
         .. " · " .. tostring(swept_comics) .. " " .. _("bản nháp comic cũ")
 end
 

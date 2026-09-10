@@ -99,7 +99,7 @@ local OneDrive = require("booxbook.onedrive")
 
 local info = assert(OneDrive.startLogin())
 assert(info.user_code == "ABCD-EFGH" and values.onedrive_device_code == "device-secret")
-assert(posted[1].body:find("Files.Read%%20offline_access") and not posted[1].body:find("User.Read", 1, true))
+assert(posted[1].body:find("Files.ReadWrite%%20offline_access") and not posted[1].body:find("User.Read", 1, true))
 assert(OneDrive.finishLogin() == "access-one")
 assert(values.onedrive_refresh_token == "refresh-one" and OneDrive.hasAuth())
 

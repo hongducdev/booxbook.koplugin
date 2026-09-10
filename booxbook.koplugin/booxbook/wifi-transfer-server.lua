@@ -87,6 +87,7 @@ end
 
 local function close(client)
     if client.request then Upload.abort(client.request) end
+    if client.output_file then client.output_file:close(); client.output_file = nil end
     client.socket:close()
     client.closed = true
 end
@@ -103,6 +104,48 @@ local function respond(client, code, body, html)
     client.buffer = nil
 end
 
+local function libraryRoot(received_dir)
+    local ok_settings, Settings = pcall(require, "booxbook.store.settings")
+    if ok_settings and Settings and Settings.downloadDir then
+        local ok_dir, dir = pcall(Settings.downloadDir)
+        if ok_dir and type(dir) == "string" and dir ~= "" then return dir end
+    end
+    if type(received_dir) == "string" then
+        return received_dir:match("^(.*)/received$") or received_dir
+    end
+    return "."
+end
+
+local function atom(client, body)
+    client.output = "HTTP/1.1 200 Result\r\nContent-Type: application/atom+xml; charset=utf-8\r\nContent-Length: "
+        .. #body .. "\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\n\r\n" .. body
+    client.sent = 0
+    client.buffer = nil
+end
+
+local function fileResponse(client, file, size, mime)
+    client.output = "HTTP/1.1 200 Result\r\nContent-Type: " .. mime .. "\r\nContent-Length: "
+        .. size .. "\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\n\r\n"
+    client.output_file = file
+    client.sent = 0
+    client.buffer = nil
+end
+
+local function queueOutputFileChunk(client)
+    if not client.output_file then return false end
+    local chunk = client.output_file:read(65536)
+    if chunk and #chunk > 0 then
+        client.output = chunk
+        client.sent = 0
+        return true
+    end
+    client.output_file:close()
+    client.output_file = nil
+    close(client)
+    return false
+end
+
+
 function Server:consume(client, chunk)
     if not client.request then
         client.buffer = client.buffer .. chunk
@@ -116,43 +159,46 @@ function Server:consume(client, chunk)
         if request and request.page then return respond(client, 200, page, true) end
         if request and request.opds then
             local ok_opds, Opds = pcall(require, "booxbook.opds")
-            local files = {}
-            if ok_opds and Opds then
-                local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
-                if ok_lfs and lfs and lfs.dir then
-                    for name in lfs.dir(self.dir) do
-                        if name ~= "." and name ~= ".." and Upload.safeFilename(name) then
-                            files[#files + 1] = { name = name }
-                        end
-                    end
-                end
-                local ok_cat, xml = pcall(Opds.catalog, files, "/opds")
+            if ok_opds and Opds and Opds.fullCatalog then
+                local ok_cat, xml = pcall(Opds.fullCatalog, libraryRoot(self.dir), "/opds")
                 if ok_cat and type(xml) == "string" then
-                    client.output = "HTTP/1.1 200 Result\r\nContent-Type: application/atom+xml; charset=utf-8\r\nContent-Length: "
-                        .. #xml .. "\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n" .. xml
-                    client.sent = 0
-                    client.buffer = nil
+                    atom(client, xml)
                     return
                 end
             end
             return respond(client, 500, _("Không tạo được OPDS."))
         end
         if request and request.opds_file then
-            local path = self.dir .. "/" .. request.opds_file
-            local file = io.open(path, "rb")
+            local ok_opds, Opds = pcall(require, "booxbook.opds")
+            local mime = ok_opds and Opds and Opds.mimeType and Opds.mimeType(request.opds_file) or nil
+            if not mime then return respond(client, 404, _("Không tìm thấy.")) end
+            local root = libraryRoot(self.dir)
+            local root_norm = (root:gsub("\\", "/"))
+            local path = root_norm .. "/" .. request.opds_file
+            local ffiUtil = package.loaded["ffi/util"]
+            if not ffiUtil then pcall(function() ffiUtil = require("ffi/util") end) end
+            local real_root = (ffiUtil and ffiUtil.realpath and ffiUtil.realpath(root_norm) or root_norm):gsub("\\", "/")
+            local real_path = (ffiUtil and ffiUtil.realpath and ffiUtil.realpath(path) or path):gsub("\\", "/")
+            if not real_path or real_path:sub(1, #real_root + 1) ~= real_root .. "/" then
+                return respond(client, 404, _("Không tìm thấy."))
+            end
+            local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
+            if not ok_lfs or not lfs then pcall(function() lfs = require("lfs") end) end
+            if lfs and lfs.symlinkattributes then
+                local sym = lfs.symlinkattributes(real_path, "mode")
+                if sym == "link" then
+                    return respond(client, 404, _("Không tìm thấy."))
+                end
+            end
+            local file = io.open(real_path, "rb")
             if not file then return respond(client, 404, _("Không tìm thấy.")) end
             local size = file:seek("end")
             file:seek("set", 0)
-            if not size or size < 1 or size > 32 * 1024 * 1024 then
+            if not size or size < 1 or size > Upload.MAX_BYTES then
                 file:close()
                 return respond(client, 413, _("File quá lớn cho OPDS, hãy copy qua USB."))
             end
-            local body = file:read("*a") or ""
-            file:close()
-            client.output = "HTTP/1.1 200 Result\r\nContent-Type: application/octet-stream\r\nContent-Length: "
-                .. #body .. "\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n" .. body
-            client.sent = 0
-            client.buffer = nil
+            fileResponse(client, file, size, mime)
             return
         end
         if request and request.queue then
@@ -220,7 +266,9 @@ function Server:step(client)
         local count = sent or partial or client.sent
         if count > client.sent then client.active = now end
         client.sent = count
-        if count >= #client.output or (err and err ~= "timeout") then close(client) end
+        if count >= #client.output then
+            if client.output_file then queueOutputFileChunk(client) else close(client) end
+        elseif err and err ~= "timeout" then close(client) end
         return
     end
     -- ponytail: at most 1 MiB/client/tick; use socket readiness polling if throughput becomes limiting.

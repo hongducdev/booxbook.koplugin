@@ -205,6 +205,11 @@ Export.finish(series, '/test', 1, 1, index, manual, package.loaded.json, true)
 assert(exports == 1 and #manual.saved == 2 and manual.saved[1].path:match('%.epub$'),
     'explicit EPUB export works while automatic export is disabled and keeps HTML')
 exports = 0
+local old_remove, deleted = os.remove, {}
+os.remove = function(path)
+    deleted[#deleted + 1] = path
+    return true
+end
 Settings.set('novel_epub', true)
 Epub.write = function(path, book)
     exports = exports + 1
@@ -213,7 +218,7 @@ Epub.write = function(path, book)
     return true
 end
 local epub_result = assert(Download.range(series, 1, 3))
-assert(#epub_result.saved == 3 and epub_result.saved[1].path:match('%.epub$'))
+assert(#epub_result.saved == 1 and epub_result.saved[1].path:match('%.epub$'))
 local Covers = require('booxbook.covers')
 local old_fetch, old_cover, successful_write = Covers.fetch, series.cover, Epub.write
 series.cover = '/original-cover.jpg'
@@ -243,7 +248,6 @@ io.open = function(path)
     end
     return nil
 end
-Settings.set('novel_keep_html', false)
 Epub.write = function(path, book)
     exports = exports + 1
     assert(path:find('/chapters-1-1.epub', 1, true))
@@ -252,16 +256,15 @@ Epub.write = function(path, book)
 end
 local packaged = assert(Download.packagePartial(series, 1, 1, interrupted.saved))
 assert(not packaged.error and #packaged.saved == 2 and packaged.saved[1].path:match('%.epub$'))
-assert(packaged.saved[2].path:match('%.html$') and exports == 2, 'cancel pack keeps HTML even when novel_keep_html=false')
+assert(packaged.saved[2].path:match('%.html$') and exports == 2, 'cancel pack keeps HTML for resume')
 io.open, package.loaded.json.decode = old_io_open, old_json_decode
 Epub.write = function() return false, 'archive failed' end
-Settings.set('novel_keep_html', false)
 local failed_epub = Download.range(series, 1, 3)
 assert(failed_epub.error:find('archive failed', 1, true) and #failed_epub.saved == 2)
 Epub.write = function() error('no EPUB for all-skipped range') end
 assert(#Download.range(series, 2, 2).saved == 0)
 Epub.write = function() return true end
-local old_remove, deleted = os.remove, {}
+deleted = {}
 os.remove = function(path)
     assert(index.chapters['11'].file == 'chapters-1-3.epub', 'index committed before HTML deletion')
     assert(path:match('ch%-%d+%.html$'), 'only this download HTML is removed')
@@ -296,7 +299,6 @@ os.remove = function() error('never delete HTML before committing EPUB index') e
 local index_failure = Download.range(series, 1, 3)
 assert(index_failure.error:find('index write failed', 1, true) and #index_failure.saved == 3)
 Html.writeFile, os.remove = previous_write, old_remove
-Settings.set('novel_keep_html', true)
 Epub.write = old_epub_write
 Settings.set('novel_epub', false)
 assert(not Download.range(series, 4, 4))
