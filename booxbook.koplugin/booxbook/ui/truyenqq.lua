@@ -6,7 +6,7 @@ local Trapper = require("ui/trapper")
 local UIManager = require("ui/uimanager")
 local InfoMessage = require("ui/widget/infomessage")
 local ReaderUI = require("apps/reader/readerui")
-local Source = require("booxbook.sources.truyentuoitho")
+local Source = require("booxbook.sources.truyenqq")
 local SeriesUI = require("booxbook.ui.series")
 local _ = require("gettext")
 local UI, busy = {}, false
@@ -56,17 +56,17 @@ function UI.download(url)
 end
 
 function UI.promptSearch()
-    Catalog.promptText{ title = _("Tìm truyện hoặc nhập URL Truyện Tuổi Thơ"),
-        input = Settings.get("truyentuoitho_last_url") or "",
+    Catalog.promptText{ title = _("Tìm truyện hoặc nhập URL TruyenQQ"),
+        input = Settings.get("truyenqq_last_url") or "",
         hint = _("Tên truyện, URL bộ truyện hoặc URL một tập"),
         ok_text = _("Tìm / mở"),
         on_submit = function(url)
             url = (url or ""):match("^%s*(.-)%s*$")
             if url == "" then return end
             if Source.parseRef(url) then
-                Settings.set("truyentuoitho_last_url", url); UI.download(url)
+                Settings.set("truyenqq_last_url", url); UI.download(url)
             elseif Source.parseSeriesRef(url) then UI.showSeries(url)
-            elseif url:match("^https?://") then notify(_("URL Truyện Tuổi Thơ không hợp lệ."))
+            elseif url:match("^https?://") then notify(_("URL TruyenQQ không hợp lệ."))
             else UI.list(nil, url) end
         end }
 end
@@ -81,8 +81,8 @@ function UI.list(kind, query, page, grid, last_screen)
         local CoverGrid = require("booxbook.ui.cover-grid")
         local items, size = result.items or {}, CoverGrid.PAGE_SIZE
         local offset = last_screen and math.floor(math.max(0, #items - 1) / size) * size + 1 or 1
-        local base = "https://truyentuoitho.com"
-        local payload = { title = "Truyện Tuổi Thơ" .. (query and (" — " .. query) or ""),
+        local base = "https://truyenqqko.com"
+        local payload = { title = "TruyenQQ" .. (query and (" — " .. query) or ""),
             items = items, offset = offset, site_page = page, has_more = result.has_more,
             source_id = Source.id, base_url = base,
             cover_referer = base .. "/", cover_delay_ms = 1600,
@@ -204,7 +204,7 @@ function UI.showSeries(ref)
 end
 
 function UI.openOffline()
-    local dir = Settings.downloadDir() .. "/comics/truyentuoitho"
+    local dir = Settings.downloadDir() .. "/comics/truyenqq"
     if not Settings.ensureDir(dir) then notify(_("Không mở được thư mục truyện.")); return end
     UIManager:nextTick(function()
         Catalog.clearStack()
@@ -216,12 +216,10 @@ function UI.openOffline()
 end
 
 function UI.openSource()
-    Catalog.show{ title = "Truyện Tuổi Thơ", on_search = UI.promptSearch, items = {
+    -- TruyenQQ (truyenqqko.com) currently exposes only the latest list.
+    Catalog.show{ title = "TruyenQQ", on_search = UI.promptSearch, items = {
         { text = _("Tìm truyện / nhập URL"), callback = UI.promptSearch },
         { text = _("Mới cập nhật"), callback = function() UI.list("latest") end },
-        { text = _("Lượt xem"), callback = function() UI.list("popular") end },
-        { text = _("Truyện mới"), callback = function() UI.list("new") end },
-        { text = _("Thịnh hành"), callback = function() UI.list("trending") end },
         { text = _("Truyện đã tải (offline)"), callback = UI.openOffline },
     } }
 end

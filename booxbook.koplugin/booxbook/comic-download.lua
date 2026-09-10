@@ -1,4 +1,5 @@
-local Source = require("booxbook.sources.truyentuoitho")
+local Truyentuoitho = require("booxbook.sources.truyentuoitho")
+local Truyenqq = require("booxbook.sources.truyenqq")
 local Http = require("booxbook.http")
 local Html = require("booxbook.html")
 local Images = require("booxbook.article-images")
@@ -38,11 +39,21 @@ end
 
 -- Collect already-downloaded staging pages for a chapter URL.
 -- Returns pages list (for Cbz.write) + staging dir, or nil + err.
+-- Pick the comic adapter by chapter URL. TruyenQQ first: its hosts never
+-- overlap Truyện Tuổi Thơ, and the fallback keeps old URLs working.
+local function adapterFor(url)
+    if Truyenqq.parseRef(url) then return Truyenqq end
+    if Truyentuoitho.parseRef(url) then return Truyentuoitho end
+end
+
+function Download.adapterFor(url) return adapterFor(url) end
+
 function Download.stagingPages(url)
     local path, path_err = Download.path(url)
     if not path then return nil, path_err end
-    local ref = Source.parseRef(url)
-    if not ref then return nil, _("URL tập Truyện Tuổi Thơ không hợp lệ.") end
+    local Source = adapterFor(url)
+    local ref = Source and Source.parseRef(url)
+    if not ref then return nil, _("URL tập truyện tranh không hợp lệ.") end
     local dir = path:match("^(.*)/[^/]+$")
     local staging = dir .. "/." .. ref.chapter .. "-pages"
     local pages = {}
@@ -104,9 +115,10 @@ function Download.packageStaging(url, progress)
 end
 
 function Download.path(url)
-    local ref = Source.parseRef(url)
-    if not ref then return nil, _("URL tập Truyện Tuổi Thơ không hợp lệ.") end
-    return Settings.downloadDir() .. "/comics/truyentuoitho/" .. ref.series .. "/" .. ref.chapter .. ".cbz"
+    local Source = adapterFor(url)
+    local ref = Source and Source.parseRef(url)
+    if not ref then return nil, _("URL tập truyện tranh không hợp lệ.") end
+    return Settings.downloadDir() .. "/comics/" .. Source.id .. "/" .. ref.series .. "/" .. ref.chapter .. ".cbz"
 end
 
 function Download.savedPath(url)
@@ -126,7 +138,9 @@ function Download.chapter(url, progress)
     if not path then return nil, path_err end
     local existing, existing_err = Download.savedPath(url)
     if existing or existing_err then return existing, existing_err end
-    local ref = Source.parseRef(url)
+    local Source = adapterFor(url)
+    local ref = Source and Source.parseRef(url)
+    if not ref then return nil, _("URL tập truyện tranh không hợp lệ.") end
     local dir = path:match("^(.*)/[^/]+$")
     local chapter, err = Source.getChapter(ref.url)
     if not chapter then return nil, err end
@@ -190,16 +204,7 @@ end
 -- Remove abandoned staging (`.-pages/` dirs + `.part` files) older than
 -- max_age_days whose CBZ was never published. Best-effort, never touches CBZ.
 -- Returns the number of staging dirs/files removed.
-function Download.sweepStale(max_age_days)
-    max_age_days = tonumber(max_age_days) or 7
-    if max_age_days < 0 then return 0 end
-    local ok, lfs = pcall(require, "libs/libkoreader-lfs")
-    if not ok or not lfs then
-        ok, lfs = pcall(require, "lfs")
-    end
-    if not ok or not lfs or not lfs.dir or not lfs.attributes then return 0 end
-    local root = Settings.downloadDir() .. "/comics/truyentuoitho"
-    local now = os.time()
+local function sweepRoot(root, lfs, now, max_age_days)
     local swept = 0
     local function dirMtime(dir)
         local newest = nil
@@ -248,6 +253,22 @@ function Download.sweepStale(max_age_days)
     return swept
 end
 
+function Download.sweepStale(max_age_days)
+    max_age_days = tonumber(max_age_days) or 7
+    if max_age_days < 0 then return 0 end
+    local ok, lfs = pcall(require, "libs/libkoreader-lfs")
+    if not ok or not lfs then
+        ok, lfs = pcall(require, "lfs")
+    end
+    if not ok or not lfs or not lfs.dir or not lfs.attributes then return 0 end
+    local now = os.time()
+    local swept = 0
+    for _, source_id in ipairs({ Truyentuoitho.id, Truyenqq.id }) do
+        swept = swept + sweepRoot(Settings.downloadDir() .. "/comics/" .. source_id, lfs, now, max_age_days)
+    end
+    return swept
+end
+
 function Download.range(series, first, last, progress)
     local count = type(series) == "table" and #(series.chapters or {}) or 0
     if type(first) ~= "number" or type(last) ~= "number" or first % 1 ~= 0 or last % 1 ~= 0
@@ -255,7 +276,9 @@ function Download.range(series, first, last, progress)
     local result = { saved = {}, cancelled = false }
     for n = first, last do
         local chapter = series.chapters[n]
-        if not Source.parseRef(chapter) or Source.parseRef(chapter).series ~= series.id then
+        local Source = adapterFor(chapter)
+        local ref = Source and Source.parseRef(chapter)
+        if not ref or ref.series ~= series.id then
             result.error = _("Tập không thuộc bộ truyện."); break
         end
         if progress and progress(n - first + 1, last - first + 1, chapter, 0, 0, false) == false then

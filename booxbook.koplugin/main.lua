@@ -125,7 +125,7 @@ function BooxBook:showMainMenu()
                                 require("booxbook.ui.truyentuoitho").openSource()
                             end },
                             { text = "TruyenQQ", keep_menu_open = true, callback = function()
-                                require("booxbook.ui.truyentuoitho").openSource("truyenqq")
+                                require("booxbook.ui.truyenqq").openSource()
                             end },
                             { text = _("Truyện đang theo dõi"), keep_menu_open = true, callback = function()
                                 require("booxbook.ui.follow").open()
@@ -177,7 +177,7 @@ function BooxBook:onReaderReady(config)
     local path = ui.document and ui.document.file
     if not path or not ui.paging or not ui.zooming then return end
     local ffiUtil = require("ffi/util")
-    local root = ffiUtil.realpath(Settings.downloadDir() .. "/comics/truyentuoitho")
+    local root = ffiUtil.realpath(Settings.downloadDir() .. "/comics")
     path = ffiUtil.realpath(path)
     if not root or not path or path:sub(1, #root + 1) ~= root .. "/" or not path:match("%.cbz$")
         or config:readSetting("booxbook_comic_page_layout") then return end
