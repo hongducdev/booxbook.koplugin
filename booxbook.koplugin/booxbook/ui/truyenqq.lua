@@ -32,15 +32,55 @@ local function online(message, action, done)
     end)
 end
 
-function UI.download(url)
+function UI.download(url, series, index)
+    local meta
+    if series and type(series.chapters) == "table" then
+        if not index then
+            for i, ch in ipairs(series.chapters) do
+                if ch.url == url or (ch.ref and ch.ref.url == url) then
+                    index = i
+                    break
+                end
+            end
+        end
+        local current = series.chapters[index or 1]
+        local next_ch = series.chapters[(index or 1) + 1]
+        local ref = Source and Source.parseRef and Source.parseRef(url)
+        if ref and Download.writeManifest then
+            local series_dir = Settings.downloadDir() .. "/comics/" .. Source.id .. "/" .. (series.id or ref.series)
+            Download.writeManifest(series_dir, series)
+        end
+        local next_ref = next_ch and Source and Source.parseRef and Source.parseRef(next_ch)
+        if next_ch and (not next_ref or (ref and next_ref.series ~= ref.series)) then
+            next_ch = nil
+            next_ref = nil
+        end
+        meta = {
+            source_id = Source and Source.id or "truyenqq",
+            series_id = series.id or (ref and ref.series),
+            series_title = series.title,
+            series_url = series.url,
+            chapter = ref and ref.chapter,
+            chapter_title = current and current.title or (ref and ref.chapter),
+            chapter_url = url,
+            chapter_index = index or 1,
+            next_url = next_ch and next_ch.url,
+            next_title = next_ch and next_ch.title,
+            next_chapter = next_ref and next_ref.chapter,
+        }
+    end
     local path, err = Download.savedPath(url)
-    if path then open(path); return end
+    if path then
+        if meta then Download.writeMeta(path, meta) end
+        open(path)
+        return
+    end
     if err then notify(err); return end
-    online(_("Đang lấy tập Truyện Tuổi Thơ…"), function()
+    online(_("Đang tải tập TruyenQQ…"), function()
         local result, chapter_err, partial = Download.chapter(url, function(i, count, packing)
             return Trapper:info(string.format(packing and _("Đóng gói CBZ: %d/%d — chạm để hủy")
                 or _("Tải ảnh: %d/%d — chạm để hủy"), i, count))
-        end)
+        end, meta)
         if not result and Download.isCancelErr(chapter_err) then
             return { cancelled = true, err = chapter_err, partial = partial, url = url }
         end
@@ -177,6 +217,12 @@ end
 
 function UI.showSeries(ref)
     online(_("Đang lấy mục lục…"), function() return Source.getSeries(ref) end, function(series)
+        local first_ch = series.chapters and series.chapters[1]
+        local ref_first = first_ch and Source and Source.parseRef and Source.parseRef(first_ch.url or first_ch)
+        if ref_first and Download.writeManifest then
+            local series_dir = Settings.downloadDir() .. "/comics/" .. Source.id .. "/" .. ref_first.series
+            Download.writeManifest(series_dir, series)
+        end
         local total = #series.chapters
         SeriesUI.show(series, {
             unit = _("tập"), Unit = _("Tập"),
@@ -184,8 +230,8 @@ function UI.showSeries(ref)
                 local TextViewer = require("ui/widget/textviewer")
                 UIManager:show(TextViewer:new{ title = series.title, text = series.description or "" })
             end,
-            on_go = function(n) UI.download(series.chapters[n].url) end,
-            on_chapter = function(chapter) UI.download(chapter.url) end,
+            on_go = function(n) UI.download(series.chapters[n].url, series, n) end,
+            on_chapter = function(chapter, i) UI.download(chapter.url, series, i) end,
             on_range = function()
                 SeriesUI.askRange(total, function(first, last)
                     Catalog.confirm(string.format(_("Tải %d tập CBZ? Mỗi tập có thể chiếm hàng trăm MB."), last - first + 1),

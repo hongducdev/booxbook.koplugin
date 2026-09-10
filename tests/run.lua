@@ -503,6 +503,7 @@ dofile("tests/followup-features.lua")
 dofile("tests/gdrive.lua")
 dofile("tests/batch1.lua")
 dofile("tests/ui-open.lua")
+dofile("tests/continuation.lua")
 
 if failures > 0 then
     io.stderr:write(tostring(failures) .. " test(s) failed\n")

@@ -174,6 +174,55 @@ function Novels.download(series, first, last, confirmed, open_after)
     end)
 end
 
+function Novels.downloadChapter(source_id, series_id, chapter_number, chapter_url)
+    chapter_number = tonumber(chapter_number)
+    if type(source_id) ~= "string" or source_id == "" or type(series_id) ~= "string" or series_id == ""
+        or not chapter_number or chapter_number % 1 ~= 0 or chapter_number < 1 then
+        notify(_("Thông tin chương tiếp theo không hợp lệ."))
+        return
+    end
+    local ok_src, Source = pcall(require, "booxbook.source")
+    local adapter = ok_src and Source and Source.get and Source.get(source_id)
+    if not adapter then
+        notify(_("Không tìm thấy nguồn truyện: ") .. tostring(source_id))
+        return
+    end
+    local ref
+    if source_id == "truyenfull" then
+        ref = "/" .. series_id .. "/"
+    elseif source_id == "tvtruyen" then
+        ref = "/" .. series_id .. ".html"
+    elseif source_id == "docln" then
+        ref = "/truyen/" .. series_id
+    elseif source_id == "metruyencv" or source_id == "wattpad" then
+        ref = series_id
+    elseif source_id == "sangtacviet" then
+        if chapter_url and type(chapter_url) == "string" and chapter_url:match("/c%d+") then
+            ref = chapter_url:gsub("/c%d+.*$", "")
+        else
+            ref = series_id
+        end
+    else
+        ref = "/" .. series_id .. "/"
+    end
+    online(_("Đang lấy mục lục…"), function()
+        local series, err = adapter.getSeries(ref)
+        if not series then return nil, err end
+        series.source_id = series.source_id or adapter.id or source_id
+        return series
+    end, function(series)
+        if not series or type(series.chapters) ~= "table" then
+            notify(_("Không lấy được mục lục truyện."))
+            return
+        end
+        if chapter_number < 1 or chapter_number > #series.chapters then
+            notify(_("Bạn đã đọc đến chương mới nhất hiện có của bộ truyện này."))
+            return
+        end
+        Novels.download(series, chapter_number, chapter_number, true, true)
+    end)
+end
+
 local function showSaved(result)
     local items = {}
     for _, saved in ipairs(result.saved or {}) do

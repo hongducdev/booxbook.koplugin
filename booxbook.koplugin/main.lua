@@ -220,11 +220,20 @@ end
 
 function BooxBook:onEndOfBook()
     self.finished_news_path = self.ui.document and self.ui.document.file
+    local ok, Continuation = pcall(require, "booxbook.continuation")
+    if ok and Continuation then
+        local handled = Continuation.onEndOfBook(self.ui)
+        if handled then return true end
+    end
 end
 
 function BooxBook:onCloseDocument()
     require("booxbook.news-cleanup").afterClose(self.ui, self.finished_news_path)
     self.finished_news_path = nil
+    local ok, Continuation = pcall(require, "booxbook.continuation")
+    if ok and Continuation then
+        Continuation.reset()
+    end
 end
 
 function BooxBook:showLibrary()
