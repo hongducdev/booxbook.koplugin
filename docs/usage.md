@@ -38,6 +38,15 @@ Chỉ đọc (scope `drive.readonly`); không upload, đồng bộ, xóa hay đ�
 trên Drive. Đăng xuất tại **Cài đặt → OneDrive → Đăng xuất Google Drive**
 trước khi chuyển nhượng thiết bị.
 
+## Sao lưu / khôi phục + tự kiểm tra cập nhật
+
+- **Cài đặt → Bộ nhớ → Sao lưu cài đặt**: xuất EPUB/HTML/news/18+/ảnh/limit/follow
+  ra `received/booxbook-backup-*.json`. **Khôi phục cài đặt** liệt kê các bản sao
+  lưu mới nhất trước, xác nhận ghi đè rồi mới áp dụng.
+- Mỗi lần mở menu BooxBook, plugin kiểm tra thầm release GitHub tối đa 1 lần/ngày
+  và chỉ khi đã có mạng (không hỏi bật Wi-Fi). Có bản mới thì báo một lần và
+  hiện `• mới!` cạnh số phiên bản ở chân trang chủ.
+
 ## Gửi sách qua Wi-Fi
 
 1. Kết nối máy đọc sách và điện thoại/máy tính vào cùng mạng Wi-Fi.
@@ -67,8 +76,9 @@ tên file trong 3 giây. Không báo thành công cho file dở hoặc file bị
 
 **OPDS và hàng đợi:** app đọc sách hỗ trợ OPDS mở catalog tại `http://…:8080/opds`
 cùng địa chỉ (tải file ≤32MB; file lớn hơn copy qua USB). Form **hàng đợi** trên
-trang web nhận URL `http(s)` (cần mã phiên) để lưu vào `received/queue.txt`
-cho máy đọc tải sau.
+trang web nhận URL `http(s)` (cần mã phiên) để lưu vào `received/queue.txt`.
+Mở **Sách & cloud → Hàng đợi Wi-Fi** để tải từng link (chỉ file sách hỗ trợ),
+xóa link đã xong hoặc xóa cả hàng đợi. Không tự tải nền.
 
 ## Báo RSS
 
@@ -173,10 +183,10 @@ cần tải lại để nhận metadata và bìa mới.
 - **Sách & cloud → Tìm sách offline**: tìm theo tên trong toàn bộ sách đã tải,
   xem tổng số file/dung lượng, mở trực tiếp 50 kết quả mới nhất.
 
-## Truyện Tuổi Thơ — CBZ (+ TruyenQQ)
+## Truyện Tuổi Thơ — CBZ
 
-1. Vào **Truyện → Truyện Tuổi Thơ** (hoặc **TruyenQQ**, chung giao diện Madara).
-   Chọn **Mới cập nhật**, **Lượt xem**, **Truyện mới** hoặc **Thịnh hành** để duyệt grid bìa, lật trang bằng mũi tên.
+1. Vào **Truyện → Truyện Tuổi Thơ**. Chọn **Mới cập nhật**, **Lượt xem**,
+   **Truyện mới** hoặc **Thịnh hành** để duyệt grid bìa, lật trang bằng mũi tên.
 2. **Tìm truyện / nhập URL** nhận tên truyện, URL bộ hoặc URL một tập, ví dụ `https://truyentuoitho.com/manga/tieu-hoa-thuong/tap-28/`.
 3. Chọn bộ để xem thông tin và **Danh sách tập**. Chọn tập hoặc **Mở tập bất kỳ** (số thứ tự mục lục) để tải/mở CBZ.
 4. Icon menu bên trái mục lục có **Tải khoảng tập**, **Tải toàn bộ tập**. Mỗi tập là một CBZ riêng. Xác nhận số tập trước khi tải nhiều tập.
@@ -201,13 +211,25 @@ chỉ dọn các trang dùng trong CBZ sau khi thành công. Đổi nguồn ản
 Không phụ thuộc công tắc ảnh minh họa hay EPUB của truyện chữ.
 Chưa xác minh giao diện và CBZ WebP trên Boox thật.
 
+## TruyenQQ — CBZ
+
+1. Vào **Truyện → TruyenQQ** (`truyenqqko.com`). **Mới cập nhật** duyệt grid bìa;
+   **Tìm truyện / nhập URL** nhận tên truyện, URL bộ
+   (`https://truyenqqko.com/truyen-tranh/yeu-than-ky-746`) hoặc URL một tập
+   (`.../yeu-than-ky-746-chap-703`).
+2. Mục lục, tải một/khoảng/toàn bộ tập, tải tiếp, hủy/đóng gói và đọc offline
+   giống Truyện Tuổi Thơ. CBZ lưu dưới `comics/truyenqq/<bộ>/`.
+3. Nguồn này chặn rate khá gắt (HTTP 429): gặp thì thử lại sau hoặc đổi mạng,
+   plugin không tự retry dồn dập. Ảnh chỉ từ `truyenqqko.com` và CDN
+   `hinhhinh.com` / `truyenvua.com`. Giới hạn 600 trang/tập như trên.
+
 ## Dữ liệu trên máy
 
 | Loại | Đường dẫn |
 |---|---|
 | Bài báo đã mở | `koreader/booxbook/news/<feed-id>/` |
 | Chương truyện | `koreader/booxbook/novels/<nguồn>/<id>/` |
-| Tập truyện tranh CBZ | `koreader/booxbook/comics/truyentuoitho/<bộ>/<tập>.cbz` |
+| Tập truyện tranh CBZ | `koreader/booxbook/comics/<truyentuoitho|truyenqq>/<bộ>/<tập>.cbz` |
 | Sách nhận qua Wi-Fi/OneDrive | `koreader/booxbook/received/` |
 | Cài đặt + cookie | `koreader/settings/booxbook.lua` |
 

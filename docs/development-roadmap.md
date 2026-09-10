@@ -6,7 +6,14 @@
 - [x] Digest báo ngày: gom tối đa 20 HTML mới nhất thành EPUB trong `received/`.
 - [x] Theo dõi truyện (kiểm tra thủ công), tìm sách offline + quota, OPDS `/opds` (file ≤32MB), hàng đợi `/queue`, TruyenQQ, sao lưu cài đặt, check cập nhật 24h.
 - [x] LuaJIT regression suite xanh gồm test Drive/digest/follow/library/OPDS/queue mới.
-- [ ] Smoke test trên Boox: đăng nhập Drive, tải sách, digest, OPDS/queue, CBZ TruyenQQ.
+- [x] Khép vòng đợt 1: UI tiêu thụ hàng đợi (tải/xóa từng link), UI khôi phục sao lưu,
+  auto-check GitHub thầm 1 lần/ngày + badge `• mới!` (không hỏi bật Wi-Fi).
+- [x] Sửa crash mở follow list (`for _,` che gettext), bìa WebP không còn đánh chìm EPUB,
+  tự đóng gói EPUB khi tải lại toàn chương-cũ — đều verified trên Samsung + test hồi quy.
+- [x] TruyenQQ viết lại cho `truyenqqko.com` (adapter + UI + download riêng, truyenqq.net cũ
+  chặn 429/anti-bot) + tổng quát `comic-download` theo adapter.
+- [ ] Smoke test trên Boox: đăng nhập Drive, tải sách, digest, OPDS/queue, CBZ TruyenQQ,
+  khôi phục sao lưu, badge cập nhật.
 
 ## OneDrive download-only — 2026-09-09
 
