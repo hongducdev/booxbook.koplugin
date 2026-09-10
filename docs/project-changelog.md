@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.11 — 2026-09-10
+
+- Đọc tiếp nối tập/chương (EndOfBook): tới trang cuối CBZ/EPUB/HTML thì hỏi mở tiếp
+  nếu đã tải, hỏi tải tiếp nếu chưa; hết bộ thì báo đã đọc hết. Comic dùng sidecar
+  `.meta.json` + `manifest.json`, novel dùng `index.json`.
+- Fix tiếp nối: không nuốt dialog EndOfBook mặc định với sách ngoài BooxBook, không
+  ghi sidecar terminal khi thiếu manifest, chặn `next_url` khác bộ/khác nguồn,
+  kiểm tra số chương `downloadChapter` trước khi tải.
+
 ## 0.0.10 — 2026-09-09
 
 - Thêm OneDrive download-only: Device Code login, duyệt từng thư mục và tải các
