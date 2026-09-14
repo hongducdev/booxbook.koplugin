@@ -5,14 +5,18 @@ local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local _ = require("gettext")
 
 local Catalog = require("booxbook.ui.catalog")
-local Epub = require("booxbook.epub")
-local Html = require("booxbook.html")
-local Http = require("booxbook.http")
-local Network = require("booxbook.network")
 local Settings = require("booxbook.store.settings")
-local News = require("booxbook.ui.news")
-local Novels = require("booxbook.ui.novels")
-local Update = require("booxbook.update")
+
+-- Everything below loads on first use. KOReader compiles every eager require while it
+-- builds its menu, and these modules pull in the reader surface (news feeds, source
+-- adapters, download and export pipelines) that only matters after a menu action runs.
+local function epub() return require("booxbook.epub") end
+local function html() return require("booxbook.html") end
+local function http() return require("booxbook.http") end
+local function network() return require("booxbook.network") end
+local function news() return require("booxbook.ui.news") end
+local function novels() return require("booxbook.ui.novels") end
+local function update() return require("booxbook.update") end
 
 local BooxBook = WidgetContainer:extend{
     name = "booxbook",
@@ -58,13 +62,13 @@ function BooxBook:addToMainMenu(menu_items)
 end
 
 function BooxBook:maybeCheckUpdate()
-    if not Network.ifOnline then return end
-    local checked = Network.ifOnline(function()
-        if not Update.shouldCheck(Update.lastCheck()) then return end
-        local ok_release, release = pcall(Update.fetchLatest)
+    if not network().ifOnline then return end
+    local checked = network().ifOnline(function()
+        if not update().shouldCheck(update().lastCheck()) then return end
+        local ok_release, release = pcall(update().fetchLatest)
         if not ok_release or not release then return end
-        Update.noteChecked()
-        if Update.needsUpdate(release.version, Update.currentVersion()) then
+        update().noteChecked()
+        if update().needsUpdate(release.version, update().currentVersion()) then
             Settings.set("update_available", release.version)
             notify(_("Có bản BooxBook mới: ") .. tostring(release.version)
                 .. _(" — vào Cài đặt → Hệ thống → Cập nhật từ GitHub."))
@@ -86,7 +90,7 @@ function BooxBook:maybeMorningSync()
     end
 end
 function BooxBook:showMainMenu()
-    local version = Update.currentVersion()
+    local version = update().currentVersion()
     local version_text = "v" .. version
     if type(Settings.get) == "function" then
         local ok, marker = pcall(Settings.get, "update_available")
@@ -96,7 +100,7 @@ function BooxBook:showMainMenu()
     end
     Catalog.show{
         title = _("BooxBook"),
-        subtitle = Network.statusText(),
+        subtitle = network().statusLine(),
         footer_slots = {
             { text = _("Quay lại"), action = "back", enabled = true },
             { text = version_text, enabled = false },
@@ -104,7 +108,7 @@ function BooxBook:showMainMenu()
             { text = "1/1", enabled = false },
         },
         on_footer = function(action)
-            if action == "update" then Update.checkAndPrompt() end
+            if action == "update" then update().checkAndPrompt() end
         end,
         items = {
             {
@@ -112,7 +116,7 @@ function BooxBook:showMainMenu()
                 keep_menu_open = true,
                 callback = function()
                     UIManager:nextTick(function()
-                        Catalog.show{ title = _("Báo"), items = News.menu() }
+                        Catalog.show{ title = _("Báo"), items = news().menu() }
                     end)
                 end,
             },
@@ -125,7 +129,7 @@ function BooxBook:showMainMenu()
                             require("booxbook.ui.sangtacviet").openSource()
                         end
                         Catalog.show{ title = _("Truyện"), items = {
-                            { text = "DocLN", keep_menu_open = true, callback = Novels.openSource },
+                            { text = "DocLN", keep_menu_open = true, callback = novels().openSource },
                             { text = "Wattpad", keep_menu_open = true, callback = function()
                                 require("booxbook.ui.wattpad").openSource()
                             end },
@@ -267,13 +271,13 @@ end
 function BooxBook:settingsMenu()
     local items = {
         {
-            text = _("Phiên bản") .. " " .. Update.currentVersion(),
+            text = _("Phiên bản") .. " " .. update().currentVersion(),
             select_enabled = false,
         },
         {
             text = _("Cập nhật từ GitHub"),
             callback = function()
-                Update.checkAndPrompt()
+                update().checkAndPrompt()
             end,
         },
         {
@@ -481,6 +485,20 @@ function BooxBook:settingsMenu()
                 Catalog.show{ title = _("Khôi phục cài đặt"), items = rows }
             end,
         },
+        {
+            text = _("Tên Wi-Fi hiển thị"),
+            callback = function()
+                local detected = network().detectWifiName()
+                Catalog.promptText{
+                    title = _("Tên Wi-Fi hiển thị"),
+                    hint = _("Để trống để tự nhận"),
+                    input = Settings.get("wifi_label") or detected or "",
+                    on_submit = function(value)
+                        Settings.set("wifi_label", tostring(value or ""):match("^%s*(.-)%s*$"))
+                    end,
+                }
+            end,
+        },
     }
     return {
         { text = _("Đọc và tải"), sub_item_table = { items[4], items[5], items[6], items[7], items[8] } },
@@ -489,7 +507,7 @@ function BooxBook:settingsMenu()
             items[11], items[12], items[13], items[14], items[15],
         } },
         { text = _("OneDrive"), sub_item_table = { items[16], items[17], items[18], items[21] } },
-        { text = _("Hệ thống"), sub_item_table = { items[1], items[2], items[3], items[20] } },
+        { text = _("Hệ thống"), sub_item_table = { items[1], items[2], items[3], items[20], items[23] } },
     }
 end
 
@@ -570,7 +588,7 @@ function BooxBook:editCookie(source_id, title)
 end
 
 function BooxBook:runSelfTest()
-    Network.whenOnline(function()
+    network().whenOnline(function()
         self:performSelfTest()
     end)
 end
@@ -581,17 +599,17 @@ function BooxBook:onBooxBookSelfTest()
 end
 
 function BooxBook:performSelfTest()
-    local ok, code = Http.get("https://example.com", {
+    local ok, code = http().get("https://example.com", {
         referer = "https://booxbook.local/",
         delay_ms = 0,
     })
     local dir = Settings.downloadDir()
     local html_path = dir .. "/_selftest.html"
-    local body = Html.wrapDocument("Kiểm tra BooxBook", "<p>Tiếng Việt</p><p>BooxBook selftest.</p>")
-    local html_ok, html_err = Html.writeFile(html_path, body)
+    local body = html().wrapDocument("Kiểm tra BooxBook", "<p>Tiếng Việt</p><p>BooxBook selftest.</p>")
+    local html_ok, html_err = html().writeFile(html_path, body)
 
     local epub_path = dir .. "/_selftest.epub"
-    local epub_ok, epub_err = Epub.write(epub_path, {
+    local epub_ok, epub_err = epub().write(epub_path, {
         title = "Kiểm tra BooxBook",
         chapters = {
             { title = "Tiếng Việt", html = "<p>Tiếng Việt</p>" },

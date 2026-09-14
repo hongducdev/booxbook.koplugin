@@ -254,6 +254,8 @@ package.loaded["gettext"] = function(value) return value end
 package.loaded["booxbook.network"] = {
     whenOnline = function(callback) callback() end,
     statusText = function() return "Đã kết nối mạng" end,
+    statusLine = function() return "✓ Đã kết nối mạng" end,
+    detectWifiName = function() return "PixelArt 2" end,
 }
 package.loaded["booxbook.ui.catalog"] = {
     clearStack = function()
@@ -292,7 +294,7 @@ assert_eq(table.concat(menu_events, ","), "close,nextTick", "Tools closes before
 assert_true(type(scheduled) == "function", "fullscreen work is deferred")
 scheduled()
 assert_eq(table.concat(menu_events, ","), "close,nextTick,clear,show", "fullscreen menu resets and opens in order")
-assert_eq(shown_menu.subtitle, "Đã kết nối mạng", "home TitleBar shows network status")
+assert_eq(shown_menu.subtitle, "✓ Đã kết nối mạng", "home TitleBar shows network status")
 assert_eq(#shown_menu.items, 5, "home actions fit comfortably on one page")
 assert_eq(shown_menu.items[4].text, "Gửi sách qua Wi-Fi", "primary transfer action precedes settings")
 assert_eq(shown_menu.items[5].text, "Cài đặt", "settings remain available last")
@@ -350,7 +352,7 @@ for _, group in ipairs(settings_groups) do
 end
 assert_eq(table.concat(group_names, ","), "Đọc và tải,Bộ nhớ,Nguồn và cookie,OneDrive,Hệ thống",
     "settings groups follow task order")
-assert_eq(setting_count, 21, "grouping preserves every setting")
+assert_eq(setting_count, 22, "grouping preserves every setting")
 local toggle_count = 0
 for _, group in ipairs(settings_groups) do
     for _, item in ipairs(group.sub_item_table) do
