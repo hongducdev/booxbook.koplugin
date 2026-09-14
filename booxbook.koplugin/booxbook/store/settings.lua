@@ -2,6 +2,8 @@ local Settings = {}
 
 local DEFAULTS = {
     download_dir = nil,
+    -- Name shown next to the home network status; empty means detect it.
+    wifi_label = "",
     delay_ms = 1200,
     include_images = true,
     covers_max_bytes = 50 * 1024 * 1024,
@@ -143,12 +145,17 @@ function Settings.setSangtacvietEnabled(enabled)
     Settings.set("stv_enabled", enabled == true)
 end
 
-local function mkdir_p(path)
-    local lfs_ok, lfs = pcall(require, "libs/libkoreader-lfs")
-    if not lfs_ok then
-        lfs_ok, lfs = pcall(require, "lfs")
+local function lfsModule()
+    local ok, lfs = pcall(require, "libs/libkoreader-lfs")
+    if not ok then
+        ok, lfs = pcall(require, "lfs")
     end
-    if not lfs_ok then
+    return ok and lfs or nil
+end
+
+local function mkdir_p(path)
+    local lfs = lfsModule()
+    if not lfs then
         return false
     end
     local acc = ""
@@ -169,25 +176,38 @@ function Settings.ensureDir(path)
     return mkdir_p(path)
 end
 
+-- Resolved at most once per session: callers ask for this path on every cover lookup,
+-- download and quota check, and mkdir_p costs several syscalls each call.
+local cached_dir, cached_key
+
 function Settings.downloadDir()
     local custom = Settings.get("download_dir")
-    if type(custom) == "string" and custom ~= "" then
-        mkdir_p(custom)
-        return custom
+    if type(custom) ~= "string" or custom == "" then custom = nil end
+    local key = custom or false
+    if cached_dir and cached_key == key then
+        -- One cheap stat keeps working if the directory disappears mid-session.
+        local lfs = lfsModule()
+        if not lfs or lfs.attributes(cached_dir, "mode") == "directory" then return cached_dir end
+        mkdir_p(cached_dir)
+        return cached_dir
     end
-    local ok, DataStorage = pcall(require, "datastorage")
-    local base
-    if ok then
-        if DataStorage.getFullDataDir then
-            base = DataStorage:getFullDataDir()
+    local dir = custom
+    if not dir then
+        local ok, DataStorage = pcall(require, "datastorage")
+        local base
+        if ok then
+            if DataStorage.getFullDataDir then
+                base = DataStorage:getFullDataDir()
+            else
+                base = DataStorage:getDataDir()
+            end
         else
-            base = DataStorage:getDataDir()
+            base = "."
         end
-    else
-        base = "."
+        dir = (base:gsub("[/\\]$", "")) .. "/booxbook"
     end
-    local dir = (base:gsub("[/\\]$", "")) .. "/booxbook"
     mkdir_p(dir)
+    cached_dir, cached_key = dir, key
     return dir
 end
 

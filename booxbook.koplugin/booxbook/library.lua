@@ -29,6 +29,7 @@ local accents = {
     ["ỳ"] = "y", ["ý"] = "y", ["ỷ"] = "y", ["ỹ"] = "y", ["ỵ"] = "y",
     ["Ỳ"] = "y", ["Ý"] = "y", ["Ỷ"] = "y", ["Ỹ"] = "y", ["Ỵ"] = "y",
 }
+Library.accents = accents
 
 local BOOK_EXTENSIONS = {
     epub = true, html = true, pdf = true, cbz = true, cbr = true,
@@ -45,12 +46,15 @@ local IGNORED_DIRS = {
     [".git"] = true,
 }
 
+-- One UTF-8 pass instead of ~135 gsub passes. Every key maps to a single ASCII letter
+-- that is not itself a key, so the mapping is order-independent.
+local FOLD_SEQUENCE = "[%z\1-\127\194-\244][\128-\191]*"
+
 function Library.fold(str)
-    local res = tostring(str or "")
-    for k, v in pairs(accents) do
-        res = res:gsub(k, v)
-    end
-    return res:lower()
+    if type(str) ~= "string" then str = tostring(str or "") end
+    -- Plain ASCII (most queries and paths) needs no per-character mapping.
+    if not str:find("[\128-\255]") then return str:lower() end
+    return str:gsub(FOLD_SEQUENCE, function(char) return accents[char] or char end):lower()
 end
 
 function Library.matchQuery(name, query)

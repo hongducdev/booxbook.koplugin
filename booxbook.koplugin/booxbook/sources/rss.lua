@@ -112,7 +112,7 @@ function Rss.renderArticle(item, full_html, feed, path)
     -- Publisher headings may be inside or outside the extracted article container.
     body = body:gsub("<%s*[Hh]1%f[%W][^>]*>.-</%s*[Hh]1%s*>", "")
     local processed, sidecar = Images.process(body, item.link, path, decode)
-    body = Html.sanitize(processed)
+    body = Html.sanitize(processed, true)
     local meta = "<h1>" .. Html.escape(item.title) .. "</h1>"
         .. "<p><strong>" .. Html.escape(item.date) .. "</strong></p>"
         .. '<p><a href="' .. Html.escape(item.link) .. '">Nguồn bài viết</a></p>'

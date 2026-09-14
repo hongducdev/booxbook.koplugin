@@ -16,7 +16,13 @@ local function utf8(code)
 end
 
 function Html.decode(text)
-    text = tostring(text or ""):gsub("<!%[CDATA%[(.-)%]%]>", "%1")
+    text = tostring(text or "")
+    -- Fast path: tag attributes and titles rarely carry an entity, and skipping the
+    -- five gsub passes below is what keeps per-attribute decoding cheap.
+    if not text:find("&", 1, true) and not text:find("<![CDATA[", 1, true) then
+        return text
+    end
+    text = text:gsub("<!%[CDATA%[(.-)%]%]>", "%1")
     if has_util and Util.htmlEntitiesToUtf8 then
         return Util.htmlEntitiesToUtf8(text)
     end
@@ -47,18 +53,32 @@ end
 
 function Html.stripDangerous(html)
     html = html or ""
-    html = html:gsub("<%s*[Ss][Cc][Rr][Ii][Pp][Tt][^>]*>.-<%s*/%s*[Ss][Cc][Rr][Ii][Pp][Tt]%s*>", "")
-    html = html:gsub("<%s*[Ss][Tt][Yy][Ll][Ee][^>]*>.-<%s*/%s*[Ss][Tt][Yy][Ll][Ee]%s*>", "")
-    html = html:gsub("<%s*[Nn][Oo][Ss][Cc][Rr][Ii][Pp][Tt][^>]*>.-<%s*/%s*[Nn][Oo][Ss][Cc][Rr][Ii][Pp][Tt]%s*>", "")
-    html = html:gsub("<%s*[Ii][Ff][Rr][Aa][Mm][Ee][^>]*>.-<%s*/%s*[Ii][Ff][Rr][Aa][Mm][Ee]%s*>", "")
-    html = html:gsub("<%s*[Ii][Ff][Rr][Aa][Mm][Ee][^>]*/>", "")
+    -- Every removal below needs its opening tag, so one cheap pattern probe decides
+    -- whether the full lazy-match pass is worth running. Chapter text and already
+    -- cleaned article bodies contain none of these tags and skip four scans.
+    if html:find("<%s*[Ss][Cc][Rr][Ii][Pp][Tt]") then
+        html = html:gsub("<%s*[Ss][Cc][Rr][Ii][Pp][Tt][^>]*>.-<%s*/%s*[Ss][Cc][Rr][Ii][Pp][Tt]%s*>", "")
+    end
+    if html:find("<%s*[Ss][Tt][Yy][Ll][Ee]") then
+        html = html:gsub("<%s*[Ss][Tt][Yy][Ll][Ee][^>]*>.-<%s*/%s*[Ss][Tt][Yy][Ll][Ee]%s*>", "")
+    end
+    if html:find("<%s*[Nn][Oo][Ss][Cc][Rr][Ii][Pp][Tt]") then
+        html = html:gsub("<%s*[Nn][Oo][Ss][Cc][Rr][Ii][Pp][Tt][^>]*>.-<%s*/%s*[Nn][Oo][Ss][Cc][Rr][Ii][Pp][Tt]%s*>", "")
+    end
+    if html:find("<%s*[Ii][Ff][Rr][Aa][Mm][Ee]") then
+        html = html:gsub("<%s*[Ii][Ff][Rr][Aa][Mm][Ee][^>]*>.-<%s*/%s*[Ii][Ff][Rr][Aa][Mm][Ee]%s*>", "")
+        html = html:gsub("<%s*[Ii][Ff][Rr][Aa][Mm][Ee][^>]*/>", "")
+    end
+    -- Quoted values first, so a handler whose value contains spaces is removed whole.
     html = html:gsub("%s[oO][nN]%w+%s*=%s*['\"][^'\"]*['\"]", "")
     html = html:gsub("%s[oO][nN]%w+%s*=%s*[^%s>]+", "")
     return html
 end
 
-function Html.sanitize(html)
-    html = Html.stripDangerous(html)
+-- `already_safe` lets a caller that just stripped the same document skip the second
+-- full-document pass before the tag filter runs.
+function Html.sanitize(html, already_safe)
+    if not already_safe then html = Html.stripDangerous(html) end
     html = html:gsub("(</?)(%w+)([^>]*)>", function(prefix, tag, rest)
         local name = lower(tag)
         if not ALLOWED_TAGS[name] then
@@ -73,7 +93,7 @@ function Html.sanitize(html)
             if src == "" then
                 return ""
             end
-            return string.format('<img src="%s" alt="%s"/>', src, alt)
+            return '<img src="' .. src .. '" alt="' .. alt .. '"/>'
         end
         if name == "br" or name == "hr" then
             return "<" .. name .. "/>"
@@ -83,8 +103,10 @@ function Html.sanitize(html)
     return html
 end
 
-local function findTagOpen(html, predicate)
-    local pos = 1
+-- `from` keeps the scan in the caller's string: slicing the tail per match used to copy
+-- O(K x N) bytes for K matches in a document of N bytes.
+local function findTagOpen(html, predicate, from)
+    local pos = from or 1
     while true do
         local s, e, name, attrs = html:find("<%s*([%w:-]+)([^>]*)>", pos)
         if not s then
@@ -163,16 +185,22 @@ end
 
 -- Tiny selectors for the known site markup; return non-overlapping elements.
 function Html.elements(html, selector, first_only)
-    html = (html or ""):gsub("<!%-%-.-%-%->", "")
+    html = html or ""
+    -- gsub always builds a new string, so only pay for comment removal when one exists.
+    if html:find("<!--", 1, true) then
+        html = html:gsub("<!%-%-.-%-%->", "")
+    end
     local result, pos = {}, 1
+    local is_id = selector:sub(1, 1) == "#"
+    local is_class = selector:sub(1, 1) == "."
+    local wanted = selector:sub(2)
     while true do
-        local start, finish, tag = findTagOpen(html:sub(pos), function(name, attrs)
-            if selector:sub(1, 1) == "#" then return attrValue(attrs, "[Ii][Dd]") == selector:sub(2) end
-            if selector:sub(1, 1) == "." then return classListContains(attrs, selector:sub(2)) end
+        local start, finish, tag = findTagOpen(html, function(name, attrs)
+            if is_id then return attrValue(attrs, "[Ii][Dd]") == wanted end
+            if is_class then return classListContains(attrs, wanted) end
             return name == selector
-        end)
+        end, pos)
         if not start then break end
-        start, finish = start + pos - 1, finish + pos - 1
         local inner, outer = extractElement(html, start, finish, tag)
         result[#result + 1] = { inner = inner, outer = outer,
             attrs = html:sub(start, finish):match("<%s*[%w:-]+(.-)>"), tag = tag }
