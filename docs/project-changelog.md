@@ -1,6 +1,6 @@
 # Changelog
 
-## Chưa phát hành
+## 0.0.13 — 2026-09-14
 
 - **Dòng trạng thái mạng ở màn hình chính**: thêm icon theo trạng thái (`✓` đã kết nối,
   `•` có liên kết nhưng chưa chắc Internet, `○` chưa kết nối, `?` chưa xác định) và hiện
@@ -31,6 +31,16 @@
   kết quả** hiển thị số kết nối/yêu cầu/bị từ chối, địa chỉ mà điện thoại đã gọi và cảnh báo khi
   trình duyệt tự nâng lên HTTPS; subtitle cảnh báo khi địa chỉ hiển thị không thuộc mạng nội bộ
   (VPN/4G).
+- **Tối ưu hiệu năng** (`html.lua`, `library.lua`, `sources/rss.lua`, `fulltext-search.lua`,
+  `store/settings.lua`, `main.lua`): bỏ lần `stripDangerous` trùng ở đường bài báo (6,5×);
+  `Html.elements` không còn copy cả chuỗi còn lại mỗi lần khớp (6× với trang 2000 link);
+  `Html.decode` có fast-path khi giá trị không chứa entity (5,5×); `Library.fold` thay ~135
+  lượt `gsub` bằng một lượt quét UTF-8 (13× với tiếng Việt, 78× với chuỗi ASCII) và bảng
+  dấu dùng chung một bản; `Settings.downloadDir` chỉ tạo thư mục một lần mỗi phiên; tick
+  WiFi 20 Hz khi rảnh → 5 Hz. `main.lua` nạp lười module menu nên lúc khởi động KOReader
+  chỉ biên dịch **2 module / 9 KB / 316 dòng** thay vì **38 module / 294 KB / 7.015 dòng**.
+- **Dọn kho**: xoá `plans/reports/260904-all-feeds-audit.md` (trùng byte với
+  `tests/fixtures/feeds-audit.md`, 77 KB).
 
 ## 0.0.12 — 2026-09-10
 
