@@ -52,8 +52,9 @@ trước khi chuyển nhượng thiết bị.
 1. Kết nối máy đọc sách và điện thoại/máy tính vào cùng mạng Wi-Fi.
 2. Trong **BooxBook → Gửi sách qua Wi-Fi**, giữ màn hình nhận sách mở.
 3. Điện thoại: chọn **Quét QR để gửi từ điện thoại**, quét bằng camera để mở web
-   với mã phiên điền sẵn. Máy tính: gõ địa chỉ `http://…:8080/` đang hiển thị
-   vào trình duyệt, rồi nhập mã phiên 6 chữ số trên máy đọc sách (giữ số 0 đầu).
+   với mã phiên điền sẵn. Máy tính: gõ địa chỉ `http://…:8080/` đang hiển thị (cổng có thể
+   khác 8080 nếu cổng đó đang bận) vào trình duyệt, rồi nhập mã phiên 6 chữ số trên máy đọc
+   sách (giữ số 0 đầu).
 4. Chọn một hoặc nhiều sách, bấm **Gửi sách**. Xem tiến độ và kết quả từng file.
 5. Bấm **Dừng nhận sách**, rồi mở **Sách & cloud → Thư viện trên máy → received** để đọc.
 
@@ -67,9 +68,17 @@ Một thiết bị nhập sai mã 5 lần sẽ bị khóa tới khi mở lại p
 trong cùng mạng vẫn gửi được.
 Đóng màn hình nhận sách, tắt KOReader, mất mạng hoặc cho máy ngủ sẽ dừng phiên;
 mở lại sẽ có mã phiên mới. Khi gửi sách lớn, tránh để máy tự ngủ.
-Không vào được web: kiểm tra cùng Wi-Fi, tránh mạng khách/chặn thiết bị nội bộ,
-tắt VPN nếu địa chỉ hiển thị thuộc VPN. Nếu cổng 8080 bận, dừng HTTP Inspector
-hoặc ứng dụng đang dùng cổng đó rồi mở lại. Chưa xác nhận trên Boox/Kindle/Kobo thật.
+Không vào được web: mở **Kiểm tra kết nối và kết quả** trên máy đọc sách trước, để biết máy
+đọc có nhận được kết nối nào từ điện thoại/máy tính hay không.
+- **0 kết nối**: thiết bị gửi chưa tới được máy đọc — kiểm tra hai máy cùng một mạng Wi-Fi,
+  tắt VPN (nhất là khi địa chỉ hiển thị thuộc VPN), tránh mạng khách/chặn thiết bị nội bộ
+  (AP/client isolation) và tắt chế độ tiết kiệm pin cho trình duyệt.
+- **Có kết nối nhưng bị từ chối**: mở đúng một địa chỉ trong **Xem địa chỉ và mã phiên**
+  (đúng cả cổng) và nhập đúng mã phiên 6 chữ số.
+- **Trình duyệt thử HTTPS**: gõ đầy đủ `http://` trước địa chỉ; một số trình duyệt tự nâng
+  lên HTTPS nên không hiển thị được trang HTTP này.
+Máy chủ tự chọn cổng trống trong 8080–8088 khi cổng 8080 bận, nên hãy dùng đúng địa chỉ và
+cổng đang hiển thị. Chưa xác nhận trên Boox/Kindle/Kobo thật.
 
 Sau khi mỗi file được ghi hoàn tất, KOReader hiện thông báo **Đã nhận sách** kèm
 tên file trong 3 giây. Không báo thành công cho file dở hoặc file bị từ chối.

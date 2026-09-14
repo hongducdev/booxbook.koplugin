@@ -7,18 +7,27 @@ Trình đọc cá nhân. Không vượt VIP / paywall / captcha.
 ## Nhận sách từ mạng nội bộ
 
 `main.lua → ui/wifi-transfer.lua → wifi-transfer-server.lua → wifi-upload.lua`.
-Màn hình riêng dùng Catalog; server LuaSocket bind địa chỉ IPv4 của interface
-Wi-Fi, chỉ fallback bảng định tuyến khi không đọc được interface. Poll nonblocking mỗi 50 ms, tối đa
-4 kết nối, 1 MiB/kết nối/tick; idle timeout 30 giây, request timeout 30 phút.
+Màn hình riêng dùng Catalog; server LuaSocket listen `0.0.0.0` trên cổng trống đầu tiên
+trong 8080–8088 (hiển thị cổng thật), hiển thị địa chỉ LAN tốt nhất — interface VPN/cellular
+(`tun*`, `utun*`, `wg*`, `tailscale*`, `rmnet*`, `ccmni*`, `wwan*`, …) xếp cuối, địa chỉ
+routable trước link-local, cuối cùng mới tới địa chỉ lấy từ bảng định tuyến — kèm danh sách
+địa chỉ dự phòng để người dùng đổi khi địa chỉ đầu không tới được. Poll nonblocking mỗi 50 ms,
+tối đa 4 kết nối, 1 MiB/kết nối/tick; idle timeout 30 giây, request timeout 30 phút.
 Trang `wifi-transfer-page.lua` không có tài nguyên ngoài: XMLHttpRequest gửi raw
 File lần lượt, báo tiến độ và lỗi. Đây là HTTP **nhận vào**, độc lập HTTP client
 `booxbook.http` vốn chỉ tải nội dung nguồn.
 
-POST `/upload` kiểm Host/Origin, mã phiên 6 chữ số từ `/dev/urandom` (rejection
-sampling, giữ số 0 đầu), khóa riêng IP nguồn sau 5 lần sai đến khi mở lại phiên, Content-Length
-và tên/đuôi sách; chặn traversal, file ẩn/reserved, header trùng/chunked và file
-quá 512 MiB. Mã QR chứa token trong fragment, trang xóa fragment sau khi đọc;
-token không nhúng trong HTML được phục vụ. Server không cung cấp API đọc/xóa file.
+POST `/upload` kiểm Host/Origin (mọi địa chỉ IPv4 hoặc `localhost` đúng cổng; từ chối tên miền và
+Origin HTTPS; `Sec-Fetch-Site: cross-site` chỉ bị chặn ở request ghi nên bấm link từ ứng dụng khác
+vẫn mở được trang), từ chối ngay khi accept mọi kết nối có địa chỉ nguồn ngoài mạng nội bộ
+(private/link-local/loopback/CGNAT, hoặc cùng hai octet đầu với một địa chỉ của máy nên LAN cấp IP
+public vẫn dùng được), mã phiên 6 chữ số từ
+`/dev/urandom` (rejection sampling, giữ số 0 đầu), khóa riêng IP nguồn sau 5 lần sai đến khi mở
+lại phiên, Content-Length và tên/đuôi sách; chặn traversal, file ẩn/reserved, header trùng/chunked
+và file quá 512 MiB. Mã QR chứa token trong fragment, trang xóa fragment sau khi đọc; token không
+nhúng trong HTML được phục vụ. Server không cung cấp API đọc/xóa file. Bộ đếm kết nối/yêu cầu/bị
+từ chối, địa chỉ Host gần nhất và số lần bắt gặp TLS handshake trên cổng HTTP được hiển thị ở mục
+**Kiểm tra kết nối và kết quả** để phân biệt lỗi mạng với lỗi địa chỉ.
 Ghi stream vào `received/.upload-<session>-<id>.part`, đóng file thành công mới
 rename; giữ file đích đã có. Disconnect/timeout/stop xóa file tạm thuộc request.
 Nếu tiến trình bị kill cứng, file `.part` có thể còn lại, không xuất hiện như sách.

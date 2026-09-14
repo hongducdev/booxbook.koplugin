@@ -1,5 +1,37 @@
 # Changelog
 
+## Chưa phát hành
+
+- **Dòng trạng thái mạng ở màn hình chính**: thêm icon theo trạng thái (`✓` đã kết nối,
+  `•` có liên kết nhưng chưa chắc Internet, `○` chưa kết nối, `?` chưa xác định) và hiện
+  **tên mạng thay vì địa chỉ IP**: Kobo/Kindle tự đọc SSID (`wpa_cli`/`iwgetid`); Android
+  dùng tên ở **Cài đặt → Hệ thống → Tên Wi-Fi hiển thị**, mục này tự dò qua root nếu máy đã
+  root và cho nhập tay khi không dò được (KOReader không có quyền đọc SSID nên không thể tự
+  lấy), kèm fallback hiện loại mạng (`Wi-Fi`/`4G`/`Ethernet`); tra cứu cache 60 giây.
+- **Sửa lỗi không mở được trang gửi sách qua Wi-Fi**: máy chủ lắng nghe trên mọi
+  interface (`0.0.0.0`) và tự chuyển sang cổng trống tiếp theo trong 8080–8088 khi cổng
+  8080 bận, thay vì chỉ bind đúng một địa chỉ IPv4 của interface được chọn.
+- **Chọn địa chỉ LAN đúng để hiển thị**: interface VPN/cellular (`tun*`, `utun*`, `wg*`,
+  `tailscale*`, `rmnet*`, `ccmni*`, `wwan*`, …) bị xếp cuối và địa chỉ routable ưu tiên
+  hơn link-local; màn hình hiển thị đủ danh sách địa chỉ IPv4 (kể cả địa chỉ từ bảng
+  định tuyến) để thử địa chỉ kế tiếp khi địa chỉ đầu không tới được.
+- **Host/Origin linh hoạt nhưng vẫn chống DNS rebinding**: chấp nhận mọi địa chỉ IPv4
+  (hoặc `localhost`) đúng cổng của máy chủ, từ chối tên miền, Origin HTTPS và
+  `Sec-Fetch-Site: cross-site`; kết nối từ ngoài dải mạng nội bộ bị từ chối theo địa chỉ
+  nguồn, nên bind `0.0.0.0` không mở server ra Internet.
+- **Trang vẫn mở khi bấm link từ ứng dụng khác**: request ghi mới bị chặn vì
+  `Sec-Fetch-Site: cross-site`; điều hướng GET (bấm link trong Zalo/Telegram, mở từ lịch sử
+  trình duyệt) không còn bị trả 403, đây là nguyên nhân trực tiếp của "gõ đúng địa chỉ mà
+  không thấy giao diện".
+- **Nguồn ngoài mạng nội bộ bị chặn ngay khi accept**: địa chỉ nguồn phải thuộc dải
+  private/link-local/loopback/CGNAT hoặc cùng hai octet đầu với một địa chỉ của máy (LAN cấp
+  IP public vẫn dùng được); nhờ vậy bind `0.0.0.0` không mở server ra Internet và kẻ lạ không
+  chiếm được slot kết nối.
+- **Chẩn đoán ngay trên máy đọc sách** (`ui/wifi-transfer.lua`): mục mới **Kiểm tra kết nối và
+  kết quả** hiển thị số kết nối/yêu cầu/bị từ chối, địa chỉ mà điện thoại đã gọi và cảnh báo khi
+  trình duyệt tự nâng lên HTTPS; subtitle cảnh báo khi địa chỉ hiển thị không thuộc mạng nội bộ
+  (VPN/4G).
+
 ## 0.0.12 — 2026-09-10
 
 - **Tự động kiểm tra truyện & gom digest sáng** (`morning-sync.lua`): kiểm tra chương mới
