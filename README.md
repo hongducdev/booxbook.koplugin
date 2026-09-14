@@ -83,4 +83,14 @@ tests/               unit test LuaJIT (không cần KOReader)
 website/             site tĩnh giới thiệu + hướng dẫn (deploy GitHub Pages)
 ```
 
+## Ủng hộ BooxBook
+
+Nếu BooxBook hữu ích, bạn có thể quét mã QR dưới đây để donate và giúp dự án tiếp tục phát triển:
+
+<p align="center">
+  <img src="./website/donate-qr.png" width="240" alt="Mã QR để ủng hộ BooxBook" />
+</p>
+
+Tham gia cộng đồng Telegram: [t.me/booxbookreader](https://t.me/booxbookreader).
+
 Ghi chú bên thứ ba (MIT, Nekori): [THIRD-PARTY-NOTICES.md](booxbook.koplugin/THIRD-PARTY-NOTICES.md).
