@@ -42,8 +42,8 @@ function upload(file){return new Promise(resolve=>{
  xhr.setRequestHeader('X-BooxBook-Token',token.value.trim());xhr.setRequestHeader('X-File-Name',encodeURIComponent(file.name));
  xhr.upload.onprogress=e=>{if(e.lengthComputable)progress.value=e.loaded/e.total*100};
  xhr.onload=()=>resolve(xhr.status===201?'Đã lưu vào thư viện.':xhr.responseText||'Gửi thất bại.');
- xhr.onerror=()=>resolve('Mất kết nối. Kiểm tra Wi-Fi và màn hình nhận sách.');
- xhr.ontimeout=()=>resolve('Hết thời gian gửi. Hãy thử lại.');xhr.onabort=()=>resolve('Đã hủy.');
+ xhr.onerror=()=>resolve('Máy đọc không trả lời khi gửi '+file.name+'. Kiểm tra Wi-Fi, giữ màn hình nhận sách mở — lý do thật ở mục “Kiểm tra kết nối và kết quả” trên máy đọc.');
+ xhr.ontimeout=()=>resolve('Hết thời gian gửi '+file.name+'. Hãy thử lại.');xhr.onabort=()=>resolve('Đã hủy.');
  xhr.send(file);
 })}
 form.addEventListener('submit',async e=>{

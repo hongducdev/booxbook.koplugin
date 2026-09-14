@@ -74,7 +74,8 @@ Không vào được web: mở **Kiểm tra kết nối và kết quả** trên 
   tắt VPN (nhất là khi địa chỉ hiển thị thuộc VPN), tránh mạng khách/chặn thiết bị nội bộ
   (AP/client isolation) và tắt chế độ tiết kiệm pin cho trình duyệt.
 - **Có kết nối nhưng bị từ chối**: mở đúng một địa chỉ trong **Xem địa chỉ và mã phiên**
-  (đúng cả cổng) và nhập đúng mã phiên 6 chữ số.
+  (đúng cả cổng) và nhập đúng mã phiên 6 chữ số. Dòng **Lần từ chối gần nhất** hiện đúng
+  lý do (trùng tên, sai mã, quá lớn…) khi máy đọc đã trả lời từ chối.
 - **Trình duyệt thử HTTPS**: gõ đầy đủ `http://` trước địa chỉ; một số trình duyệt tự nâng
   lên HTTPS nên không hiển thị được trang HTTP này.
 Máy chủ tự chọn cổng trống trong 8080–8088 khi cổng 8080 bận, nên hãy dùng đúng địa chỉ và

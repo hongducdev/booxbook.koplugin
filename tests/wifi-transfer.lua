@@ -210,6 +210,31 @@ assert(stalled.closed and not io.open("@wifi/stalled.pdf", "rb"))
 local disconnected = peer({ headers("disconnect.pdf", "9") .. "x" })
 server:poll(); server:poll(); disconnected.disconnected=true; server:poll()
 assert(disconnected.closed)
+-- A refusal answers while the phone is still uploading. Closing the socket at that
+-- moment resets it and the browser reports a network error instead of the message
+-- ("Mất kết nối"), so the rest of the body must be discarded first.
+local refused = peer({ headers("refused.azw3", "10"):gsub(token, "654321") .. "abc", "defghij" })
+server:poll(); server:poll()
+assert(server.clients[1] and server.clients[1].drain == 7, "the rest of a refused upload is discarded")
+assert(not refused.closed, "a refusal must not reset the socket mid-upload")
+serve(server, refused, 40)
+assert(refused.closed and refused.output:find("401 Result", 1, true), "the refusal message is delivered")
+assert(server.last_error and server.last_error:find("^401: ", 1),
+    "the device keeps the exact refusal for its diagnostics screen")
+assert(not io.open("@wifi/refused.azw3", "rb"), "a refused upload is never saved")
+local duplicate = peer({ headers("stream.pdf", "6") .. "ab", "cdef" })
+server:poll(); server:poll()
+assert(server.clients[1] and server.clients[1].drain == 4, "a duplicate name discards the rest too")
+serve(server, duplicate, 40)
+assert(duplicate.closed and duplicate.output:find("409 Result", 1, true), "duplicate is told why")
+-- The queue body is a short URL: the reply closes at once instead of draining.
+local queue_body = "https://a.test/book"
+local queued = peer({ ("POST /queue HTTP/1.1\r\nHost: 127.0.0.1:8080\r\nX-BooxBook-Token: %s"
+    .. "\r\nContent-Length: %d\r\n\r\n%s"):format(token, #queue_body, queue_body) })
+server:poll(); server:poll()
+serve(server, queued, 40)
+assert(queued.closed and queued.output:find("201 Result", 1, true), "a URL is queued and answered")
+assert(io.open("@wifi/queue.txt", "rb"), "the URL was appended to the queue file")
 local stopped = peer({ headers("stop.pdf", "9") .. "x" })
 server:poll(); server:poll(); server:stop(); server:stop()
 assert(stopped.closed and listeners[1].closed)
@@ -324,10 +349,12 @@ assert(message.text:find("http://192.168.1.16:8080/", 1, true), "primary address
 assert(message.text:find("http://10.8.0.2:8080/", 1, true), "alternate address listed")
 assert(message.text:find(token, 1, true), "session code repeated")
 ui_server.connections, ui_server.requests, ui_server.rejected = 2, 3, 1
+ui_server.last_error = "409: Sách trùng tên. Hãy đổi tên rồi gửi lại."
 ui_server.https_attempts, ui_server.recent_hosts = 1, { "192.168.1.16:8080" }
 shown.items[5].callback()
 assert(message.text:match("^Kết nối đã nhận: 2 · yêu cầu: 3 · sách: 0"), message.text)
 assert(message.text:find("192.168.1.16:8080", 1, true) and message.text:find("HTTPS", 1, true))
+assert(message.text:find("Lần từ chối gần nhất: 409:", 1, true), "the exact refusal is shown on the device")
 ui_server.connections = 0
 ui_server.recent_hosts = {}
 shown.items[5].callback()

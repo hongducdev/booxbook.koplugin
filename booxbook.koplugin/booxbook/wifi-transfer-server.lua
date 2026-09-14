@@ -225,13 +225,28 @@ end
 
 local function respond(self, client, code, body, html)
     if client.request then Upload.abort(client.request) end
-    if isRefusal(code) then self.rejected = self.rejected + 1 end
+    if isRefusal(code) then
+        self.rejected = self.rejected + 1
+        -- The phone may only manage "connection lost": the device keeps the real reason.
+        self.last_error = tostring(code) .. ": " .. tostring(body)
+    end
     client.output = "HTTP/1.1 " .. code .. " Result\r\nContent-Type: "
         .. (html and "text/html" or "text/plain") .. "; charset=utf-8\r\nContent-Length: " .. #body
         .. "\r\nConnection: close\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer"
         .. "\r\nX-Content-Type-Options: nosniff\r\nContent-Security-Policy: default-src 'none'; "
         .. "script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; "
         .. "frame-ancestors 'none'; base-uri 'none'; form-action 'self'\r\n\r\n" .. body
+    -- The phone keeps uploading while we answer: closing now resets the socket and the
+    -- browser reports a network error instead of this message. Whatever body bytes are
+    -- still on their way (declared minus consumed minus the leftover in the buffer) is
+    -- discarded by step() before the connection is closed.
+    local dropped = 0
+    if client.buffer then
+        local leftover = client.buffer:find("\r\n\r\n", 1, true)
+        if leftover then dropped = #client.buffer - leftover - 3 end
+    end
+    local pending = (client.declared or 0) - (client.received_body or 0) - dropped
+    client.drain = pending > 0 and pending or nil
     client.sent = 0
     client.buffer = nil
 end
@@ -293,6 +308,13 @@ function Server:consume(client, chunk)
             return
         end
         if boundary > 8192 then return respond(self, client, 431, _("Header quá dài.")) end
+        -- Body bytes the phone announced, and the counter of the ones actually consumed.
+        -- A refusal answers while the upload is still running, and the leftover has to be
+        -- discarded instead of reset; see respond().
+        local declared = tonumber(client.buffer:sub(1, boundary + 3)
+            :match("[\r\n][Cc]ontent%-[Ll]ength:[ \t]*(%d+)"))
+        client.declared = (declared and declared <= Upload.MAX_BYTES) and declared or 0
+        client.received_body = 0
         local request, code, message = Upload.headers(client.buffer:sub(1, boundary + 3), self.authority, self.token)
         if request then
             self.requests = self.requests + 1
@@ -372,6 +394,7 @@ function Server:consume(client, chunk)
     end
     if client.request.queue then
         client.request.queue_body = (client.request.queue_body or "") .. (chunk or "")
+        client.received_body = client.received_body + #(chunk or "")
         if #client.request.queue_body > client.request.remaining then
             return respond(self, client, 413, _("URL quá dài."))
         end
@@ -389,6 +412,7 @@ function Server:consume(client, chunk)
         end
         return
     end
+    client.received_body = client.received_body + #chunk
     local ok, result = Upload.write(client.request, chunk)
     if not ok then return respond(self, client, 500, result) end
     if result == "complete" then
@@ -408,9 +432,15 @@ function Server:step(client)
         if count > client.sent then client.active = now end
         client.sent = count
         if count >= #client.output then
-            if client.output_file then queueOutputFileChunk(client) else close(client) end
-        elseif err and err ~= "timeout" then close(client) end
-        return
+            if client.output_file then return queueOutputFileChunk(client) end
+            if not client.drain then return close(client) end
+            -- Answer sent, the rest of the refused upload is discarded below.
+            client.output = nil
+        elseif err and err ~= "timeout" then
+            return close(client)
+        else
+            return
+        end
     end
     -- ponytail: at most 1 MiB/client/tick; use socket readiness polling if throughput becomes limiting.
     for _ = 1, 16 do
@@ -418,7 +448,12 @@ function Server:step(client)
         chunk = chunk or partial or ""
         if #chunk > 0 then
             client.active = now
-            self:consume(client, chunk)
+            if client.drain then
+                client.drain = client.drain - #chunk
+                if client.drain <= 0 then return close(client) end
+            else
+                self:consume(client, chunk)
+            end
         end
         if client.output then return end
         if err and err ~= "timeout" then return close(client) end

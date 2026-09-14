@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.15 — 2026-09-15
+
+- **Sửa lỗi gửi sách qua Wi-Fi bị che thành "Mất kết nối" (ảnh hưởng cao)**: máy chủ trả lời
+  từ chối (trùng tên, sai mã phiên, file quá lớn…) rồi đóng socket ngay khi điện thoại còn
+  đang gửi body, khiến kernel gửi RST và trình duyệt báo lỗi mạng thay vì thông báo thật —
+  lặp lại mỗi lần gửi. Nay máy chủ đọc nốt phần body còn lại (theo `Content-Length`, tối đa
+  `Upload.MAX_BYTES`) rồi mới đóng, nên mọi định dạng file đều nhận được đúng lý do.
+- **Báo lỗi chính xác ở cả hai phía**: trang gửi sách nêu tên file và nói rõ máy đọc không
+  trả lời (thay câu chung `Mất kết nối`); màn hình **Kiểm tra kết nối và kết quả** trên máy
+  đọc thêm dòng **Lần từ chối gần nhất** kèm mã và thông báo (`409: Sách trùng tên…`).
+- Kiểm thử hồi quy LuaJIT: từ chối khi body mới nhận một phần (401 `drain = 7`, 409
+  `drain = 4`), `/queue` không chờ drain, chuỗi chẩn đoán trên máy đọc; cả ba assertion mới
+  đều đỏ trước khi sửa. Toàn bộ `tests/run.lua` đạt.
+
 ## 0.0.14 — 2026-09-14
 
 - **Sửa Wi-Fi trên Kindle (ảnh hưởng cao)**: phiên nhận hiện link nhưng thiếu quy tắc

@@ -86,6 +86,9 @@ local function resultText(current, dir)
     else
         lines[#lines + 1] = _("Địa chỉ đã gọi:") .. " " .. _("chưa có")
     end
+    if current.last_error then
+        lines[#lines + 1] = _("Lần từ chối gần nhất:") .. " " .. tostring(current.last_error)
+    end
     if (current.rejected or 0) > 0 then
         lines[#lines + 1] = _("Bị từ chối:") .. " " .. tostring(current.rejected)
             .. " — " .. _("mở đúng địa chỉ đang hiển thị và nhập đúng mã phiên.")
