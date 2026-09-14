@@ -1,5 +1,11 @@
 # Lộ trình phát triển
 
+## Nhận sách Wi-Fi trên Kindle — 2026-09-14
+
+- [x] Bổ sung mở/đóng tường lửa theo cổng thực tế, hoàn tác khi thiết lập lỗi.
+- [x] Kiểm thử hồi quy Wi-Fi và toàn bộ suite bằng LuaJIT.
+- [ ] Xác nhận trên Kindle thật: mở trang từ điện thoại, gửi EPUB, dừng phiên.
+
 ## Google Drive + Digest + Follow-up — 2026-09-10
 
 - [x] Google Drive download-only: Device flow, refresh/đăng xuất, duyệt thư mục, tải `.part` + rename, không ghi đè.

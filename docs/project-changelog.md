@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.14 — 2026-09-14
+
+- **Sửa Wi-Fi trên Kindle (ảnh hưởng cao)**: phiên nhận hiện link nhưng thiếu quy tắc
+  tường lửa cho TCP vào/ra, khiến trình duyệt có thể không tới được trang gửi sách.
+  Mở đúng cổng đã bind theo cách HTTP Inspector của KOReader; gỡ quy tắc khi dừng,
+  suspend hoặc lỗi poll. Nếu thiết lập thất bại, đóng listener, hoàn tác phần đã mở
+  và báo lỗi rõ ràng. Android/Kobo không chạy lệnh tường lửa.
+- Kiểm thử hồi quy LuaJIT: mở/đóng cổng, cổng dự phòng, lỗi từng bước và cleanup;
+  toàn bộ `tests/run.lua` đạt. Chưa xác nhận trên Kindle thật.
+
 ## 0.0.13 — 2026-09-14
 
 - **Dòng trạng thái mạng ở màn hình chính**: thêm icon theo trạng thái (`✓` đã kết nối,

@@ -298,7 +298,7 @@ assert_eq(shown_menu.subtitle, "✓ Đã kết nối mạng", "home TitleBar sho
 assert_eq(#shown_menu.items, 5, "home actions fit comfortably on one page")
 assert_eq(shown_menu.items[4].text, "Gửi sách qua Wi-Fi", "primary transfer action precedes settings")
 assert_eq(shown_menu.items[5].text, "Cài đặt", "settings remain available last")
-assert_eq(shown_menu.footer_slots[2].text, "v0.0.13", "home footer shows the plugin version")
+assert_eq(shown_menu.footer_slots[2].text, "v0.0.14", "home footer shows the plugin version")
 assert_eq(shown_menu.footer_slots[3].action, "update", "home footer exposes one labeled update action")
 assert_eq(shown_menu.footer_slots[4].text, "1/1", "home footer confirms all actions fit on one page")
 assert_true(type(shown_menu.on_footer) == "function", "home footer actions are handled")

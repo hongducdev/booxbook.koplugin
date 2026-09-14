@@ -7,6 +7,10 @@ Trình đọc cá nhân. Không vượt VIP / paywall / captcha.
 ## Nhận sách từ mạng nội bộ
 
 `main.lua → ui/wifi-transfer.lua → wifi-transfer-server.lua → wifi-upload.lua`.
+Trên Kindle, UI mở quy tắc iptables INPUT/OUTPUT cho đúng cổng đã bind, theo
+HTTP Inspector của KOReader. Chỉ giữ quy tắc trong phiên nhận; `Transfer.stop`
+gỡ khi đóng/suspend/lỗi poll, và hoàn tác nếu thiết lập chỉ thành công một phần.
+Không hiện URL khi mở tường lửa thất bại; Android/Kobo bỏ qua bước này.
 Màn hình riêng dùng Catalog; server LuaSocket listen `0.0.0.0` trên cổng trống đầu tiên
 trong 8080–8088 (hiển thị cổng thật), hiển thị địa chỉ LAN tốt nhất — interface VPN/cellular
 (`tun*`, `utun*`, `wg*`, `tailscale*`, `rmnet*`, `ccmni*`, `wwan*`, …) xếp cuối, địa chỉ

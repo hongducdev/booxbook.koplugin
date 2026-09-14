@@ -7,11 +7,36 @@ local Server = require("booxbook.wifi-transfer-server")
 local _ = require("gettext")
 local Transfer = {}
 local server, screen, tick, standby, generation = nil, nil, nil, nil, 0
+local firewall_rules = {}
+
+local function firewallCommand(action, rule)
+    local ok, status = pcall(os.execute, "iptables " .. action .. " " .. rule)
+    return ok and (status == 0 or status == true)
+end
+
+local function openFirewall(port)
+    local Device = require("device")
+    if not Device:isKindle() then return true end
+    -- Match KOReader's HTTP Inspector, using the port actually bound (8080 may be busy).
+    for _, rule in ipairs({
+        "INPUT -p tcp --dport " .. port .. " -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT",
+        "OUTPUT -p tcp --sport " .. port .. " -m conntrack --ctstate ESTABLISHED -j ACCEPT",
+    }) do
+        if not firewallCommand("-A", rule) then return false end
+        firewall_rules[#firewall_rules + 1] = rule
+    end
+    return true
+end
 
 function Transfer.stop()
     generation = generation + 1
     if tick then UIManager:unschedule(tick); tick = nil end
     if server then server:stop(); server = nil end
+    for index = #firewall_rules, 1, -1 do
+        if firewallCommand("-D", firewall_rules[index]) then
+            table.remove(firewall_rules, index)
+        end
+    end
     if standby then UIManager:allowStandby(); standby = nil end
     if screen then
         local old = screen
@@ -87,6 +112,13 @@ local function start(expected_generation)
         server, err = Server.new(dir, Server.localAddresses(preferredInterface()), Server.sessionToken())
     else err = _("Không tạo được thư mục nhận sách.") end
     if not server then UIManager:show(InfoMessage:new{ text=err }); return end
+    if not openFirewall(server.port) then
+        Transfer.stop()
+        UIManager:show(InfoMessage:new{
+            text=_("Không mở được cổng nhận sách qua tường lửa Kindle. Hãy khởi động lại KOReader và thử lại."),
+        })
+        return
+    end
     local current = server
     current.on_received = function(name)
         UIManager:show(InfoMessage:new{ text=_("Đã nhận sách:") .. "\n" .. name, timeout=3 })

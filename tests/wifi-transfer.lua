@@ -306,7 +306,15 @@ package.loaded["booxbook.wifi-transfer-server"] = {
 }
 package.loaded["booxbook.ui.wifi-transfer"] = nil
 local Transfer = require("booxbook.ui.wifi-transfer")
+local execute, firewall_commands, kindle, firewall_failure = os.execute, {}, false, nil
+package.loaded.device = { isKindle=function() return kindle end }
+os.execute = function(command)
+    firewall_commands[#firewall_commands + 1] = command
+    if firewall_failure and command:find(firewall_failure, 1, true) then return 256 end
+    return 0
+end
 Transfer.show(); assert(shown and scheduled and balance == 1)
+assert(#firewall_commands == 0, "Android does not change firewall rules")
 assert(requested_interface == "wlan0", "the active network interface is passed to the server")
 assert(ui_server.addresses[1] == "192.168.1.16", "alternate addresses reach the screen")
 ui_server.on_received("received.epub")
@@ -328,7 +336,7 @@ ui_server.connections = 2
 local qr
 package.loaded["ui/widget/qrmessage"] = { new=function(_, opts) qr=opts; return opts end }
 for _, dimensions in ipairs({ {1080, 2340}, {2340, 1080}, {600, 800} }) do
-    package.loaded.device = { screen={ getWidth=function() return dimensions[1] end,
+    package.loaded.device = { isKindle=function() return kindle end, screen={ getWidth=function() return dimensions[1] end,
         getHeight=function() return dimensions[2] end } }
     shown.items[3].callback()
     assert(qr.width == math.floor(math.min(unpack(dimensions)) * 0.85))
@@ -351,6 +359,43 @@ local opened = server_count
 Transfer.show(); assert(delayed)
 Transfer.stop(); delayed()
 assert(server_count == opened, "closed plugin cancels delayed Wi-Fi callback")
+
+network_manager.isConnected = function() return true end
+package.loaded.device = { isKindle=function() return kindle end }
+kindle = true
+Transfer.show()
+assert(#firewall_commands == 2, "Kindle must open INPUT and OUTPUT before advertising the web page")
+assert(firewall_commands[1] == "iptables -A INPUT -p tcp --dport 8080 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT")
+assert(firewall_commands[2] == "iptables -A OUTPUT -p tcp --sport 8080 -m conntrack --ctstate ESTABLISHED -j ACCEPT")
+Transfer.stop(); Transfer.stop()
+assert(#firewall_commands == 4 and balance == 0, "stop removes each rule exactly once")
+assert(firewall_commands[3] == firewall_commands[2]:gsub("iptables %-A", "iptables -D"))
+assert(firewall_commands[4] == firewall_commands[1]:gsub("iptables %-A", "iptables -D"))
+firewall_commands = {}
+firewall_failure = "-A OUTPUT"
+local previous_shown, previous_stopped = shown, stopped_count
+Transfer.show()
+assert(shown == previous_shown and balance == 0 and stopped_count == previous_stopped + 1,
+    "failed firewall setup closes listener without advertising an unreachable session")
+assert(#firewall_commands == 3 and firewall_commands[3]:find("-D INPUT", 1, true),
+    "partial setup rolls back only the rule it added")
+assert(message.text:find("tường lửa Kindle", 1, true))
+firewall_commands, firewall_failure = {}, "-A INPUT"
+Transfer.show()
+assert(#firewall_commands == 1 and balance == 0, "failed first rule needs no rollback")
+firewall_commands, firewall_failure = {}, nil
+local original_new = package.loaded["booxbook.wifi-transfer-server"].new
+package.loaded["booxbook.wifi-transfer-server"].new = function(...)
+    local current = original_new(...)
+    current.port = 8081
+    return current
+end
+Transfer.show()
+assert(firewall_commands[1]:find("--dport 8081", 1, true), "open actual fallback port")
+ui_server.poll = function() error("poll failed") end
+scheduled()
+assert(#firewall_commands == 4 and balance == 0, "poll failure also closes firewall")
+os.execute = execute
 
 io.open, os.remove, os.rename = open, remove, rename
 for _, path in pairs(paths) do remove(path) end
