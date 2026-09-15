@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.0.16 — 2026-09-15
+
+- **Tìm toàn văn trong bài báo đã tải**: thêm **Báo → Tìm trong tin đã tải**, dùng lại
+  tìm kiếm toàn văn sẵn có nhưng giới hạn trong `koreader/booxbook/news/`. Không phân biệt
+  dấu, kết quả hiện trích đoạn quanh từ khóa rồi mở bài bằng KOReader. Trần mặc định
+  200 file/30 kết quả, nên máy có rất nhiều bài có thể chưa quét hết.
+- **CSS đọc trên e-ink cho mọi tài liệu sinh ra**: bài báo, chương tải về và chương EPUB
+  nay nhúng chung một khối `<style>` (ảnh vừa bề rộng, `figure`/`figcaption`, `blockquote`,
+  bảng, `hr`). Cố ý **không** đặt `font-size`, `line-height`, `text-align` để cài đặt
+  typography của KOReader vẫn quyết định.
+- **Duyệt theo thể loại cho TVTruyen và Truyện Full**: mỗi nguồn có mục **Thể loại**
+  (TVTruyen 63 thể loại, Truyện Full 46) trỏ thẳng vào cây `/the-loai/…` của site; tiêu đề
+  lưới hiện tên thể loại. Thể loại 18+ (Sắc, Sắc Hiệp, Adult, Mature, Ecchi, Incest,
+  Netorare) chỉ hiện khi bật **Nội dung 18+**, và `browse()` chặn lại lần nữa nếu menu
+  còn cũ.
+- Kiểm thử LuaJIT: tìm kiếm tin offline và thứ tự tham số `root`/`title`, URL thể loại
+  theo từng nguồn, chặn 18+, key thể loại trùng hoặc không an toàn trong URL, entry thể
+  loại dị dạng, root tìm kiếm không tồn tại, CSS nhúng không đụng typography. Toàn bộ
+  `tests/run.lua` đạt.
+- Đã chạy thật trên Samsung S24 FE (KOReader Android): tìm `ukraine` ra 30 kết quả/2 trang
+  trong 46 bài đã tải; lưới **Truyện Full — Tiên Hiệp** và **TVTruyen — Học Đường** tải
+  truyện thật kèm bìa; bật/tắt 18+ đổi đúng danh sách; bài mới ghi ra máy có khối `<style>`;
+  không có `crash.log` hay lỗi Lua trong logcat.
+- Chưa gắn thể loại cho DocLN, Wattpad, MeTruyenCV, Sangtacviet: các site này không có trang
+  thể loại dùng trực tiếp (Wattpad chỉ có `filter=hot/featured/new`, MeTruyenCV lọc qua API,
+  Sangtacviet theo `sort`). Adapter nào thêm bảng `genres` là tự có menu.
+
 ## 0.0.15 — 2026-09-15
 
 - **Sửa lỗi gửi sách qua Wi-Fi bị che thành "Mất kết nối" (ảnh hưởng cao)**: máy chủ trả lời

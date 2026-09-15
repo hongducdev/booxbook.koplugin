@@ -64,7 +64,8 @@ end
 assert(select(2, Update.parseRelease('{"tag_name":"v0.0.3","assets":[]}')) == "no_asset", "JSON string without zip is no_asset")
 Update._jsonDecode = nil
 
-assert(Update.currentVersion() == "0.0.15", "installed version is 0.0.15")
+-- Reads _meta.lua; assert the shape so a version bump needs no test edit.
+assert(Update.currentVersion():match("^%d+%.%d+%.%d+$"), "installed version is semver from _meta.lua")
 assert(Http.MAX_BODY == 2 * 1024 * 1024, "article HTTP cap stays 2 MiB")
 
 local original_get = Http.get

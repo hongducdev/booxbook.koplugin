@@ -7,7 +7,7 @@
 
 Plugin [KOReader](https://github.com/koreader/koreader) để đọc báo RSS và truyện chữ trên máy đọc sách (Onyx Boox và thiết bị khác). Tải HTML về máy, đọc offline trong KOReader.
 
-**Phiên bản:** 0.0.15 (`hongducdev/booxbook.koplugin`) · giấy phép [AGPL-3.0-or-later](./LICENSE)
+**Phiên bản:** 0.0.16 (`hongducdev/booxbook.koplugin`) · giấy phép [AGPL-3.0-or-later](./LICENSE)
 
 **Website giới thiệu + hướng dẫn:** xem [`website/`](website/) (deploy tự động lên GitHub Pages qua workflow `pages.yml`). Số version và link Release trên web tự đồng bộ từ `version` trong `booxbook.koplugin/_meta.lua` lúc deploy — không sửa tay. Preview local: `pwsh -File scripts/preview-website.ps1`.
 
@@ -24,8 +24,8 @@ Dùng như trình đọc RSS / thư viện cá nhân. Không phát tán nội du
 
 | Mục | Nguồn | Ghi chú |
 |---|---|---|
-| **Báo** | 17 tờ, 633 kênh RSS | 9 báo Việt, 8 nguồn nước ngoài; thêm RSS tùy chỉnh |
-| **Truyện** | DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full | Tìm / duyệt, tải chương, đọc lại offline |
+| **Báo** | 17 tờ, 633 kênh RSS | 9 báo Việt, 8 nguồn nước ngoài; thêm RSS tùy chỉnh; tìm toàn văn trong bài đã tải |
+| **Truyện** | DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full | Tìm / duyệt / **duyệt thể loại**, tải chương, đọc lại offline |
 | **Truyện tranh** | Truyện Tuổi Thơ | Duyệt/tìm, mục lục, tải một/khoảng/toàn bộ tập, tải tiếp, đọc CBZ offline |
 | **Sách & cloud** | File local + OneDrive | Duyệt thư mục trên máy, tìm sách offline; duyệt thư mục OneDrive và tải sách về |
 | **Gửi sách qua Wi-Fi** | Điện thoại / máy tính cùng mạng | Mở web hoặc quét QR, gửi nhiều sách vào thư viện; tối đa 512 MiB/file |

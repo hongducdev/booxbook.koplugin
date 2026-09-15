@@ -99,6 +99,7 @@ xóa link đã xong hoặc xóa cả hàng đợi. Không tự tải nền.
 - Trang chi tiết có tiêu đề ở đầu bài; ảnh trong nội dung/tóm tắt được lưu cục bộ chỉ khi mở bài. Ảnh lỗi không chặn đọc chữ. Hỗ trợ JPEG, PNG, GIF, WebP; tối đa 20 ảnh, 2 MiB/ảnh, 10 MiB/bài.
 - **Báo → Số bài mỗi danh mục**: chọn từ 1 đến 20 tiêu đề hiển thị; không giới hạn số danh mục.
 - **Báo → Tin đã tải**: đọc lại các bài đã mở/lưu, không cần tải lại. Bài cũ vẫn được giữ.
+- **Báo → Tìm trong tin đã tải**: tìm toàn văn trong `koreader/booxbook/news/` (không phân biệt dấu, khớp cả tiếng Việt có dấu lẫn không dấu). Kết quả hiện trích đoạn quanh từ khóa, kèm tên file; chạm để mở. Quét tối đa 200 file/30 kết quả, nên máy có rất nhiều bài có thể chưa quét hết. Chỉ tìm bài đã tải về máy.
 - **Báo → Thêm RSS tùy chỉnh**: thêm URL bắt đầu bằng `http://` hoặc `https://`.
 - RSS bạn thêm nằm trong nhóm riêng **Báo → RSS tùy chỉnh**. Kênh rỗng/lỗi chỉ báo thông báo; không làm mất danh sách danh mục.
 - Dùng User-Agent desktop; riêng VnExpress có cookie chọn giao diện desktop để tránh RSS rỗng. Vẫn giãn cách lượt tải và dừng khi máy chủ trả HTTP 429; không cam kết loại bỏ mọi rate limit.
@@ -256,22 +257,24 @@ mới); truyện chữ dùng
 
 ## TVTruyen
 
-**Truyện → TVTruyen**: danh sách mới / lượt xem, tìm tên hoặc nhập URL
+**Truyện → TVTruyen**: danh sách mới / lượt xem, **Thể loại** (Tiên Hiệp, Ngôn Tình, Huyền Huyễn…),
+tìm tên hoặc nhập URL
 `https://www.tvtruyen.live/ten-truyen.html`. Đọc HTML trực tiếp; không cần mã hóa,
 JavaScript hoặc cookie. Mục lục tải lần lượt các trang nên truyện dài có thể chờ
 vài phút. Tải khoảng/toàn bộ, HTML/EPUB và offline dùng cùng menu các nguồn khác.
 Lưu dưới `novels/tvtruyen/<ten-truyen>/`. Chương khóa/trống bỏ qua; lỗi mạng dừng.
-và giữ file đã tải. Nguồn này chưa có bộ lọc độ tuổi. Bìa WebP chỉ hiện ở grid; EPUB bỏ bìa WebP vì bộ ghi hiện tại chỉ nhận JPEG/PNG/GIF.
+và giữ file đã tải. Thể loại 18+ (Sắc, Adult, Mature…) chỉ hiện khi bật **Nội dung 18+**;
+danh sách và tìm kiếm vẫn chưa lọc theo từng truyện. Bìa WebP chỉ hiện ở grid; EPUB bỏ bìa WebP vì bộ ghi hiện tại chỉ nhận JPEG/PNG/GIF.
 
 ## Truyện Full
 
-**Truyện → Truyện Full**: danh sách mới / lượt xem, tìm tên hoặc nhập URL
+**Truyện → Truyện Full**: danh sách mới / lượt xem, **Thể loại**, tìm tên hoặc nhập URL
 `https://truyenfull.live/ten-truyen/`. Đọc HTML trực tiếp (`#chapter-c`); không
 cần mã hóa hay cookie. Mục lục lấy từng trang `/trang-N/` (khoảng 50 chương/trang)
 nên truyện dài có thể chờ vài phút. Tải khoảng/toàn bộ, HTML/EPUB và offline
 dùng cùng menu các nguồn khác. Lưu dưới `novels/truyenfull/<ten-truyen>/`.
-Chương trống hoặc khóa bỏ qua; lỗi mạng dừng và giữ file đã tải. Nguồn này
-chưa có bộ lọc độ tuổi.
+Chương trống hoặc khóa bỏ qua; lỗi mạng dừng và giữ file đã tải. Thể loại "Sắc (18+)" chỉ hiện
+khi bật **Nội dung 18+**; danh sách và tìm kiếm vẫn chưa lọc theo từng truyện.
 
 ## Mở nhanh một chương
 
