@@ -13,6 +13,28 @@ assert(not T.search('') and not T.browse('latest', 0))
 body = '<div class="category-list">64725 kết quả</div>'
 assert(not T.browse('latest'), 'empty browse page 1 must fail closed')
 assert(#T.search('xyz').items == 0, 'empty search may return no hits')
+-- Genre keys are the site slugs, so browse() needs no extra mapping.
+local Settings = require('booxbook.store.settings')
+local genre_url
+local base_get = H.get
+H.get = function(url, opts) genre_url = url; return base_get(url, opts) end
+body = '<div class="info-mobile-card"><div class="name"><a href="/dao-quan.html">Đạo Quân</a></div>'
+    .. '<img src="https://img.test/c.jpg"></div>'
+assert(#assert(T.browse('tien-hiep', 2)).items == 1)
+assert(genre_url == 'https://www.tvtruyen.live/the-loai/tien-hiep.html?page=2', 'genre browse URL')
+assert(not T.browse('khong-co-the-loai'), 'unknown list kind is rejected')
+local seen_keys, seen_names = {}, {}
+for _, genre in ipairs(T.genres) do
+    assert(not seen_keys[genre.key], 'duplicate genre key: ' .. genre.key)
+    assert(not seen_names[genre.name], 'duplicate genre name: ' .. genre.name)
+    assert(genre.key:match('^[a-z0-9%-]+$'), 'genre key must be URL-safe: ' .. genre.key)
+    seen_keys[genre.key], seen_names[genre.name] = true, true
+end
+assert(not T.browse('sac'), 'adult genre blocked while 18+ is off')
+Settings.set('adult_content', true)
+assert(#assert(T.browse('sac', 1)).items == 1, 'adult genre allowed when 18+ is on')
+Settings.set('adult_content', false)
+H.get = base_get
 local first = '<h3 id="comic_name">Đạo Quân</h3><div id="mobile-list-chapter"><a href="/dao-quan/chuong-2" title="Hai">Hai</a></div><a rel="next" href="/dao-quan.html?page=2">Next</a>'
 local second = '<div id="mobile-list-chapter"><a href="/dao-quan/chuong-1" title="Một">Một</a></div>'
 H.get = function(url) calls = calls + 1; return true, 200, url:find('page=2',1,true) and second or first end

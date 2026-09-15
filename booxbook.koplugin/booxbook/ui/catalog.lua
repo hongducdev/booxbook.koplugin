@@ -5,6 +5,33 @@ local _ = require("gettext")
 
 local Catalog = {}
 
+local Settings = require("booxbook.store.settings")
+
+-- Nested "Thể loại" contents for a source adapter. The picked value is the genre
+-- key, which callers hand straight to adapter.browse().
+function Catalog.genreItems(adapter, on_pick)
+    local items = {}
+    local allow_adult = type(Settings.adultContent) == "function" and Settings.adultContent() == true
+    for _, genre in ipairs(type(adapter) == "table" and adapter.genres or {}) do
+        if type(genre) == "table" and genre.key and genre.name
+            and (allow_adult or not genre.adult) then
+            local key = genre.key
+            items[#items + 1] = {
+                text = genre.name,
+                keep_menu_open = true,
+                callback = function() on_pick(key) end,
+            }
+        end
+    end
+    return items
+end
+
+function Catalog.genreName(adapter, key)
+    for _, genre in ipairs(type(adapter) == "table" and adapter.genres or {}) do
+        if genre.key == key then return genre.name end
+    end
+end
+
 -- Keep parents on UIManager's stack: CloseWidget frees their rendering resources.
 Catalog._stack = {}
 local function removeFromStack(widget)

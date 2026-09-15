@@ -19,6 +19,28 @@ body = '<html>chrome only</html>'
 assert(not T.browse('popular'), 'empty browse page 1 must fail closed')
 body = '<html>chrome only</html>'
 assert(#T.search('xyz').items == 0, 'empty search may return no hits')
+-- Genre keys are the site slugs, so browse() needs no extra mapping.
+local Settings = require('booxbook.store.settings')
+local genre_url
+local base_get = H.get
+H.get = function(url, opts) genre_url = url; return base_get(url, opts) end
+body = '<div class="list-truyen"><div class="row"><div data-image="https://img.test/c.jpg"></div>'
+    .. '<h3 class="truyen-title"><a href="https://truyenfull.live/linh-vu-thien-ha/">Linh Vũ</a></h3></div></div>'
+assert(#assert(T.browse('tien-hiep', 2)).items == 1)
+assert(genre_url == 'https://truyenfull.live/the-loai/tien-hiep/trang-2/', 'genre browse URL')
+assert(not T.browse('khong-co-the-loai'), 'unknown list kind is rejected')
+local seen_keys, seen_names = {}, {}
+for _, genre in ipairs(T.genres) do
+    assert(not seen_keys[genre.key], 'duplicate genre key: ' .. genre.key)
+    assert(not seen_names[genre.name], 'duplicate genre name: ' .. genre.name)
+    assert(genre.key:match('^[a-z0-9%-]+$'), 'genre key must be URL-safe: ' .. genre.key)
+    seen_keys[genre.key], seen_names[genre.name] = true, true
+end
+assert(not T.browse('sac'), 'adult genre blocked while 18+ is off')
+Settings.set('adult_content', true)
+assert(#assert(T.browse('sac', 1)).items == 1, 'adult genre allowed when 18+ is on')
+Settings.set('adult_content', false)
+H.get = base_get
 local first = '<div class="book"><img src="https://static.test/c.jpg" alt="Linh Vũ"></div>'
     .. '<div class="desc-text">Tóm tắt</div><a itemprop="author">Vũ Phong</a>'
     .. '<div id="list-chapter"><a href="https://truyenfull.live/linh-vu-thien-ha/chuong-2/">Hai</a></div>'

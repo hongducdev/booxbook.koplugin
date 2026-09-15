@@ -307,6 +307,26 @@ local measured_height = content[1][1].height + row.padding * 2
 for i = 2, #content do measured_height = measured_height + (content[i].width or 0) end
 assert(measured_height == 48, 'painted row height must match pagination and tap spacing')
 
+-- Genre menus: keys go to adapter.browse(), 18+ entries follow the setting.
+local GenreSettings = require('booxbook.store.settings')
+local saved_adult = GenreSettings.adultContent
+local genre_adapter = { genres = { { key = 'a', name = 'A' }, { key = 'b', name = 'B', adult = true } } }
+local genre_picked
+GenreSettings.adultContent = function() return false end
+local genre_items = Catalog.genreItems(genre_adapter, function(key) genre_picked = key end)
+assert(#genre_items == 1 and genre_items[1].text == 'A', 'adult genres hidden while 18+ is off')
+genre_items[1].callback()
+assert(genre_picked == 'a', 'genre item hands its key to the caller')
+GenreSettings.adultContent = function() return true end
+assert(#Catalog.genreItems(genre_adapter, function() end) == 2, 'adult genres listed when 18+ is on')
+assert(Catalog.genreName(genre_adapter, 'b') == 'B' and Catalog.genreName(genre_adapter, 'zz') == nil,
+    'genreName resolves labels')
+assert(#Catalog.genreItems({}, function() end) == 0 and #Catalog.genreItems(nil, function() end) == 0,
+    'adapters without genres yield no menu')
+assert(#Catalog.genreItems({ genres = { { key = 'a' }, 'junk', { name = 'no key' } } }, function() end) == 0,
+    'malformed genre entries are skipped, not rendered')
+GenreSettings.adultContent = saved_adult
+
 for _, name in ipairs(names) do package.loaded[name] = saved[name] end
 package.loaded['booxbook.ui.catalog'] = nil
 package.loaded['booxbook.ui.paged-screen'] = nil

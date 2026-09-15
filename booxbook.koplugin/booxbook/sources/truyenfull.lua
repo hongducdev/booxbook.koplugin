@@ -77,8 +77,75 @@ local function list(path, page, allow_empty)
     if #items == 0 and page == 1 and not allow_empty then return nil, CHANGED end
     return { items = items, has_more = hasMore(html, page) }
 end
+local GENRES = {}
+
+-- Key = the site's /the-loai/ slug, so browse() needs no extra mapping. Adult
+-- entries stay hidden until Settings.adultContent() is on (checked here too).
+local function genre(key, name, adult)
+    local entry = { key = key, name = name, adult = adult or nil }
+    GENRES[key] = entry
+    return entry
+end
+
+T.genres = {
+    genre("tien-hiep", "Tiên Hiệp"),
+    genre("kiem-hiep", "Kiếm Hiệp"),
+    genre("ngon-tinh", "Ngôn Tình"),
+    genre("dam-my", "Đam Mỹ"),
+    genre("huyen-huyen", "Huyền Huyễn"),
+    genre("khoa-huyen", "Khoa Huyễn"),
+    genre("di-gioi", "Dị Giới"),
+    genre("di-nang", "Dị Năng"),
+    genre("do-thi", "Đô Thị"),
+    genre("quan-truong", "Quan Trường"),
+    genre("quan-su", "Quân Sự"),
+    genre("lich-su", "Lịch Sử"),
+    genre("vong-du", "Võng Du"),
+    genre("he-thong", "Hệ Thống"),
+    genre("trong-sinh", "Trọng Sinh"),
+    genre("xuyen-khong", "Xuyên Không"),
+    genre("xuyen-sach", "Xuyên Sách"),
+    genre("xuyen-nhanh", "Xuyên Nhanh"),
+    genre("can-dai", "Cận Đại"),
+    genre("co-dai", "Cổ Đại"),
+    genre("dong-phuong", "Đông Phương"),
+    genre("phuong-tay", "Phương Tây"),
+    genre("tuong-lai", "Tương Lai"),
+    genre("mat-the", "Mạt Thế"),
+    genre("linh-di", "Linh Dị"),
+    genre("trinh-tham", "Trinh Thám"),
+    genre("tham-hiem", "Thám Hiểm"),
+    genre("hai-huoc", "Hài Hước"),
+    genre("giai-tri", "Giải Trí"),
+    genre("nguoc", "Ngược"),
+    genre("sung", "Sủng"),
+    genre("cung-dau", "Cung Đấu"),
+    genre("gia-dau", "Gia Đấu"),
+    genre("nu-cuong", "Nữ Cường"),
+    genre("nu-phu", "Nữ Phụ"),
+    genre("bach-hop", "Bách Hợp"),
+    genre("chu-cong", "Chủ công"),
+    genre("dien-van", "Điền Văn"),
+    genre("doan-van", "Đoản Văn"),
+    genre("truyen-ngan", "Truyện Ngắn"),
+    genre("truyen-teen", "Truyện Teen"),
+    genre("truyen-sang-tac", "Truyện sáng tác"),
+    genre("light-novel", "Light Novel"),
+    genre("viet-nam", "Việt Nam"),
+    genre("khac", "Khác"),
+    genre("sac", "Sắc (18+)", true),
+}
+
 function T.browse(kind, page)
-    if kind ~= nil and kind ~= "latest" and kind ~= "popular" then return nil, _("Kiểu danh sách không hợp lệ.") end
+    local selected = GENRES[kind]
+    if kind ~= nil and not selected and kind ~= "latest" and kind ~= "popular" then
+        return nil, _("Kiểu danh sách không hợp lệ.")
+    end
+    if selected then
+        if selected.adult and not Settings.adultContent() then return nil, _("Nội dung 18+ đang tắt.") end
+        page = tonumber(page or 1) or 1
+        return list("/the-loai/" .. selected.key .. "/trang-" .. page .. "/", page)
+    end
     local folder = kind == "popular" and "truyen-hot" or "truyen-moi"
     page = tonumber(page or 1) or 1
     return list("/danh-sach/" .. folder .. "/trang-" .. page .. "/", page)

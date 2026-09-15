@@ -47,7 +47,10 @@ function UI.list(kind, query, page, grid, last_screen)
                 local CoverGrid = require("booxbook.ui.cover-grid")
                 local items, size = result.items or {}, CoverGrid.PAGE_SIZE
                 local offset = last_screen and math.floor(math.max(0, #items - 1) / size) * size + 1 or 1
-                local payload = { title = query and ("Truyện Full — " .. query) or "Truyện Full",
+                local genre = Catalog.genreName(TruyenFull, kind)
+                local title = query and ("Truyện Full — " .. query)
+                    or (genre and ("Truyện Full — " .. genre) or "Truyện Full")
+                local payload = { title = title,
                     items = items, offset = offset, site_page = page, has_more = result.has_more,
                     source_id = "truyenfull", base_url = "https://truyenfull.live",
                     cover_referer = "https://truyenfull.live/", cover_delay_ms = 1600,
@@ -77,10 +80,15 @@ end
 
 function UI.openSource()
     busy = false
-    Catalog.show{ title = "Truyện Full", on_search = UI.promptSearch, items = {
+    local items = {
         { text = _("Mới cập nhật"), callback = function() UI.list("latest") end },
         { text = _("Lượt xem"), callback = function() UI.list("popular") end },
-    } }
+    }
+    local genres = Catalog.genreItems(TruyenFull, function(key) UI.list(key) end)
+    if #genres > 0 then
+        items[#items + 1] = { text = _("Thể loại"), sub_item_table = genres }
+    end
+    Catalog.show{ title = "Truyện Full", on_search = UI.promptSearch, items = items }
 end
 
 return UI
