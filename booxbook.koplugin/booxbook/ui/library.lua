@@ -49,22 +49,23 @@ function UI.searchPrompt(default_query)
         end,
     }
 end
-function UI.searchFullTextPrompt(default_query)
+-- `root`/`title` narrow the same search to one subtree (e.g. downloaded news).
+function UI.searchFullTextPrompt(default_query, root, title)
     Catalog.promptText{
-        title = _("Tìm toàn văn offline"),
+        title = title or _("Tìm toàn văn offline"),
         hint = _("Nhập từ khóa nội dung cần tìm..."),
         input = default_query or "",
         on_submit = function(value)
-            UI.showFullTextResults(value)
+            UI.showFullTextResults(value, root, title)
         end,
     }
 end
 
-function UI.showFullTextResults(query)
+function UI.showFullTextResults(query, root, title)
     local q_clean = (query or ""):match("^%s*(.-)%s*$")
     if q_clean == "" then return end
 
-    local root = Settings.downloadDir()
+    root = root or Settings.downloadDir()
     local Trapper = require("ui/trapper")
     local results
     Trapper:wrap(function()
@@ -93,9 +94,9 @@ function UI.showFullTextResults(query)
     end
 
     Catalog.show{
-        title = _("Kết quả tìm toàn văn"),
+        title = title or _("Kết quả tìm toàn văn"),
         subtitle = string.format(_("Từ khóa: \"%s\" · %d kết quả"), q_clean, #results),
-        on_search = function() UI.searchFullTextPrompt(query) end,
+        on_search = function() UI.searchFullTextPrompt(query, root, title) end,
         items = items,
     }
 end

@@ -115,4 +115,12 @@ local tree_res_limit = FulltextSearch.searchTree("/dl", "vo cong", {
 assert(#tree_res_limit == 1, "stopped at max_matches = 1")
 assert(tree_res_limit.stats.stopped_by == "max_matches", "stopped_by stat recorded")
 
+-- Scoped search: the news menu passes <download dir>/news as the root.
+local news_only = FulltextSearch.searchTree("/dl/news", "vo cong", { max_matches = 10 }, mock_lister, tree_reader)
+assert(#news_only == 1 and news_only[1].path == "/dl/news/art1.html", "news-scoped search visits only news")
+
+-- A missing root (no downloaded article yet) must return empty, not throw.
+local missing = FulltextSearch.searchTree("/nope", "vo cong", { max_matches = 10 }, mock_lister, tree_reader)
+assert(#missing == 0 and missing.stats.files_scanned == 0, "missing root yields no matches")
+
 print("FulltextSearch checks passed: bounded search, snippets and folding verified")

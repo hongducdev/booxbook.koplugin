@@ -320,6 +320,13 @@ function News.showCategories(publisher)
     Catalog.show{ title = publisher.title, items = items }
 end
 
+-- Downloaded articles are plain HTML under <download dir>/news, so the shared
+-- offline full-text search already covers them; only the entry point is new.
+function News.searchDownloaded()
+    require("booxbook.ui.library").searchFullTextPrompt(
+        nil, Settings.downloadDir() .. "/news", _("Tìm trong tin đã tải"))
+end
+
 function News.showArticles()
     local ok, lfs = pcall(require, "libs/libkoreader-lfs")
     if not ok then
@@ -383,6 +390,9 @@ function News.menu()
     end
     items[#items + 1] = { text = _("Tin đã tải"), keep_menu_open = true, callback = function()
         UIManager:nextTick(News.showArticles)
+    end }
+    items[#items + 1] = { text = _("Tìm trong tin đã tải"), keep_menu_open = true, callback = function()
+        UIManager:nextTick(News.searchDownloaded)
     end }
     items[#items + 1] = { text = _("Số bài mỗi danh mục"), keep_menu_open = true, callback = News.setLimit }
     items[#items + 1] = { text = _("Thêm RSS tùy chỉnh"), keep_menu_open = true, callback = News.addCustomFeed }
