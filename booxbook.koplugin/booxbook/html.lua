@@ -232,6 +232,19 @@ function Html.escape(text)
     return text
 end
 
+-- Shared by news articles, downloaded chapters and EPUB chapters.
+-- Only geometry and decorations: font, size, line-height and alignment stay
+-- KOReader's business, otherwise every reader setting gets overridden.
+Html.DOCUMENT_CSS = table.concat({
+    "img { max-width: 100%; height: auto; }",
+    "figure { margin: 1em 0; text-align: center; }",
+    "figcaption { font-style: italic; }",
+    "blockquote { margin: 1em 0; padding-left: 0.8em; border-left: 2px solid #000; }",
+    "hr { border: 0; border-top: 2px dashed #999; margin: 1.5em 0; }",
+    "table { width: 100%; border-collapse: collapse; }",
+    "th, td { border: 1px solid #000; padding: 0.3em 0.5em; text-align: left; }",
+})
+
 function Html.wrapDocument(title, body)
     title = Html.escape(title or "BooxBook")
     body = body or ""
@@ -241,6 +254,7 @@ function Html.wrapDocument(title, body)
         "<head>",
         '<meta charset="utf-8"/>',
         "<title>" .. title .. "</title>",
+        "<style>" .. Html.DOCUMENT_CSS .. "</style>",
         "</head>",
         "<body>",
         body,

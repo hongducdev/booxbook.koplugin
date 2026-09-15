@@ -114,6 +114,9 @@ assert_eq(Html.escape("<a>"), "&lt;a&gt;", "escape")
 
 local wrapped = Html.wrapDocument("T", "<p>x</p>")
 assert_true(wrapped:find('charset="utf-8"', 1, true), "wrap charset")
+assert_true(wrapped:find("<style>" .. Html.DOCUMENT_CSS, 1, true), "document CSS embedded for news, chapters and EPUB")
+assert_true(not wrapped:find("font-size", 1, true) and not wrapped:find("line-height", 1, true),
+    "document CSS leaves typography to the reader")
 
 assert_eq(Source.get("docln").kind, "novel", "DocLN adapter registered")
 assert_eq(Source.get("docln").name, "DocLN", "source get")
@@ -298,7 +301,8 @@ assert_eq(shown_menu.subtitle, "✓ Đã kết nối mạng", "home TitleBar sho
 assert_eq(#shown_menu.items, 5, "home actions fit comfortably on one page")
 assert_eq(shown_menu.items[4].text, "Gửi sách qua Wi-Fi", "primary transfer action precedes settings")
 assert_eq(shown_menu.items[5].text, "Cài đặt", "settings remain available last")
-assert_eq(shown_menu.footer_slots[2].text, "v0.0.15", "home footer shows the plugin version")
+assert_eq(shown_menu.footer_slots[2].text, "v" .. require("booxbook.update").currentVersion(),
+    "home footer shows the version read from _meta.lua")
 assert_eq(shown_menu.footer_slots[3].action, "update", "home footer exposes one labeled update action")
 assert_eq(shown_menu.footer_slots[4].text, "1/1", "home footer confirms all actions fit on one page")
 assert_true(type(shown_menu.on_footer) == "function", "home footer actions are handled")
@@ -489,6 +493,7 @@ dofile("tests/catalog-ui.lua")
 dofile("tests/novel-offline.lua")
 dofile("tests/epub.lua")
 dofile("tests/news-cleanup.lua")
+dofile("tests/news-search.lua")
 dofile("tests/docln-ui.lua")
 dofile("tests/network.lua")
 dofile("tests/update.lua")
