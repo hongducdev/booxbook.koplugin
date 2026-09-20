@@ -47,6 +47,48 @@ assert(Transient.isMarked(nil) == false and Transient.isMarked("") == false, "no
 Transient.reset()
 assert(Transient.isMarked(path) == false, "reset forgets the session")
 
+-- A deleted chapter must not leave KOReader's doc-settings directory behind:
+-- "<book>.sdr/" still holds metadata.cbz.lua, so the read would leave a trace and
+-- a later re-download would inherit stale progress. Only the sidecar derived from
+-- the chapter itself may be touched, and only when the chapter really goes.
+local saved_storage = package.loaded["booxbook.store.storage"]
+local emptied = {}
+package.loaded["booxbook.store.storage"] = {
+    emptyDir = function(target) emptied[#emptied + 1] = target; return true end,
+}
+
+Settings.set("transient_comics", true)
+write(path, "CBZ")
+write(meta, "{}")
+Transient.mark(path)
+assert(Transient.cleanup(path) == true, "marked chapter is dropped")
+assert(emptied[1] == dir .. "/booxbook-transient-test.sdr",
+    "the doc-settings directory goes with the chapter: " .. tostring(emptied[1]))
+assert(#emptied == 1, "exactly one doc-settings directory is touched")
+
+-- The hidden name used for a long chapter has its own doc-settings directory.
+local hidden_cbz = dir .. "/.booxbook-first.cbz"
+local hidden_meta = hidden_cbz .. ".meta.json"
+write(hidden_cbz, "CBZ")
+write(hidden_meta, "{}")
+Transient.mark(hidden_cbz)
+assert(Transient.cleanup(hidden_cbz) == true, "hidden chapter is dropped")
+assert(emptied[2] == dir .. "/.booxbook-first.sdr",
+    "the hidden chapter's own doc-settings directory: " .. tostring(emptied[2]))
+assert(not exists(hidden_cbz) and not exists(hidden_meta), "hidden chapter and sidecar are gone")
+
+-- A refused cleanup (feature off, or a file this session never downloaded) must
+-- leave the doc-settings directory alone.
+write(path, "CBZ")
+Transient.mark(path)
+Settings.set("transient_comics", false)
+assert(Transient.cleanup(path) == false, "cleanup refuses while the feature is off")
+Settings.set("transient_comics", true)
+assert(Transient.cleanup(path) == false, "cleanup refuses an unmarked path")
+assert(#emptied == 2, "a refused cleanup never touches the doc-settings directory")
+assert(exists(path), "the refused chapter is still there")
+package.loaded["booxbook.store.storage"] = saved_storage
+
 -- A partial chapter goes to a hidden name so savedPath() never mistakes it for a
 -- finished download.
 assert(Transient.hiddenName("/comics/truyenqq/series/chap-3.cbz") == "/comics/truyenqq/series/.chap-3-first.cbz")

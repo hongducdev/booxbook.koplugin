@@ -39,7 +39,21 @@ function Transient.isMarked(path)
     return path ~= nil and marked[path] == true
 end
 
--- Delete a marked chapter and its sidecar once its document is closed.
+-- KOReader keeps per-document settings in "<book>.sdr/" next to the file, so the
+-- chapter alone is not the whole story: a deleted chapter must not leave that
+-- directory behind, or a transient read still leaves a fingerprint (and a
+-- re-download would inherit stale progress). The name is derived from the
+-- chapter we just deleted, so only its own doc-settings directory is touched.
+local function removeSdrDir(path)
+    local dir = path:gsub("%.[^./]+$", ".sdr")
+    if dir == path then return end
+    local ok, Storage = pcall(require, "booxbook.store.storage")
+    if ok and Storage and type(Storage.emptyDir) == "function" then
+        pcall(Storage.emptyDir, dir)
+    end
+end
+
+-- Delete a marked chapter and its sidecars once its document is closed.
 -- Returns true when something was removed. A reader who switched the feature off
 -- keeps the file: the setting is re-checked here, not only when downloading.
 function Transient.cleanup(path)
@@ -49,6 +63,7 @@ function Transient.cleanup(path)
     if not Transient.enabled() then return false end
     os.remove(path)
     os.remove(path .. ".meta.json")
+    removeSdrDir(path)
     return true
 end
 
