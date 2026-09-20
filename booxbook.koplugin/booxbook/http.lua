@@ -447,8 +447,12 @@ function Http.request(opts)
             if code == 301 or code == 302 or code == 303 or code == 307 or code == 308 then
                 local next_url = Http.resolveUrl(url, headerGet(headers, "location"))
                 hops = hops + 1
-                if not next_url or hops > 5 then
-                    return false, code, body, headers
+                if not next_url or hops > (opts.max_hops or 5) then
+                    -- Hand back the cookies this hop set. An access gate that
+                    -- answers 302 and sets its session cookie on that same
+                    -- response is unusable if the redirect is followed away
+                    -- from it, so `max_hops = 0` must still return the jar.
+                    return false, code, body, headers, Http.parseSetCookie(headerGet(headers, "set-cookie"))
                 end
                 if not Http.sameOrigin(url, next_url) then
                     cookies = nil
