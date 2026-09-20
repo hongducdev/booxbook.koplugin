@@ -26,10 +26,16 @@ local Http = {
     BULK_TIMEOUT = 300,
 }
 
--- Operation budgets. Nested scopes never shrink the deadline, so a download
--- (BULK_TIMEOUT) that lists a table of contents inside it keeps its long budget
--- while a plain list (OP_TIMEOUT) stays short.
-local operation = { depth = 0, deadline = nil, stack = {} }
+-- Operation budgets, one per coroutine. A resumable action yields between
+-- requests and the reader may start another one meanwhile: a single global
+-- deadline would let one action's endOperation() restore the other's frame and
+-- silently cut it short. Keying by coroutine keeps them independent; the main
+-- thread is its own key.
+local operation = { deadlines = {}, stack = {} }
+
+local function budgetKey()
+    return coroutine.running() or "main"
+end
 
 local function nowSeconds()
     if socket and socket.gettime then return socket.gettime() end
@@ -37,33 +43,44 @@ local function nowSeconds()
 end
 
 function Http.beginOperation(seconds)
-    local seconds_value = tonumber(seconds) or Http.OP_TIMEOUT
-    operation.depth = operation.depth + 1
-    operation.stack[operation.depth] = operation.deadline
+    local key = budgetKey()
+    local frames = operation.stack[key]
+    if not frames then
+        frames = {}
+        operation.stack[key] = frames
+    end
+    frames[#frames + 1] = operation.deadlines[key]
     -- Nested scopes may extend the budget but never shrink it: a bulk download
     -- that lists a table of contents inside it keeps its long budget, and a
     -- short action never cuts a long one short.
-    local candidate = nowSeconds() + seconds_value
-    if not operation.deadline or candidate > operation.deadline then
-        operation.deadline = candidate
+    local candidate = nowSeconds() + (tonumber(seconds) or Http.OP_TIMEOUT)
+    local current = operation.deadlines[key]
+    if not current or candidate > current then
+        operation.deadlines[key] = candidate
     end
-    return operation.deadline
+    return operation.deadlines[key]
 end
 
 function Http.endOperation()
-    if operation.depth == 0 then
-        operation.deadline = nil
+    local key = budgetKey()
+    local frames = operation.stack[key]
+    if not frames or #frames == 0 then
+        operation.deadlines[key] = nil
+        operation.stack[key] = nil
         return
     end
-    operation.deadline = operation.stack[operation.depth]
-    operation.stack[operation.depth] = nil
-    operation.depth = operation.depth - 1
+    operation.deadlines[key] = table.remove(frames)
+    if not operation.deadlines[key] and #frames == 0 then
+        operation.stack[key] = nil
+    end
 end
 
--- nil when no action is being timed (a lone request is bounded by DEFAULT_TIMEOUT).
+-- nil when the current coroutine is not being timed (a lone request is bounded by
+-- DEFAULT_TIMEOUT).
 function Http.remaining()
-    if not operation.deadline then return nil end
-    return operation.deadline - nowSeconds()
+    local deadline = operation.deadlines[budgetKey()]
+    if not deadline then return nil end
+    return deadline - nowSeconds()
 end
 
 function Http.expired()

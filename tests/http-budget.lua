@@ -71,6 +71,39 @@ assert(waits[#waits] and waits[#waits].max_ms == 3000,
     "the sleep cap is in milliseconds: " .. tostring(waits[#waits] and waits[#waits].max_ms))
 Http.endOperation()
 
+-- Two resumable actions must not share one deadline: a table of contents that
+-- yields must keep its long budget while a second action started meanwhile keeps
+-- its own short one, and neither endOperation() may pop the other's frame.
+local Async = require("booxbook.async")
+local saved_uimanager = package.loaded["ui/uimanager"]
+local tick = nil
+package.loaded["ui/uimanager"] = {
+    nextTick = function(_, fn) tick = fn end,
+    show = function() end,
+}
+local toc_left, list_left, toc_after_end
+Async.run(function()
+    Http.beginOperation(Http.TOC_TIMEOUT)
+    Async.step() -- a request yields here
+    toc_left = Http.remaining()
+    Async.step() -- and again: the reader acts while we are suspended
+    toc_after_end = Http.remaining()
+    Http.endOperation()
+end, function() end)
+-- Resume once: the action is now suspended between its two requests.
+local first = tick; tick = nil; first()
+-- The reader starts another action from the MAIN thread meanwhile.
+Http.beginOperation(Http.OP_TIMEOUT)
+list_left = Http.remaining()
+Http.endOperation()
+-- Let the resumable action finish.
+while tick do local fn = tick; tick = nil; fn() end
+package.loaded["ui/uimanager"] = saved_uimanager
+assert(toc_left and toc_left > 50, "the resumable action keeps its own 60s budget: " .. tostring(toc_left))
+assert(list_left and list_left <= 20, "the second action gets its own 20s budget: " .. tostring(list_left))
+assert(toc_after_end and toc_after_end > 50, "ending the second action restores the first: " .. tostring(toc_after_end))
+assert(Http.remaining() == nil, "no deadline is left behind")
+
 -- The real waiter refuses to sleep past its cap and reports that back.
 RateLimit.wait = saved.wait
 RateLimit.reset()

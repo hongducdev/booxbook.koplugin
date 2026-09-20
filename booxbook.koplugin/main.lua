@@ -263,7 +263,12 @@ function BooxBook:onCloseDocument()
         -- "Đọc xong không lưu": a chapter downloaded in this session is dropped
         -- as soon as its document closes (only marked paths, see transient.lua).
         if self.ui and self.ui.document and self.ui.document.file then
-            pcall(require("booxbook.transient").cleanup, self.ui.document.file)
+            -- Deferred on purpose: CloseDocument runs before the reader releases the
+            -- file and saves its sidecar (same reason news-cleanup defers).
+            local closed = self.ui.document.file
+            UIManager:nextTick(function()
+                pcall(require("booxbook.transient").cleanup, closed)
+            end)
         end
         Continuation.reset()
     end
