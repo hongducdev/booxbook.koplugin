@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.0.18 — 2026-09-20
+
+- **Xoá nốt thư mục cài đặt của KOReader khi đóng tài liệu**: `transient.cleanup` (Đọc xong
+  không lưu) nay xoá cả `<tên>.sdr/` — nơi KOReader ghi `metadata.cbz.lua` cho tài liệu — chứ
+  không chỉ file `.cbz` và `.cbz.meta.json`. Trước đó mỗi lượt đọc tạm vẫn để lại một thư mục
+  ~2,6 KB mồ côi (đúng cái còn sót ghi ở mục 0.0.17), và lần tải lại chương sau đó sẽ thừa hưởng
+  vị trí đọc cũ. Tên thư mục suy ra từ chính chương vừa xoá nên không thể đụng file khác, và
+  `Storage.emptyDir` không làm gì khi thiếu `lfs` (không đoán bừa).
+- Kiểm thử: `tests/transient.lua` thêm ca thư mục `.sdr` cho cả tên chuẩn lẫn tên ẩn
+  `.chap-N-first.cbz`, và ca "cleanup bị từ chối thì không đụng thư mục cài đặt".
+  `luajit tests/run.lua` đạt toàn bộ.
+- Đã chạy thật trên Galaxy S24 FE (KOReader v2026.07): chương ≤ 12 trang (*Ông Xã Thú Tính*
+  chương 1) khi đóng tài liệu thì `chap-1.cbz` + `chap-1.cbz.meta.json` + `chap-1.sdr` cùng biến
+  mất, còn `chap-0.cbz` và `chap-0.sdr` (chương có sẵn, không thuộc phiên tải) vẫn nguyên; chương
+  126 trang (*Hoa Sơn Tái Khởi* chương 2, bản 12 trang ẩn) sau khi đóng cũng sạch hoàn toàn —
+  `.chap-2-first.cbz` và `.chap-2-first.sdr` đều không còn.
+
 ## 0.0.17 — 2026-09-20
 
 - **Trần thời gian cho mọi hành động**: `booxbook/http.lua` có ngân sách theo hành động
@@ -86,7 +103,7 @@
     trước đó tưởng lỗi chỉ vì một cú chạm thừa đóng hộp của plugin.
   - `luajit tests/run.lua` đạt toàn bộ; logcat không có lỗi Lua, không ANR.
 - Còn sót: KOReader vẫn giữ thư mục cài đặt `.chap-N-first.sdr` (`metadata.cbz.lua` ~2,6 KB) sau khi
-  file ẩn bị xoá. Chưa dọn trong bản này; muốn sạch thì `transient.cleanup` phải xoá luôn `<tên>.sdr`.
+  file ẩn bị xoá. Chưa dọn trong bản này (đã dọn ở 0.0.18).
 
 ## Chưa phát hành — dọn trùng lặp nguồn
 
