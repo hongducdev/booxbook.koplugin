@@ -260,6 +260,11 @@ function BooxBook:onCloseDocument()
     end
     local ok, Continuation = pcall(require, "booxbook.continuation")
     if ok and Continuation then
+        -- "Đọc xong không lưu": a chapter downloaded in this session is dropped
+        -- as soon as its document closes (only marked paths, see transient.lua).
+        if self.ui and self.ui.document and self.ui.document.file then
+            pcall(require("booxbook.transient").cleanup, self.ui.document.file)
+        end
         Continuation.reset()
     end
 end

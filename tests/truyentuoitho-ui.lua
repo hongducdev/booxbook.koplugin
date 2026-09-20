@@ -30,7 +30,7 @@ package.loaded["booxbook.ui.cover-grid"] = { PAGE_SIZE = 6, show = function(opts
 end }
 package.loaded["booxbook.ui.series"] = { show = function(series, opts) series_opts = opts end }
 local UI = dofile("booxbook.koplugin/booxbook/ui/truyentuoitho.lua")
-UI.openSource(); assert(#menu.items == 6); menu.on_search(); prompt.on_submit("https://evil.test/a")
+UI.openSource(); assert(#menu.items == 7); menu.on_search(); prompt.on_submit("https://evil.test/a")
 assert(notice and downloads == 0)
 prompt.on_submit("https://truyentuoitho.com/manga/test/tap-1/")
 assert(downloads == 0 and not opened, "download deferred until dialog closed")

@@ -10,6 +10,9 @@ local DEFAULTS = {
     -- reader can keep article pictures while making lists open without any cover
     -- download.
     list_covers = true,
+    -- Read a chapter and drop its CBZ once the document closes. Off by default:
+    -- it changes what happens to files the reader downloaded.
+    transient_comics = false,
     covers_max_bytes = 50 * 1024 * 1024,
     novel_epub = false,
     novel_keep_html = true,
@@ -116,6 +119,10 @@ end
 
 function Settings.listCovers()
     return Settings.get("list_covers") == true
+end
+
+function Settings.transientComics()
+    return Settings.get("transient_comics") == true
 end
 
 function Settings.adultContent()

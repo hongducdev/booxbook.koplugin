@@ -150,6 +150,10 @@ function Page.create(adapter)
                 UI.onChapterCancelled(result.url, result.partial)
                 return
             end
+            if Settings.transientComics() then
+                -- Fresh download in this session: drop it when the document closes.
+                require("booxbook.transient").mark(result)
+            end
             Catalog.clearStack(); ReaderUI:showReader(result)
         end)
     end
@@ -331,6 +335,18 @@ function Page.create(adapter)
             local kind = entry.kind
             items[#items + 1] = { text = _(entry.text), callback = function() UI.list(kind) end }
         end
+        items[#items + 1] = {
+            text = Settings.transientComics() and _("Đọc xong không lưu: BẬT")
+                or _("Đọc xong không lưu: tắt"),
+            callback = function()
+                Settings.set("transient_comics", not Settings.transientComics())
+                if Settings.transientComics() then
+                    notify(_("Đã bật: chương tải trong phiên này sẽ bị xoá sau khi đóng."))
+                else
+                    notify(_("Đã tắt: chương tải về được giữ lại."))
+                end
+            end,
+        }
         items[#items + 1] = { text = _("Truyện đã tải (offline)"), callback = UI.openOffline }
         Catalog.show{ title = name, on_search = UI.promptSearch, items = items }
     end
