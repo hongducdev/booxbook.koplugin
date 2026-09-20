@@ -1,5 +1,4 @@
-local Truyentuoitho = require("booxbook.sources.truyentuoitho")
-local Truyenqq = require("booxbook.sources.truyenqq")
+local SourceReg = require("booxbook.source")
 local Http = require("booxbook.http")
 local Html = require("booxbook.html")
 local Images = require("booxbook.article-images")
@@ -39,11 +38,10 @@ end
 
 -- Collect already-downloaded staging pages for a chapter URL.
 -- Returns pages list (for Cbz.write) + staging dir, or nil + err.
--- Pick the comic adapter by chapter URL. TruyenQQ first: its hosts never
--- overlap Truyện Tuổi Thơ, and the fallback keeps old URLs working.
+-- Pick the comic adapter by chapter URL. Every comic adapter validates the host
+-- inside parseRef, so the first match is unambiguous.
 local function adapterFor(url)
-    if Truyenqq.parseRef(url) then return Truyenqq end
-    if Truyentuoitho.parseRef(url) then return Truyentuoitho end
+    return SourceReg.findRef("comic", url)
 end
 
 function Download.adapterFor(url) return adapterFor(url) end
@@ -277,8 +275,8 @@ function Download.buildMetaFromPath(path)
     if not source_id or not series_id or not chapter then return nil end
     local dir = Settings.downloadDir() .. "/comics/" .. source_id .. "/" .. series_id
     local manifest = Download.readManifest(dir)
-    local Source = source_id == "truyenqq" and Truyenqq or (source_id == "truyentuoitho" and Truyentuoitho)
-    if not Source then return nil end
+    local Source = SourceReg.get(source_id)
+    if not Source or Source.kind ~= "comic" then return nil end
     if not manifest or manifest.source_id ~= source_id or manifest.id ~= series_id then
         return nil
     end
@@ -494,8 +492,8 @@ function Download.sweepStale(max_age_days)
     if not ok or not lfs or not lfs.dir or not lfs.attributes then return 0 end
     local now = os.time()
     local swept = 0
-    for _, source_id in ipairs({ Truyentuoitho.id, Truyenqq.id }) do
-        swept = swept + sweepRoot(Settings.downloadDir() .. "/comics/" .. source_id, lfs, now, max_age_days)
+    for _, adapter in ipairs(SourceReg.ofKind("comic")) do
+        swept = swept + sweepRoot(Settings.downloadDir() .. "/comics/" .. adapter.id, lfs, now, max_age_days)
     end
     return swept
 end

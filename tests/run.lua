@@ -274,7 +274,11 @@ package.loaded["booxbook.ui.catalog"] = {
 }
 package.loaded["booxbook.epub"] = {}
 package.loaded["booxbook.html"] = {}
-package.loaded["booxbook.http"] = {}
+package.loaded["booxbook.http"] = {
+    -- Time budgets are pass-through outside KOReader.
+    runWithBudget = function(_, fn) return pcall(fn) end,
+    withBudget = function(_, fn) return fn() end,
+}
 package.loaded["booxbook.store.settings"] = {}
 package.loaded["booxbook.ui.news"] = { menu = function() return { { text = "Publisher" } } end }
 
@@ -477,6 +481,8 @@ dofile("tests/news-online.lua")
 dofile("tests/news-categories.lua")
 dofile("tests/news-images.lua")
 dofile("tests/doh.lua")
+dofile("tests/fault.lua")
+dofile("tests/http-budget.lua")
 dofile("tests/news-http.lua")
 dofile("tests/docln.lua")
 dofile("tests/wattpad.lua")

@@ -6,7 +6,39 @@ local _ = ok_gettext and gettext or function(s) return s end
 local T = { id = "truyenfull", name = "Truyện Full", kind = "novel",
     capabilities = { search = true, browse = true, login = false } }
 local SITE = "https://truyenfull.live"
+-- Bounded on purpose: a site that keeps handing out "next page" links must not
+-- hold the reader here, and the action's time budget is checked every round.
+local MAX_TOC_PAGES = 60
 local CHANGED = _("Không đọc được HTML Truyện Full; trang có thể đã đổi hoặc yêu cầu xác minh.")
+
+-- Presentation for booxbook.ui.source-page; series→folder mapping for
+-- booxbook.novel-download. Both keep this source out of UI and dispatch code.
+T.view = {
+    base_url = SITE,
+    cover_referer = SITE .. "/",
+    cover_delay_ms = 1600,
+    search_hint = "Từ khóa hoặc https://truyenfull.live/ten-truyen/",
+    browse = {
+        { text = "Mới cập nhật", kind = "latest" },
+        { text = "Lượt xem", kind = "popular" },
+    },
+    is_ref = function(text)
+        return text:match("^https?://") ~= nil or text:match("^/[%w%-]+/?$") ~= nil
+    end,
+}
+
+function T.locate(series)
+    local id, chapter = T.parseRef(series.url)
+    if not id or chapter then return id, nil end
+    return id, id
+end
+
+-- Chapter identity used when saving: (series_id, chapter_id).
+function T.chapterRef(chapter)
+    local series_id, chapter_id = T.parseRef(chapter)
+    if chapter.series_id ~= series_id then series_id = nil end
+    return series_id, chapter_id
+end
 local function text(html)
     return Html.decode(Html.stripDangerous(html or ""):gsub("<[^>]+>", "")):match("^%s*(.-)%s*$")
 end
@@ -194,7 +226,12 @@ function T.getSeries(ref)
             end
         end
         if not hasMore(html, page) then break end
-        if added == 0 or page >= 1000 then return nil, CHANGED end
+        if added == 0 then return nil, CHANGED end
+        if page >= MAX_TOC_PAGES or Http.expired() then
+            -- Keep what we already have; the reader can still download it.
+            series.truncated = true
+            break
+        end
         page = page + 1
         html, err = request(path .. "trang-" .. page .. "/")
         if not html then return nil, err end

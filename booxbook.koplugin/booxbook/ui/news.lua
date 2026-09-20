@@ -17,8 +17,8 @@ local Opml = require("booxbook.opml")
 
 local News = {}
 
-local function notify(text)
-    UIManager:show(InfoMessage:new{ text = text })
+local function notify(text, subject)
+    return require("booxbook.fault").notify(text, subject)
 end
 
 local function customFeeds()
@@ -222,7 +222,8 @@ local function onlineAction(message, action, on_success)
         Network.whenOnline(function()
             Trapper:wrap(function()
                 Trapper:info(message)
-                local ok, result, err = pcall(action)
+                local ok, result, err = require("booxbook.http").runWithBudget(
+                    require("booxbook.http").BULK_TIMEOUT, action)
                 Trapper:clear()
                 if not ok or not result then
                     notify(_("Không tải được tin: ") .. tostring(ok and err or result))

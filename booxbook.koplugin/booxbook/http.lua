@@ -5,13 +5,96 @@ local socket = require("socket")
 local RateLimit = require("booxbook.rate_limit")
 local Settings = require("booxbook.store.settings")
 local Dns = require("booxbook.doh")
+local Fault = require("booxbook.fault")
 
 local Http = {
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
     MAX_BODY = 2 * 1024 * 1024,
-    DEFAULT_TIMEOUT = 10,
-    DEFAULT_MAXTIME = 30,
+    -- One request must not block the UI thread for long.
+    DEFAULT_TIMEOUT = 6,
+    DEFAULT_MAXTIME = 15,
+    -- One user action (open a source, list, table of contents, one chapter) gets
+    -- OP_TIMEOUT. A table of contents may legitimately paginate for a long series,
+    -- so it gets its own ceiling. Bulk jobs (CBZ/EPUB/cloud download) get
+    -- BULK_TIMEOUT.
+    OP_TIMEOUT = 20,
+    TOC_TIMEOUT = 60,
+    BULK_TIMEOUT = 300,
 }
+
+-- Operation budgets. Nested scopes never shrink the deadline, so a download
+-- (BULK_TIMEOUT) that lists a table of contents inside it keeps its long budget
+-- while a plain list (OP_TIMEOUT) stays short.
+local operation = { depth = 0, deadline = nil, stack = {} }
+
+local function nowSeconds()
+    if socket and socket.gettime then return socket.gettime() end
+    return os.time()
+end
+
+function Http.beginOperation(seconds)
+    local seconds_value = tonumber(seconds) or Http.OP_TIMEOUT
+    operation.depth = operation.depth + 1
+    operation.stack[operation.depth] = operation.deadline
+    -- Nested scopes may extend the budget but never shrink it: a bulk download
+    -- that lists a table of contents inside it keeps its long budget, and a
+    -- short action never cuts a long one short.
+    local candidate = nowSeconds() + seconds_value
+    if not operation.deadline or candidate > operation.deadline then
+        operation.deadline = candidate
+    end
+    return operation.deadline
+end
+
+function Http.endOperation()
+    if operation.depth == 0 then
+        operation.deadline = nil
+        return
+    end
+    operation.deadline = operation.stack[operation.depth]
+    operation.stack[operation.depth] = nil
+    operation.depth = operation.depth - 1
+end
+
+-- nil when no action is being timed (a lone request is bounded by DEFAULT_TIMEOUT).
+function Http.remaining()
+    if not operation.deadline then return nil end
+    return operation.deadline - nowSeconds()
+end
+
+function Http.expired()
+    local left = Http.remaining()
+    return left ~= nil and left <= 0
+end
+
+-- Run `fn` under a budget: pcall(fn) whose network calls are time-boxed.
+-- Explicit arity on purpose: `{ pcall(fn) }` + unpack loses values when the
+-- middle result is nil (a table with a hole has an undefined length).
+function Http.runWithBudget(seconds, fn)
+    Http.beginOperation(seconds)
+    local ok, a, b, c, d = pcall(fn)
+    Http.endOperation()
+    return ok, a, b, c, d
+end
+
+-- Same as runWithBudget, but keeps the caller's arity: errors are re-raised
+-- for the caller's own pcall, and the first value stays the first value. Use
+-- this when wrapping an action that already runs inside a pcall.
+function Http.withBudget(seconds, fn)
+    Http.beginOperation(seconds)
+    local ok, a, b, c = pcall(fn)
+    Http.endOperation()
+    if not ok then error(a, 0) end
+    return a, b, c
+end
+
+-- A single request may not outlive the action that started it.
+local function cappedTimeout(requested, remaining, fallback)
+    requested = requested or fallback
+    if not remaining then return requested end
+    if requested and requested <= remaining then return requested end
+    return math.max(1, math.floor(remaining))
+end
 
 local function logger()
     local ok, mod = pcall(require, "logger")
@@ -228,7 +311,7 @@ local function requestOnce(opts)
 
     if not ok then
         closeDest(false)
-        return nil, tostring(code), nil, nil
+        return nil, Fault.clean(tostring(code)), nil, nil
     end
 
     local payload = dest_file and "" or table.concat(chunks)
@@ -308,7 +391,20 @@ function Http.request(opts)
             return false, "URL not allowed"
         end
         attempts = attempts + 1
-        RateLimit.wait(RateLimit.hostFromUrl(url), delay_ms)
+        if Http.expired() then
+            return false, "operation-timeout", nil, nil
+        end
+        local remaining = Http.remaining()
+        if RateLimit.wait(RateLimit.hostFromUrl(url), delay_ms,
+            remaining and math.floor(remaining * 1000) or nil) == false then
+            return false, "operation-timeout", nil, nil
+        end
+        -- The wait itself may have used up the budget: sample again so the
+        -- request cannot overshoot by a whole pacing delay.
+        remaining = Http.remaining()
+        if remaining and remaining <= 0 then
+            return false, "operation-timeout", nil, nil
+        end
         local code, status, headers, body = requestOnce({
             url = url,
             method = method,
@@ -316,8 +412,8 @@ function Http.request(opts)
             cookies = cookies,
             referer = opts.referer,
             body = opts.body,
-            timeout = opts.timeout,
-            maxtime = opts.maxtime,
+            timeout = cappedTimeout(opts.timeout, remaining, Http.DEFAULT_TIMEOUT),
+            maxtime = cappedTimeout(opts.maxtime, remaining, Http.DEFAULT_MAXTIME),
             dest_file = opts.dest_file,
             max_body = opts.max_body,
             verify_tls = opts.verify_tls,
@@ -347,7 +443,11 @@ function Http.request(opts)
                 return false, code, body, headers
             elseif code == 403 then
                 if attempts == 1 then
-                    RateLimit.wait(RateLimit.hostFromUrl(url), delay_ms * 2)
+                    local left = Http.remaining()
+                    if RateLimit.wait(RateLimit.hostFromUrl(url), delay_ms * 2,
+                        left and math.floor(left * 1000) or nil) == false then
+                        return false, "operation-timeout", nil, nil
+                    end
                 else
                     return false, code, body, headers
                 end
@@ -360,13 +460,13 @@ function Http.request(opts)
         elseif isTimeout(code) or isTimeout(status) then
             last_err = code or status or "timeout"
             if attempts >= max_tries then
-                return false, last_err, nil, nil
+                return false, Fault.clean(last_err), nil, nil
             end
         else
-            return false, code or status or "request failed", body, headers
+            return false, Fault.clean(code or status or "request failed"), body, headers
         end
     end
-    return false, last_err or "request failed", nil, nil
+    return false, Fault.clean(last_err or "request failed"), nil, nil
 end
 
 function Http.get(url, opts)
@@ -409,5 +509,9 @@ function Http.downloadToFile(url, dest, opts)
     end
     return ok, code, body, headers, jar
 end
+
+-- Let the DoH connector see the active action budget (see doh.lua:connector) so a
+-- connect can never outlive the action that started it.
+Dns.remaining = Http.remaining
 
 return Http

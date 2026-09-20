@@ -62,6 +62,9 @@ end }
 
 local posted, graph_mode, graph_calls, refresh_invalid, download_mode = {}, "normal", 0, false, "normal"
 package.loaded["booxbook.http"] = {
+    -- Time budgets are pass-through outside KOReader.
+    runWithBudget = function(_, fn) return pcall(fn) end,
+    withBudget = function(_, fn) return fn() end,
     post = function(url, body, opts)
         assert(opts.verify_tls == true)
         posted[#posted + 1] = { url=url, body=body }

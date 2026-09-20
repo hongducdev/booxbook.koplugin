@@ -9,6 +9,33 @@ local M = { id = "metruyencv", name = "MeTruyenCV", kind = "novel",
 local SITE, API = "https://metruyencv.com", "https://backend.metruyencv.com/api/"
 local CHANGED = _("API MeTruyenCV thay đổi hoặc dữ liệu không hợp lệ.")
 
+-- Presentation for booxbook.ui.source-page; series→folder mapping for
+-- booxbook.novel-download. Both keep this source out of UI and dispatch code.
+M.view = {
+    base_url = SITE,
+    cover_referer = SITE .. "/",
+    cover_delay_ms = 1600,
+    search_hint = "Từ khóa hoặc https://metruyencv.com/truyen/…",
+    browse = {
+        { text = "Mới cập nhật", kind = "latest" },
+        { text = "Lượt xem", kind = "popular" },
+    },
+    is_ref = function(text)
+        return text:match("^https?://") ~= nil or text:match("^/truyen/") ~= nil
+            or text:match("^%d+$") ~= nil
+    end,
+}
+
+function M.locate(series)
+    local id = M.refId(series.url, true)
+    return id, id
+end
+
+-- Chapter identity used when saving: (series_id, chapter_id).
+function M.chapterRef(chapter)
+    return chapter.series_id, M.refId(chapter, false)
+end
+
 function M.refId(ref, story)
     if type(ref) == "table" then ref = ref.ref or ref.id or ref.url end
     if type(ref) == "number" then ref = tostring(ref) end
@@ -107,7 +134,14 @@ function M.getSeries(ref)
                     url = SITE .. "/truyen/chuong/" .. cid, series_id = id, locked = locked(ch) }
             end
         end
-        if more(data, page) and (added == 0 or page >= 1000) then return nil, CHANGED end
+        if more(data, page) then
+            if added == 0 or page >= 1000 then return nil, CHANGED end
+            -- Keep the chapters already read rather than losing the whole list.
+            if Http.expired() then
+                series.truncated = true
+                break
+            end
+        end
         page = page + 1
     until not more(data, page - 1)
     table.sort(chapters, function(a, b)

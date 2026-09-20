@@ -11,6 +11,25 @@ local Source = { MAX_PAGES = 600, id = "truyenqq", name = "TruyenQQ", kind = "co
 local SITE = "https://truyenqqko.com"
 local hosts = { ["truyenqqko.com"] = true, ["m.truyenqqko.com"] = true }
 
+-- Presentation for booxbook.ui.comic-page: browse entries, cover referer and the
+-- settings key remembering the last URL the reader opened.
+Source.view = {
+    base_url = SITE,
+    cover_delay_ms = 1600,
+    search_hint = "Tên truyện, URL bộ truyện hoặc URL một tập",
+    loading = "Đang tải tập %s…",
+    last_url_key = "truyenqq_last_url",
+    browse = {
+        { text = "Mới cập nhật", kind = "latest" },
+    },
+}
+
+-- Canonical series URL, used by booxbook.continuation when a saved CBZ has no
+-- stored series URL.
+function Source.seriesUrl(series_id)
+    return SITE .. "/truyen-tranh/" .. series_id
+end
+
 local function text(html)
     return Html.decode((html or ""):gsub("<[^>]+>", " ")):gsub("%s+", " "):match("^%s*(.-)%s*$")
 end

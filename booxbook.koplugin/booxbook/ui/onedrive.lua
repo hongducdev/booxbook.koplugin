@@ -11,8 +11,8 @@ local Settings = require("booxbook.store.settings")
 
 local UI = {}
 
-local function notify(text)
-    UIManager:show(InfoMessage:new{ text = text })
+local function notify(text, subject)
+    return require("booxbook.fault").notify(text, subject)
 end
 
 local function online(message, action, on_success)
@@ -20,7 +20,8 @@ local function online(message, action, on_success)
         Network.whenOnline(function()
             Trapper:wrap(function()
                 Trapper:info(message)
-                local called, result, err = pcall(action)
+                local called, result, err = require("booxbook.http").runWithBudget(
+                    require("booxbook.http").BULK_TIMEOUT, action)
                 Trapper:clear()
                 if not called or not result then
                     notify(tostring(called and err or result))

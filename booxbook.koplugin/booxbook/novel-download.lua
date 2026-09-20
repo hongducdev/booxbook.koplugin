@@ -1,9 +1,4 @@
-local Docln = require("booxbook.sources.docln")
-local Wattpad = require("booxbook.sources.wattpad")
-local MeTruyenCV = require("booxbook.sources.metruyencv")
-local TVTruyen = require("booxbook.sources.tvtruyen")
-local TruyenFull = require("booxbook.sources.truyenfull")
-local Sangtacviet = require("booxbook.sources.sangtacviet")
+local Source = require("booxbook.source")
 local Html = require("booxbook.html")
 local Export = require("booxbook.novel-export")
 local Parser = require("booxbook.sources.docln-parser")
@@ -23,34 +18,16 @@ local function chapterFileName(chapter_id)
     return "ch-" .. safe .. ".html"
 end
 
+-- Series identity is owned by the adapter (adapter.locate), so adding a source
+-- no longer means editing this dispatch table.
 local function seriesLocation(series)
     series = series or {}
     local source_id = series.source_id or "docln"
-    local path, id, adapter
-    if source_id == "truyenfull" then
-        local chapter
-        id, chapter = TruyenFull.parseRef(series.url)
-        path, adapter = not chapter and id or nil, TruyenFull
-    elseif source_id == "tvtruyen" then
-        local chapter
-        id, chapter = TVTruyen.parseRef(series.url)
-        path, adapter = not chapter and id or nil, TVTruyen
-    elseif source_id == "metruyencv" then
-        id = MeTruyenCV.refId(series.url, true)
-        path, adapter = id, MeTruyenCV
-    elseif source_id == "wattpad" then
-        id = Wattpad.refId(series.url, true)
-        path, adapter = id, Wattpad
-    elseif source_id == "sangtacviet" then
-        local parts = Sangtacviet.parseRef(series.url or series)
-        id = parts and Sangtacviet.seriesId(parts) or series.id
-        path, adapter = id, Sangtacviet
-    elseif source_id == "docln" then
-        path, id = Parser.path(series.url)
-        adapter = Docln
-    else
+    local adapter = Source.get(source_id)
+    if not adapter or type(adapter.locate) ~= "function" then
         return nil, nil, nil, _("Nguồn truyện không hợp lệ.")
     end
+    local id, path = Source.locate(adapter, series)
     return source_id, id, path, adapter
 end
 
@@ -165,23 +142,11 @@ function Download.range(series, first, last, confirmed, progress)
         local chapter_path, chapter_series = Parser.path(chapter)
         local chapter_id = chapter_path and chapter_path:match("/c(%d+)")
         local max_id_len = 12
-        if source_id == "truyenfull" then
-            chapter_series, chapter_id = TruyenFull.parseRef(chapter)
-            if chapter.series_id ~= chapter_series then chapter_series = nil end
-        elseif source_id == "tvtruyen" then
-            chapter_series, chapter_id = TVTruyen.parseRef(chapter)
-            if chapter.series_id ~= chapter_series then chapter_series = nil end
-        elseif source_id == "metruyencv" then
-            chapter_id = MeTruyenCV.refId(chapter, false)
-            chapter_series = chapter.series_id
-        elseif source_id == "wattpad" then
-            chapter_id = Wattpad.refId(chapter, false)
-            chapter_series = chapter.series_id
-        elseif source_id == "sangtacviet" then
-            local parts = Sangtacviet.parseRef(chapter)
-            chapter_id = parts and parts.chapter_id or chapter.chapter_id or chapter.id
-            chapter_series = chapter.series_id or (parts and Sangtacviet.seriesId(parts))
-            max_id_len = 32
+        local chapter_adapter = Source.get(source_id)
+        if chapter_adapter and type(chapter_adapter.chapterRef) == "function" then
+            local ref_series, ref_id, ref_max = chapter_adapter.chapterRef(chapter)
+            chapter_series, chapter_id = ref_series, ref_id
+            max_id_len = ref_max or max_id_len
         end
         if chapter_series ~= id or not chapter_id or #chapter_id > max_id_len then
             result.error = _("Đường dẫn chương không thuộc truyện này."); break

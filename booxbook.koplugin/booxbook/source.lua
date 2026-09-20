@@ -35,6 +35,35 @@ function Source.enabledList(settings)
     return list
 end
 
+-- Adapters of one kind ("novel", "comic", "news"), in menu order.
+function Source.ofKind(kind)
+    local list = {}
+    for _, adapter in ipairs(Source.list()) do
+        if adapter.kind == kind then
+            list[#list + 1] = adapter
+        end
+    end
+    return list
+end
+
+-- First adapter of `kind` whose parseRef() accepts the reference.
+function Source.findRef(kind, ref)
+    for _, adapter in ipairs(kind and Source.ofKind(kind) or Source.list()) do
+        if type(adapter.parseRef) == "function" and adapter.parseRef(ref) then
+            return adapter
+        end
+    end
+end
+
+-- Series identity for the on-disk layout: (id, path). `path` is nil when the
+-- reference points at a chapter rather than at the series itself.
+function Source.locate(adapter, series)
+    if type(adapter) ~= "table" or type(adapter.locate) ~= "function" then
+        return nil, nil
+    end
+    return adapter.locate(series)
+end
+
 Source.register(require("booxbook.sources.rss"))
 
 Source.register(require("booxbook.sources.docln"))

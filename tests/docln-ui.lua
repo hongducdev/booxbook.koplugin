@@ -166,7 +166,9 @@ local before = wifi
 Novels.download(series, 1, 51); assert(confirm and wifi == before, 'large download requires confirmation')
 confirm(); drain(); assert(last == 51)
 Docln.search = function() error('network failure') end
-Novels.search('query', 1); drain(); assert(notice:find('network failure', 1, true))
+Novels.search('query', 1); drain()
+assert(notice and not notice:find('%.lua:', 1) and notice:find('mạng', 1, true),
+    'a raised network failure is explained instead of showing code internals')
 Docln.search = function() return { items = {}, has_more = false } end
 Novels.search('query', 1); drain(); assert(notice == 'Không tìm thấy truyện phù hợp.')
 assert(cleared >= 1 and wifi == 0, 'online path clears progress without Wi-Fi prompts')

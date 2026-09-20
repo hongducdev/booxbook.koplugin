@@ -1,5 +1,75 @@
 # Changelog
 
+## Chưa phát hành — giới hạn thời gian tải & lỗi dễ đọc
+
+- **Trần thời gian cho mọi hành động**: `booxbook/http.lua` có ngân sách theo hành động
+  (`beginOperation`/`endOperation`/`remaining`/`expired`). Mặc định 20 giây cho một hành động,
+  300 giây cho việc tải dung lượng lớn (có tiến trình và nút hủy). Ngân sách chỉ nới ra khi
+  lồng nhau nên tải một khoảng chương vẫn giữ trần dài. Hết ngân sách thì dừng với câu
+  "Việc tải mất quá nhiều thời gian nên đã dừng lại." thay vì treo.
+- Timeout một request 10s→**6s** (maxtime 30s→15s) và được cắt theo thời gian còn lại;
+  DoH từ **60s → 5s** (query) / **8s** (handshake TLS), tối đa 3 địa chỉ mỗi host.
+  Đây là nguyên nhân chính của những lần đứng hàng phút khi host chết.
+- `RateLimit.wait` nhận `max_ms`: không ngủ quá thời gian còn lại, trả `false` để caller dừng
+  trước khi gửi request sớm. Mục lục Truyện Full/TVTruyen thêm trần **60 trang** và dừng khi
+  hết ngân sách, giữ phần đã đọc (`series.truncated`).
+- **Lỗi luôn là câu cho người dùng**: thêm `booxbook/fault.lua`, mọi thông báo đi qua
+  `Fault.notify`. Chuỗi chứa chi tiết mã nguồn (`file.lua:dòng`, `stack traceback`, `attempt to …`)
+  được thay bằng câu tiếng Việt (`connection refused` → "Không kết nối được tới máy chủ.",
+  `timeout` → "Máy chủ phản hồi quá chậm.", 403/404/429/5xx, `operation-timeout`…); mọi câu
+  đã đọc được thì giữ nguyên. Guard `busy` không còn im lặng mà báo "Đang tải, vui lòng chờ."
+- Kiểm thử: thêm `tests/fault.lua` (map lỗi, idempotent, không lộ `file.lua:`),
+  `tests/http-budget.lua` (ngân sách, cắt sleep, ngân sách lồng nhau, `runWithBudget`/
+  `withBudget`) và ca trần mục lục trong `tests/truyenfull.lua`.
+- Đã chạy thật trên Galaxy S24 FE: host chết hiện "Không kết nối được tới máy chủ." trong
+  vài giây (trước đó là `…/doh.lua:102: …/doh.lua:41: connection refused`); mở mục lục một bộ
+  dài trên truyenfull.live kết thúc sau ~20–30 giây và UI dùng được (trước đó treo vài phút →
+  ANR). Không có lỗi Lua trong logcat.
+- Sau review đối kháng, sửa thêm: connect TLS/DoH nay bị cắt theo ngân sách và chỉ fallback
+  DNS hệ thống khi không có ngân sách (trước đó một host chết vẫn có thể chạm ~35–40s);
+  `Fault.message` không còn chạy mẫu con trên câu đã đọc được ("chỉ lấy được 500 chương đầu"
+  từng bị đổi thành "Máy chủ đang lỗi"); mục lục có trần riêng `TOC_TIMEOUT = 60` thay vì
+  20s chung (MeTruyenCV thêm `truncated` khi hết ngân sách); `follow` không còn hiện "nil";
+  ngân sách được lấy lại mẫu sau khi chờ rate-limit và cả nhánh 403; `morning-sync` bọc ngân
+  sách; `main.lua` báo khi không kiểm tra được cập nhật thay vì im lặng.
+- Chưa làm (Phase 2): fetch vẫn đồng bộ trên main thread, nên ngân sách 20s vẫn có thể bị coi là
+  ANR nếu chạm liên tục trong lúc chờ. Cần coroutine + `nextTick` giữa các request.
+
+## Chưa phát hành — dọn trùng lặp nguồn
+
+- **Một trang UI chung cho mọi nguồn**: thêm `booxbook/ui/source-page.lua` (truyện chữ) và
+  `booxbook/ui/comic-page.lua` (truyện tranh). Bảy file `ui/truyenfull|tvtruyen|metruyencv|`
+  `wattpad|sangtacviet|truyenqq|truyentuoitho.lua` từ chỗ trùng nhau gần như toàn bộ
+  (~900 dòng) nay chỉ còn một dòng shim. Tổng plugin còn 14.706 dòng (từ 15.056): bỏ 1.082
+  dòng code trùng, thêm 745 dòng (hai trang UI chung + metadata trong adapter).
+- **Adapter tự mô tả**: mỗi nguồn khai `view` (menu duyệt, `base_url`, cover referer,
+  gợi ý ô tìm kiếm, mẫu nhận URL), `locate` (ref → thư mục lưu), `chapterRef`
+  (chương → `series_id`/`chapter_id`); nguồn tranh thêm `seriesUrl`. Sangtacviet giữ
+  `base_url` động vì tên miền đổi lúc chạy.
+- **Registry thành điểm điều phối duy nhất**: thêm `Source.ofKind`, `Source.findRef`,
+  `Source.locate`. Bỏ chuỗi `if source_id == …` trong `novel-download.lua` (2 chỗ),
+  `comic-download.lua` (`adapterFor`, `resolveComicNext`, quét thư mục) và
+  `continuation.lua` (2 chỗ, gồm lần đoán URL bộ truyện).
+- Hành vi giữ nguyên: đúng số mục menu, đúng thứ tự, đúng câu thông báo, cùng ngữ nghĩa
+  busy guard và `nextTick`. `luajit tests/run.lua` đạt toàn bộ.
+- Sau review đối kháng, siết thêm: mở lại menu nguồn xóa được cờ busy bị kẹt (như bản cũ),
+  gợi ý ô nhập đi qua `_()` để xgettext vẫn bắt, câu "Đang tải/lấy tập…" giữ nguyên theo
+  từng nguồn qua `view.loading`, `base_url` dạng hàm được resolve (chưa nguồn tranh nào
+  dùng), và `continuation`/`comic-download` chỉ nhận adapter `kind == "comic"` trước khi
+  ghi manifest hay gọi UI.
+- Đã chạy thật trên Galaxy S24 FE (KOReader Android 15) ngày 20/09/2026: menu **Truyện →**
+  Truyện Full (3 mục, lưới bìa thật), MeTruyenCV (2 mục, lưới qua API), TruyenQQ (3 mục) và
+  Truyện Tuổi Thơ (6 mục) mở đúng như bản cũ; ô tìm kiếm hiện đúng tiêu đề + gợi ý tiếng Việt;
+  tải thật 1 tập CBZ TruyenQQ (`chap-0.cbz` 1,5 MB + `chap-0.cbz.meta.json` +
+  `manifest.json`, `source_id = "truyenqq"`) và KOReader mở ngay tập đó; tải thật 1 chương
+  MeTruyenCV ra `index.json` (`id = 104789` do `adapter.locate`, khoá chương `12935750` do
+  `adapter.chapterRef`) kèm EPUB 180 KB. logcat không có lỗi Lua nào.
+- Phát hiện **sẵn có**, không do refactor (đã đối chứng bằng cách chạy lại đúng thao tác với
+  gói trước refactor, treo y hệt): mở mục lục một bộ dài trên truyenfull.live đứng ở
+  "Đang lấy mục lục…" và gây **ANR** vì fetch chạy đồng bộ trên main thread; `truyentuoitho.com`
+  hiện chết (curl từ máy tính cũng bị từ chối cổng 443) nên vào nguồn này cũng ANR. Việc cần
+  làm riêng: chuyển fetch ra coroutine để không chặn UI và hạ timeout cho host chết.
+
 ## 0.0.16 — 2026-09-15
 
 - **Tìm toàn văn trong bài báo đã tải**: thêm **Báo → Tìm trong tin đã tải**, dùng lại

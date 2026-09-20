@@ -54,6 +54,19 @@ H.get = function(url)
     return true, 200, url:find('trang-2', 1, true) and first:gsub('trang%-2', 'trang-3', 1) or first
 end
 assert(not T.getSeries('/linh-vu-thien-ha/'), 'repeated TOC must stop, not return incomplete chapters')
+-- A site that always offers a next page must stop at the page cap and keep what
+-- it already read, instead of looping until the reader gives up.
+local toc_calls = 0
+H.get = function(url)
+    toc_calls = toc_calls + 1
+    local page = tonumber(url:match('trang%-(%d+)') or '1')
+    return true, 200, first:gsub('chuong%-2', 'chuong-' .. (1000 + page))
+        :gsub('trang%-2', 'trang-' .. (page + 1), 1)
+end
+local capped = assert(T.getSeries('/linh-vu-thien-ha/'))
+assert(capped.truncated, 'endless table of contents is truncated, not spun forever')
+assert(toc_calls <= 61, 'table of contents stops at the page cap, calls=' .. toc_calls)
+assert(#capped.chapters >= 1, 'the chapters already read are kept')
 H.get = function() return code == 200, code, body end
 body = '<div id="chapter-c"><p>Tiếng Việt &amp; chữ</p><script>bad()</script><p>Hai</p></div>'
 assert(T.getChapter(series.chapters[1]).html:find('Tiếng Việt &amp; chữ', 1, true))

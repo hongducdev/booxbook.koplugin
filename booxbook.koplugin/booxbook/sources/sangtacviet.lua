@@ -100,6 +100,39 @@ local function home()
     return DOMAINS[1]
 end
 
+-- Presentation for booxbook.ui.source-page. base_url is a function because the
+-- working Sangtacviet domain is discovered at runtime and cached in settings.
+Sangtacviet.view = {
+    base_url = home,
+    cover_delay_ms = 0,
+    search_hint = "Từ khóa hoặc https://sangtacviet…/truyen/…",
+    error_hint = "Thử nhập URL /truyen/…",
+    title_with_kind = true,
+    browse = {
+        { text = "Mới cập nhật", kind = "update" },
+        { text = "Lượt xem", kind = "view" },
+    },
+    is_ref = function(text)
+        return text:match("^https?://") ~= nil or text:match("^/truyen/") ~= nil
+            or Sangtacviet.parseRef(text) ~= nil
+    end,
+}
+
+-- Series identity for booxbook.novel-download: (id, path).
+function Sangtacviet.locate(series)
+    local parts = Sangtacviet.parseRef(series.url or series)
+    local id = parts and Sangtacviet.seriesId(parts) or series.id
+    return id, id
+end
+
+-- Chapter identity used when saving: (series_id, chapter_id, max id length).
+function Sangtacviet.chapterRef(chapter)
+    local parts = Sangtacviet.parseRef(chapter)
+    local chapter_id = parts and parts.chapter_id or chapter.chapter_id or chapter.id
+    local series_id = chapter.series_id or (parts and Sangtacviet.seriesId(parts))
+    return series_id, chapter_id, 32
+end
+
 local function useHome(url)
     url = (url or ""):gsub("/+$", "")
     if session.home ~= url then

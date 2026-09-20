@@ -9,6 +9,34 @@ local Wattpad = { id = "wattpad", name = "Wattpad", kind = "novel",
 local SITE = "https://www.wattpad.com"
 local CHANGED = _("API Wattpad đổi — nhập URL truyện hoặc thử lại sau.")
 
+-- Presentation for booxbook.ui.source-page; series→folder mapping for
+-- booxbook.novel-download. Both keep this source out of UI and dispatch code.
+Wattpad.view = {
+    base_url = SITE,
+    cover_referer = SITE .. "/",
+    cover_delay_ms = 1600,
+    search_hint = "Từ khóa hoặc https://www.wattpad.com/story/…",
+    browse = {
+        { text = "Nổi bật", kind = "hot" },
+        { text = "Đề cử", kind = "featured" },
+        { text = "Mới", kind = "new" },
+    },
+    is_ref = function(text)
+        return text:match("^https?://") ~= nil or text:match("^/story/") ~= nil
+            or text:match("^%d+$") ~= nil
+    end,
+}
+
+function Wattpad.locate(series)
+    local id = Wattpad.refId(series.url, true)
+    return id, id
+end
+
+-- Chapter identity used when saving: (series_id, chapter_id).
+function Wattpad.chapterRef(chapter)
+    return chapter.series_id, Wattpad.refId(chapter, false)
+end
+
 function Wattpad.refId(ref, story)
     if type(ref) == "table" then ref = ref.url or ref.ref or ref.id end
     if type(ref) == "number" then ref = tostring(ref) end

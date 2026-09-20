@@ -128,6 +128,72 @@ Mỗi adapter trả:
 
 `getChapter` không vượt paywall/VIP. Chương khóa trả `{ skipped = "locked" }`.
 
+### Metadata + hook tùy chọn
+
+Mỗi adapter tự khai báo cách hiển thị và cách ánh xạ tham chiếu, nên
+`ui/source-page.lua` (truyện chữ) và `ui/comic-page.lua` (truyện tranh) render
+mọi nguồn mà không cần file UI riêng: `ui/<id>.lua` chỉ còn một dòng shim.
+
+```lua
+view = {                        -- cách hiển thị
+  base_url = "https://…",       -- hoặc function() khi domain đổi lúc chạy (Sangtacviet)
+  cover_referer = "https://…/",
+  cover_delay_ms = 1600,
+  search_hint = "…",            -- gợi ý trong ô nhập
+  error_hint = "…",             -- tùy chọn, thay câu "Thử nhập URL truyện."
+  title_with_kind = true,       -- tùy chọn: tiêu đề kèm tên mục đang xem
+  browse = { { text = "…", kind = "latest" } },
+  is_ref = function(text) end,  -- nhập URL/tham chiếu hay từ khóa
+}
+locate = function(series) end,       -- → id, path (path = nil khi URL là chương)
+chapterRef = function(chapter) end,  -- → series_id, chapter_id, max_id_len
+seriesUrl = function(series_id) end, -- tùy chọn (chỉ comic): URL bộ truyện
+```
+
+Nguồn không có `genres` thì không dựng menu **Thể loại** và không hỏi tên thể loại.
+
+Registry: `Source.ofKind(kind)` lọc adapter theo `kind`; `Source.findRef(kind, ref)`
+chọn adapter đầu tiên nhận `parseRef(ref)`; `Source.locate(adapter, series)` gọi
+`adapter.locate`. `novel-download`, `comic-download` và `continuation` đều đi qua
+các hàm này — không còn chuỗi `if source_id == …`.
+
+## Giới hạn thời gian & thông báo lỗi
+
+Không thao tác nào được phép chạy vô hạn trên main thread: KOReader bị Android coi là
+không phản hồi (ANR) chỉ sau ~5 giây, nên mọi đường mạng đều có trần.
+
+- **Ngân sách theo hành động** (`booxbook/http.lua`): `Http.beginOperation(giây)` /
+  `Http.endOperation()` / `Http.remaining()` / `Http.expired()`. Mặc định `OP_TIMEOUT = 20`
+  cho một hành động (mở nguồn, lưới, mục lục, mở chương); `BULK_TIMEOUT = 300` cho việc tải
+  dung lượng lớn (CBZ/EPUB/bài báo/cloud) vốn có thanh tiến trình và nút hủy.
+- Ngân sách **chỉ nới ra khi lồng nhau**, không thu hẹp: tải một khoảng chương (BULK) mà
+  bên trong có lấy mục lục (OP) thì vẫn giữ ngân sách dài.
+- `Http.check` trước **mỗi** request và **mỗi** lần chờ rate-limit; hết ngân sách thì trả
+  `false, "operation-timeout"` ngay chứ không thử lại.
+- Timeout một request: `DEFAULT_TIMEOUT = 6s`, `DEFAULT_MAXTIME = 15s`; timeout được **cắt**
+  theo thời gian còn lại để request cuối không vượt quá ngân sách. Tải file giữ 60s/180s.
+- `RateLimit.wait(host, delay_ms, max_ms)` trả `false` khi phải ngủ quá `max_ms`, để caller
+  dừng trước khi gửi request sớm.
+- DoH (`booxbook/doh.lua`): connect/query 5s, handshake TLS 8s, tối đa 3 địa chỉ mỗi host.
+  Lỗi được `error(reason, 0)` nên không còn tiền tố `file.lua:dòng:`.
+- Mục lục dài: `MAX_TOC_PAGES = 60` cho Truyện Full và TVTruyen; hết trần hoặc hết ngân sách
+  thì dừng và giữ phần đã đọc, đặt `series.truncated = true`; UI báo
+  "Mục lục quá dài, chỉ lấy được N chương đầu."
+- **Thông báo lỗi** (`booxbook/fault.lua`): mọi điểm hiện thông báo đi qua `Fault.notify`.
+  `Fault.message(text, chủ_ngữ)` chỉ viết lại khi chuỗi chứa chi tiết mã nguồn
+  (`file.lua:dòng`, `stack traceback`, `attempt to …`, `bad argument`, `nil value`); mọi câu
+  đã đọc được thì giữ nguyên. Bảng map: refused → "Không kết nối được tới máy chủ.",
+  timeout/wantread → "Máy chủ phản hồi quá chậm.", TLS/certificate → "Lỗi bảo mật kết nối
+  (TLS).", network → "Lỗi kết nối mạng.", download failed → "Tải không thành công.",
+  403/404/429/5xx → câu tương ứng, `operation-timeout` → "Việc tải mất quá nhiều thời gian
+  nên đã dừng lại.", còn lại → "Không tải được nội dung. Kiểm tra Wi-Fi rồi thử lại."
+  `Fault.clean(text)` chỉ bỏ tiền tố vị trí, dùng ở tầng HTTP/DoH.
+- Không nhánh nào im lặng: guard `busy` cũng hiện "Đang tải, vui lòng chờ."
+
+**Còn lại (Phase 2, chưa làm):** fetch vẫn chạy đồng bộ trên main thread, nên ngân sách 20s
+vẫn có thể bị Android coi là không phản hồi nếu người dùng chạm liên tục trong lúc chờ.
+Muốn hết hẳn phải chạy fetch trong coroutine và nhường `UIManager:nextTick` giữa các request.
+
 ## UI và mặc định
 
 - Chuỗi giao diện: tiếng Việt, `_()` (`gettext`).

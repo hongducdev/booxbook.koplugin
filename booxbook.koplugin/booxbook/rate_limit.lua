@@ -47,7 +47,10 @@ function RateLimit.hostFromUrl(url)
     return url:match("^https?://([^/]+)") or "default"
 end
 
-function RateLimit.wait(host, delay_ms)
+-- `max_ms` caps how long we are allowed to sleep (the caller's remaining time
+-- budget). Returns false when the cap was hit, so the caller can abort instead
+-- of firing a request too early or blocking the UI longer.
+function RateLimit.wait(host, delay_ms, max_ms)
     host = host or "default"
     delay_ms = delay_ms or RateLimit.default_delay_ms
     local delay = delay_ms / 1000
@@ -55,10 +58,17 @@ function RateLimit.wait(host, delay_ms)
     if last then
         local elapsed = nowSeconds() - last
         if elapsed < delay then
-            sleepSeconds(delay - elapsed)
+            local need = delay - elapsed
+            if max_ms and max_ms < need * 1000 then
+                sleepSeconds(math.max(0, max_ms) / 1000)
+                RateLimit.last[host] = nowSeconds()
+                return false
+            end
+            sleepSeconds(need)
         end
     end
     RateLimit.last[host] = nowSeconds()
+    return true
 end
 
 function RateLimit.reset()

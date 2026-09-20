@@ -60,6 +60,9 @@ package.loaded["booxbook.store.settings"] = {
 local calls = { post = {}, get = {}, put = {} }
 local od_put_mode, gd_post_mode = "ok", "ok"
 package.loaded["booxbook.http"] = {
+    -- Time budgets are pass-through outside KOReader.
+    runWithBudget = function(_, fn) return pcall(fn) end,
+    withBudget = function(_, fn) return fn() end,
     post = function(url, body, opts)
         assert(opts.verify_tls == true, "cloud requests verify TLS")
         calls.post[#calls.post + 1] = { url = url, body = body, opts = opts }

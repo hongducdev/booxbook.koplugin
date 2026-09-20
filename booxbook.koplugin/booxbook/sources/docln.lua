@@ -10,6 +10,13 @@ local Docln = { id = "docln", name = "DocLN", kind = "novel",
     -- One grid screen; larger pages + sync covers were OOMing on device after search.
     LIST_LIMIT = 6 }
 
+-- Series identity for booxbook.novel-download: (id, path) rooted at the
+-- DocLN path, which is also the on-disk folder name.
+function Docln.locate(series)
+    local path, id = Parser.path(series.url)
+    return id, path
+end
+
 local function request(path, valid)
     local homes, saved = {}, Settings.get("docln_home")
     for position, home in ipairs(Parser.homes) do if home == saved then homes[1] = home end end

@@ -28,11 +28,11 @@ local function CoverGrid()
     return require("booxbook.ui.cover-grid")
 end
 
-local function notify(text)
-    UIManager:show(InfoMessage:new{ text = text })
+local function notify(text, subject)
+    return require("booxbook.fault").notify(text, subject)
 end
 
-local function online(message, action, done)
+local function online(message, action, done, budget)
     UIManager:nextTick(function()
         Network.whenOnline(function()
             if busy then notify(_("Đang tải DocLN, vui lòng chờ.")); return end
@@ -41,7 +41,7 @@ local function online(message, action, done)
                 local ok, result, err
                 local wrapped_ok, wrapped_err = pcall(function()
                     Trapper:info(message)
-                    ok, result, err = pcall(action)
+                    ok, result, err = require("booxbook.http").runWithBudget(budget, action)
                 end)
                 busy = false
                 Trapper:clear()
@@ -135,8 +135,12 @@ function Novels.download(series, first, last, confirmed, open_after)
         return
     end
     online(_("Đang tải chương…"), function()
-        return Download.range(series, first, last, confirmed, function(number, total, chapter)
-            return Trapper:info(string.format(_("Đang tải %d/%d: %s — chạm để hủy"), number, total, chapter.title))
+        -- A range is a bulk job: extend past the short budget `online` starts with.
+        local Http = require("booxbook.http")
+        return Http.withBudget(Http.BULK_TIMEOUT, function()
+            return Download.range(series, first, last, confirmed, function(number, total, chapter)
+                return Trapper:info(string.format(_("Đang tải %d/%d: %s — chạm để hủy"), number, total, chapter.title))
+            end)
         end)
     end, function(result)
         if result.cancelled then
@@ -206,7 +210,11 @@ function Novels.downloadChapter(source_id, series_id, chapter_number, chapter_ur
         ref = "/" .. series_id .. "/"
     end
     online(_("Đang lấy mục lục…"), function()
-        local series, err = adapter.getSeries(ref)
+        -- The table of contents is only the first half: a chapter follows it.
+        local Http = require("booxbook.http")
+        local series, err = Http.withBudget(Http.BULK_TIMEOUT, function()
+            return adapter.getSeries(ref)
+        end)
         if not series then return nil, err end
         series.source_id = series.source_id or adapter.id or source_id
         return series
@@ -343,10 +351,18 @@ end
 
 function Novels.showSeries(ref, adapter)
     adapter = adapter or Docln
-    online(_("Đang lấy mục lục…"), function() return adapter.getSeries(ref) end, function(series)
+    online(_("Đang lấy mục lục…"), function()
+        -- A long series paginates for a while; the table of contents gets its own
+        -- ceiling so a slow source keeps what it read instead of timing out early.
+        local Http = require("booxbook.http")
+        return Http.withBudget(Http.TOC_TIMEOUT, function() return adapter.getSeries(ref) end)
+    end, function(series)
         -- DocLN series carry id but no source_id; normalize so follow works.
         series.source_id = series.source_id or adapter.id or "docln"
         local total = #(series.chapters or {})
+        if series.truncated then
+            notify(string.format(_("Mục lục quá dài, chỉ lấy được %d chương đầu."), total))
+        end
         SeriesUI.show(series, {
             on_go = function(number) Novels.download(series, number, number, false, true) end,
             on_chapter = function(chapter) Novels.download(series, chapter.index, chapter.index) end,

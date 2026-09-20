@@ -265,7 +265,10 @@ function MorningSync.runIfDue(deps, on_progress, on_done)
                     local ref = (entry.url and entry.url ~= "") and entry.url or entry.id
                     if ref and ref ~= "" then
                         local run_query = function()
-                            local ok, series = pcall(adapter.getSeries, ref)
+                            -- One followed series per tick: the tick itself stays bounded.
+                            local ok, series = require("booxbook.http").runWithBudget(nil, function()
+                                return adapter.getSeries(ref)
+                            end)
                             if ok and type(series) == "table" then
                                 local live = type(series.chapters) == "table" and #series.chapters or 0
                                 local new_count = Follow.checkUpdate(entry, live)

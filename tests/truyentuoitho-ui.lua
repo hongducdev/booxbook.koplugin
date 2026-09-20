@@ -38,7 +38,8 @@ scheduled(); assert(downloads == 1 and not opened)
 scheduled(); assert(opened == "/book.cbz")
 fail = true
 UI.download("https://truyentuoitho.com/manga/test/tap-1/"); scheduled()
-assert(notice:find("download failed", 1, true))
+assert(notice and not notice:find('%.lua:', 1) and notice:find('không thành công', 1, true),
+    'a raised download failure is explained instead of showing code internals')
 fail = false
 UI.download("https://truyentuoitho.com/manga/test/tap-1/"); scheduled()
 assert(downloads == 3, "error releases busy guard")

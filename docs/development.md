@@ -9,6 +9,7 @@
 - Module nhỏ, đúng một việc; tách trước khi file ~400 dòng.
 - HTTP đi qua `booxbook.http` (Referer, Cookie, rate limit, retry). Caller bọc `Network.whenOnline` / `NetworkMgr:beforeWifiAction`.
 - Adapter tuân [hợp đồng `booxbook.source`](system-architecture.md#adapter-contract-booxbooksource). `getChapter` không vượt paywall/VIP.
+- Adapter tự khai `view` / `locate` / `chapterRef` (+ `seriesUrl` cho comic). Thêm nguồn chỉ sửa file adapter và `source.lua`; không tạo file UI mới, không thêm nhánh `if source_id == …`.
 - Mặc định lưu truyện: một file HTML mỗi chương. EPUB tùy chọn.
 
 ## Cây plugin
@@ -34,7 +35,8 @@ booxbook.koplugin/
     update.lua              kiểm tra / cài zip GitHub Release
     store/settings.lua      LuaSettings → settings/booxbook.lua
     sources/                RSS + DocLN + Wattpad + Sangtacviet + MeTruyenCV + TVTruyen + Truyện Full + feeds*
-    ui/                     catalog, danh sách, grid, news, novels
+    ui/                     source-page (truyện chữ), comic-page (truyện tranh),
+                            catalog, series, grid, news, novels, `ui/<id>.lua` = shim
 ```
 
 Cài trên máy: `/sdcard/koreader/plugins/booxbook.koplugin/`.

@@ -9,8 +9,8 @@ local Settings = require("booxbook.store.settings")
 
 local UI = {}
 
-local function notify(text)
-    UIManager:show(InfoMessage:new{ text = tostring(text) })
+local function notify(text, subject)
+    return require("booxbook.fault").notify(text, subject)
 end
 
 function UI.openBook(path)

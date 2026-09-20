@@ -38,8 +38,8 @@ function BooxBook:init()
     self.ui.menu:registerToMainMenu(self)
 end
 
-local function notify(text)
-    UIManager:show(InfoMessage:new{ text = text })
+local function notify(text, subject)
+    return require("booxbook.fault").notify(text, subject)
 end
 
 function BooxBook:addToMainMenu(menu_items)
@@ -66,7 +66,11 @@ function BooxBook:maybeCheckUpdate()
     local checked = network().ifOnline(function()
         if not update().shouldCheck(update().lastCheck()) then return end
         local ok_release, release = pcall(update().fetchLatest)
-        if not ok_release or not release then return end
+        if not ok_release or not release then
+            -- Checked at most once a day, so a single message is not noise.
+            notify(_("Không kiểm tra được bản cập nhật mới."))
+            return
+        end
         update().noteChecked()
         if update().needsUpdate(release.version, update().currentVersion()) then
             Settings.set("update_available", release.version)

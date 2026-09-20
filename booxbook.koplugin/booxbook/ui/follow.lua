@@ -11,8 +11,8 @@ local Source = require("booxbook.source")
 
 local UI = {}
 
-local function notify(text)
-    UIManager:show(InfoMessage:new{ text = text })
+local function notify(text, subject)
+    return require("booxbook.fault").notify(text, subject)
 end
 
 local function saved()
@@ -62,10 +62,14 @@ local function checkOne(entry, done)
         local new_count, err_msg, live
         Trapper:wrap(function()
             Trapper:info(_("Đang kiểm tra: ") .. (entry.title or entry.id))
-            local ok, series = pcall(adapter.getSeries, ref)
+            -- Checking a followed series fetches its table of contents: keep it bounded.
+            local ok, series, failed = require("booxbook.http").runWithBudget(nil, function()
+                return adapter.getSeries(ref)
+            end)
             Trapper:clear()
             if not ok or type(series) ~= "table" then
-                err_msg = tostring(series)
+                -- Without the adapter's own message the reader would see "nil".
+                err_msg = tostring(failed or series)
             else
                 live = type(series.chapters) == "table" and #series.chapters or 0
                 new_count = Follow.checkUpdate(entry, live)

@@ -1,12 +1,21 @@
 local ltn12 = require("ltn12")
 local socket = require("socket")
+local Fault = require("booxbook.fault")
 
 local Dns = {}
+-- http.lua installs its budget reader here so a connect cannot outlive the
+-- action that started it (doh.lua must not require http.lua).
+Dns.remaining = nil
 local cache = {}
 local DOH_HOST = "cloudflare-dns.com"
 local DOH_IP = "1.1.1.1"
 local DOH_MAX_BODY = 64 * 1024
-local TLS_TIMEOUT = 60
+-- Short on purpose. A DoH lookup is tiny, and a content connection that has not
+-- answered in a few seconds is almost always a dead host. The old 60s timeout
+-- multiplied by every address and retry was freezing the UI thread for minutes.
+local DOH_TIMEOUT = 5
+local TLS_TIMEOUT = 8
+local MAX_ADDRESSES = 3
 
 local function dnsNameMatches(pattern, host)
     pattern, host = tostring(pattern or ""):lower(), tostring(host or ""):lower()
@@ -32,16 +41,16 @@ function Dns.certificateMatchesHost(cert, host)
     return false
 end
 
-local function tlsSocket(host, port, connect_host, params, verify_host)
+local function tlsSocket(host, port, connect_host, params, verify_host, timeout)
     local ssl = require("ssl")
     local raw, wrapped
     local ok, result = pcall(function()
         raw = assert(socket.tcp())
-        raw:settimeout(TLS_TIMEOUT)
+        raw:settimeout(timeout or TLS_TIMEOUT)
         assert(raw:connect(connect_host, port))
         wrapped = assert(ssl.wrap(raw, params))
         wrapped:sni(host)
-        wrapped:settimeout(TLS_TIMEOUT)
+        wrapped:settimeout(timeout or TLS_TIMEOUT)
         assert(wrapped:dohandshake())
         if verify_host then
             assert(Dns.certificateMatchesHost(assert(wrapped:getpeercertificate()), host),
@@ -66,11 +75,12 @@ local function register(conn)
     end
 end
 
-local function connector(resolve, fallback, cafile)
+local function connector(resolve, fallback, cafile, default_timeout)
+    default_timeout = default_timeout or TLS_TIMEOUT
     return function()
-        local conn = { timeout = TLS_TIMEOUT }
+        local conn = { timeout = default_timeout }
         function conn:settimeout(timeout)
-            self.timeout = timeout or TLS_TIMEOUT
+            self.timeout = timeout or default_timeout
             return 1
         end
         function conn:connect(host, port)
@@ -81,11 +91,26 @@ local function connector(resolve, fallback, cafile)
                 verify = cafile and "peer" or "none",
                 cafile = cafile,
             }
+            -- Never connect with a timeout the caller's budget cannot pay for:
+            -- http.lua clamps self.timeout through the action's deadline.
+            local function perAttempt()
+                local limit = self.timeout or default_timeout
+                local left = Dns.remaining and Dns.remaining()
+                if left then
+                    return math.max(1, math.floor(math.min(limit, left)))
+                end
+                return limit
+            end
+            -- A hostname handed to socket.tcp would resolve with blocking libc
+            -- DNS, which ignores the timeout: only do that when nothing is timed.
+            local allow_hostname_fallback = Dns.remaining == nil or Dns.remaining() == nil
             local addresses = resolve(host)
             local last_error
             local function tryAddresses(items)
-                for _, address in ipairs(items) do
-                    local result, err = tlsSocket(host, port, address, params, cafile ~= nil)
+                for index, address in ipairs(items) do
+                    if index > MAX_ADDRESSES then break end
+                    if Dns.remaining and Dns.remaining() and Dns.remaining() <= 0 then break end
+                    local result, err = tlsSocket(host, port, address, params, cafile ~= nil, perAttempt())
                     if result then
                         self.sock = result
                         self.sock:settimeout(self.timeout)
@@ -96,10 +121,12 @@ local function connector(resolve, fallback, cafile)
                 end
             end
             if tryAddresses(addresses) then return 1 end
-            if fallback then
+            if fallback and allow_hostname_fallback then
                 if tryAddresses(fallback(host)) then return 1 end
             end
-            error(last_error or "connection failed")
+            -- Level 0: never prefix a file:line the reader would see.
+            local reason = Fault.clean(last_error)
+            error(reason ~= "" and reason or "connection failed", 0)
         end
         return conn
     end
@@ -132,7 +159,7 @@ function Dns.parse(body, now)
     return addresses, (now or os.time()) + math.max(60, math.min(ttl, 3600))
 end
 
-local bootstrapConnector = connector(function() return { DOH_IP } end)
+local bootstrapConnector = connector(function() return { DOH_IP } end, nil, nil, DOH_TIMEOUT)
 
 local function escapeQuery(value)
     return (value:gsub("([^%w%.%-])", function(char)
@@ -171,7 +198,7 @@ end
 
 function Dns.create(cafile)
     -- Prefer DoH so poisoned system DNS cannot silently lead to an ISP block page.
-    return connector(resolveDoh, function(host) return { host } end, cafile)
+    return connector(resolveDoh, function(host) return { host } end, cafile, TLS_TIMEOUT)
 end
 
 return Dns

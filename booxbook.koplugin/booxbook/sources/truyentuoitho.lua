@@ -8,6 +8,28 @@ local Source = { MAX_PAGES = 600, id = "truyentuoitho", name = "Truyện Tuổi 
 local SITE = "https://truyentuoitho.com"
 local hosts = { ["truyentuoitho.com"] = true, ["truyentuoitho.online"] = true }
 
+-- Presentation for booxbook.ui.comic-page: browse entries, cover referer and the
+-- settings key remembering the last URL the reader opened.
+Source.view = {
+    base_url = SITE,
+    cover_delay_ms = 1600,
+    search_hint = "Tên truyện, URL bộ truyện hoặc URL một tập",
+    loading = "Đang lấy tập %s…",
+    last_url_key = "truyentuoitho_last_url",
+    browse = {
+        { text = "Mới cập nhật", kind = "latest" },
+        { text = "Lượt xem", kind = "popular" },
+        { text = "Truyện mới", kind = "new" },
+        { text = "Thịnh hành", kind = "trending" },
+    },
+}
+
+-- Canonical series URL, used by booxbook.continuation when a saved CBZ has no
+-- stored series URL.
+function Source.seriesUrl(series_id)
+    return SITE .. "/manga/" .. series_id .. "/"
+end
+
 function Source.parseRef(url)
     if type(url) == "table" then url = url.url or url.ref end
     if type(url) ~= "string" then return nil end

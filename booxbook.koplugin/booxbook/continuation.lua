@@ -227,13 +227,14 @@ function Continuation.promptContinuation(next_info)
     elseif next_info.next_url then
         local msg = string.format(_("Đã đọc xong %s.\nBạn có muốn tải tiếp %s để đọc tiếp không?"), current_title, next_title)
         Catalog.confirm(msg, function()
+            -- Each comic source ships a UI module named after its source id; the id is
+            -- taken from the registry (not from stored data) so the dynamic require
+            -- can only ever name a module this plugin ships.
             local SourceUI
-            if next_info.source_id == "truyenqq" then
-                local ok, QQ = pcall(require, "booxbook.ui.truyenqq")
-                if ok then SourceUI = QQ end
-            elseif next_info.source_id == "truyentuoitho" then
-                local ok, TT = pcall(require, "booxbook.ui.truyentuoitho")
-                if ok then SourceUI = TT end
+            local adapter = require("booxbook.source").get(next_info.source_id)
+            if adapter then
+                local ok, page = pcall(require, "booxbook.ui." .. adapter.id)
+                if ok then SourceUI = page end
             end
             if SourceUI and SourceUI.download then
                 SourceUI.download(next_info.next_url)
@@ -253,24 +254,12 @@ function Continuation.bootstrapOnline(source_id, series_id, chapter, real_path, 
     if type(series_url) ~= "string" or series_url == "" then
         series_url = nil
     end
-    if not series_url then
-        if source_id == "truyenqq" then
-            series_url = "https://truyenqqko.com/truyen-tranh/" .. series_id
-        elseif source_id == "truyentuoitho" then
-            series_url = "https://truyentuoitho.com/manga/" .. series_id .. "/"
-        end
+    local Source = require("booxbook.source").get(source_id)
+    if not Source or Source.kind ~= "comic" or not Source.getSeries then return end
+    if not series_url and type(Source.seriesUrl) == "function" then
+        series_url = Source.seriesUrl(series_id)
     end
     if not series_url then return end
-
-    local Source
-    if source_id == "truyenqq" then
-        local ok_q, Q = pcall(require, "booxbook.sources.truyenqq")
-        if ok_q then Source = Q end
-    elseif source_id == "truyentuoitho" then
-        local ok_t, T = pcall(require, "booxbook.sources.truyentuoitho")
-        if ok_t then Source = T end
-    end
-    if not Source or not Source.getSeries then return end
 
     UIManager:nextTick(function()
         Network.ifOnline(function()
