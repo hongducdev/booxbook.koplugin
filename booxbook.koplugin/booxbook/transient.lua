@@ -38,4 +38,14 @@ function Transient.reset()
     marked = {}
 end
 
+-- A partial chapter must never take the canonical path: savedPath() would then
+-- treat a truncated chapter as complete. The hidden name keeps it in the same
+-- folder, invisible to the file browser, and it goes away with the document.
+function Transient.hiddenName(path)
+    if type(path) ~= "string" or path == "" then return nil end
+    local hidden = path:gsub("([^/]+)%.cbz$", ".%1-first.cbz")
+    if hidden == path then return nil end
+    return hidden
+end
+
 return Transient

@@ -15,6 +15,10 @@ local function resolve(value)
     return value
 end
 
+-- How many pages a transient read fetches before opening the reader. The rest of
+-- the chapter is fetched on a later attempt (see fast_opened below).
+local FIRST_PAGES = 12
+
 function Page.create(adapter)
     assert(type(adapter) == "table" and adapter.id, "adapter with id required")
     local Catalog = require("booxbook.ui.catalog")
@@ -40,6 +44,8 @@ function Page.create(adapter)
     local function notify(text, subject)
         return require("booxbook.fault").notify(text, subject)
     end
+
+    local fast_opened = {}
 
     local function open(path)
         UIManager:nextTick(function() Catalog.clearStack(); ReaderUI:showReader(path) end)
@@ -131,11 +137,21 @@ function Page.create(adapter)
             return
         end
         if err then notify(err); return end
+        -- Transient read: take just enough pages to open the reader quickly. The
+        -- budget is spent once per chapter per session, so asking for the same
+        -- chapter again downloads it in full instead of never getting there.
+        local transient = Settings.transientComics() and not fast_opened[url]
+        local budget_cancel = false
         online(string.format(loading, name), function()
             -- One CBZ is a bulk job: extend past the short budget `online` starts with.
             local Http = require("booxbook.http")
             return Http.withBudget(Http.BULK_TIMEOUT, function()
                 local result, chapter_err, partial = Download.chapter(url, function(i, count, packing)
+                    if transient and count > FIRST_PAGES and i > FIRST_PAGES then
+                        fast_opened[url] = true
+                        budget_cancel = true
+                        return false -- enough to start reading; stop here
+                    end
                     return Trapper:info(string.format(packing and _("Đóng gói CBZ: %d/%d — chạm để hủy")
                         or _("Tải ảnh: %d/%d — chạm để hủy"), i, count))
                 end, meta)
@@ -147,6 +163,21 @@ function Page.create(adapter)
             end)
         end, function(result)
             if type(result) == "table" and result.cancelled then
+                if budget_cancel then
+                    -- Package what we have under a HIDDEN name: the canonical path
+                    -- stays free for a full download later, so a truncated chapter
+                    -- can never look complete to savedPath().
+                    local packed = Download.packageStaging(result.url)
+                    if packed then
+                        local hidden = require("booxbook.transient").hiddenName(packed)
+                        if hidden and os.rename(packed, hidden) then packed = hidden end
+                        require("booxbook.transient").mark(packed)
+                        local pages = (result.partial and result.partial.downloaded) or FIRST_PAGES
+                        notify(string.format(_("Đang mở %d trang đầu — chọn lại chương để tải đủ."), pages))
+                        Catalog.clearStack(); ReaderUI:showReader(packed)
+                        return
+                    end
+                end
                 UI.onChapterCancelled(result.url, result.partial)
                 return
             end
