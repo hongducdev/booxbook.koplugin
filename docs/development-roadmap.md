@@ -1,5 +1,56 @@
 # Lộ trình phát triển
 
+## Thêm nguồn truyện từ Z-Truyenviet — 2026-09-20
+
+Port các nguồn truyện mà `magicxlll/Z-Truyenviet.koplugin` (MIT) có mà BooxBook chưa có,
+viết lại theo hợp đồng `booxbook.source` (hai plugin khác kiến trúc, không copy-paste).
+Đã thêm 13 nguồn (11 chữ + 2 tranh); 3 nguồn bị loại vì GET thật cho thấy không dùng được.
+Registry: 22 nguồn (17 chữ, 4 tranh, RSS).
+
+- [x] Hạ tầng: đăng ký adapter trong `source.lua`, shim `ui/<id>.lua`, mục menu `main.lua`, test vào `tests/run.lua`.
+- [x] 11 nguồn truyện chữ: akaytruyen, aztruyen, blhvip, conduongbachu, dualeotruyenfull,
+      metruyenchuvn, metruyenvn, storyaclick, truyenc, truyendich, xtruyen.
+  - [x] `metruyenvn` (Mê Truyện VN): kiểm live — `.comic-item-box`, `/page/N/`, `.chapter-table`,
+        `/chuong-<n>-<id>/`, `#view-chapter`, backlink `#post-category-link`; search AJAX + fallback `/?s=`.
+  - [x] `akaytruyen`: chạy parser thật trên HTML thật — Hot 31 / Đang ra 27 / Hoàn thành 4 (đủ cover),
+        8 trang × 50 chương, mục lục mới-nhất-trước được đảo lại; `search-chapters` trả 422 khi rỗng → fallback.
+  - [x] `blhvip`: API `api.blhvip.vn` — 50 chương/trang, thứ tự theo `ord`, `/v1/story/<slug>` 403 nên metadata từ HTML.
+  - [x] `storyaclick`: `api/v1/stories`, `chapters/story/<slug>?minimal=true`, `chapters/<slug>/<chap>` có `content`.
+  - [x] `dualeotruyenfull`: listing 24 card, story 24 chương, chapter `#chapter-content` 90 đoạn.
+  - [x] `aztruyen`: TOC `li.listc` (148 mục), chapter `div.chapter-content` + 122 đoạn.
+  - [x] `xtruyen`: tự viết decoder Python đối chiếu — `data_x` 8060 ký tự → base64 bảng chữ tự chế → zlib → 17090 byte HTML.
+  - [x] `truyendich`: `truyendich.space/api/novels/search` + `/chapters` (6960 chương), story `/doc-truyen/<slug>`,
+        chapter `#original-content-tab` 43 đoạn. `.ai`/`.fit` vẫn nhận trong `parseRef`.
+  - [x] `truyenc`: story 58 chương, chapter `.story-content` 30 đoạn, 34 thể loại (7 nhóm 18+);
+        không có tìm kiếm phía server nên `capabilities.search = false`.
+  - [x] `conduongbachu`: WordPress REST trả JSON hợp lệ; chapter `.entry-content` 86 đoạn.
+  - [x] `metruyenchuvn`: `latest` fallback về trang chủ khi `/danh-sach/truyen-moi` 404 (34 truyện),
+        `popular`/`full` 20 truyện, search lọc đúng (“Tinh Thần Đại Đạo” đầu tiên).
+- [x] 2 nguồn truyện tranh: cbunu, dualeo.
+  - [x] `cbunu`: mục lục `.works-chapter-list` sắp lại theo thứ tự đọc, chỉ nhận ảnh host của site;
+        `Http.post(..., { max_hops = 0 })` để đọc `Set-Cookie` trên chính phản hồi 302.
+  - [x] `dualeo`: `dualeotruyenhn.com` nay **301 → `dualeotruyenvt.com`**; host đích không kết nối được
+        từ mạng đã kiểm nên khả dụng phụ thuộc mạng người dùng. Parse đã đối chiếu HTML thật qua proxy.
+- [x] **Loại 3 nguồn sau khi GET thật cho thấy không dùng được** (xóa adapter + shim + test + mục menu):
+  - `mizzya`: wordpress.com trả 403 JS challenge cho mọi client không-JS, kể cả khi gửi đủ header như bản gốc.
+  - `giatocvuongtai`: cả domain lẫn `/api/public/*` trả 401 `"Bạn cần đăng nhập để truy cập nội dung này."`
+  - `haccbl`: chương gửi `InitMangaEncryptedChapter` (PBKDF2-HMAC-SHA512 999 vòng + AES-256-CBC);
+    Z giải mã bằng `ffi.load` hàng chục tên `libcrypto.so*`, trái quy ước `docs/development.md`.
+    Không có phần giải mã thì nguồn chỉ duyệt được chứ không tải được ảnh → bỏ.
+    Nếu sau này muốn có lại: làm thuần Lua (PBKDF2-HMAC-SHA512 + AES-256-CBC), kiểm offline bằng
+    vector chuẩn và ciphertext thật.
+- [x] `truyenc`: gate thể loại 18+ qua `Settings.adultContent()`.
+- [x] Test stub HTTP mỗi nguồn; `luajit tests/run.lua` xanh (13 file test mới).
+  - [x] `cbunu`: parseRef/parseList/browse/search/getSeries/parseChapter + unlock + 429 + trần 600 trang.
+- [x] Smoke test thật có mạng cho từng nguồn (chỉ GET trang công khai). Kết quả ghi ở trên.
+- [x] Ghi chú ngoại lệ: `cbunu` giữ cơ chế unlock (dò mật khẩu chung của site) theo yêu cầu
+      người dùng — khác quy ước "không vượt paywall" trong `docs/development.md`; ghi rõ trong docs.
+- [x] Cập nhật README, `website/index.html`, `docs/usage.md`, `docs/system-architecture.md`,
+      `_meta.lua` (0.0.19) và changelog.
+- [ ] Smoke test trên thiết bị thật (Boox/Kindle/Kobo) cho các nguồn mới.
+- [x] Không đưa vào đợt này: `dilib` (thư viện số/GDrive, cả phim/nhạc) và `tve4u`
+      (ebook XenForo, bắt buộc đăng nhập) — không phải nguồn truyện, khác hẳn domain.
+
 ## Nhận sách Wi-Fi trên Kindle — 2026-09-14
 
 - [x] Bổ sung mở/đóng tường lửa theo cổng thực tế, hoàn tác khi thiết lập lỗi.

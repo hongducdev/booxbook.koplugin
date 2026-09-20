@@ -15,7 +15,7 @@ Dùng như trình đọc RSS / thư viện cá nhân. Không phát tán nội du
 
 ## Website có gì
 
-- Giới thiệu tính năng: báo RSS 17 tờ / 633 kênh, truyện chữ 6 nguồn, truyện tranh CBZ, EPUB + thư viện, gửi sách qua Wi-Fi.
+- Giới thiệu tính năng: báo RSS 17 tờ / 633 kênh, truyện chữ 17 nguồn, truyện tranh 4 nguồn CBZ, EPUB + thư viện, gửi sách qua Wi-Fi.
 - Hướng dẫn cài 5 bước từ file Release (có ảnh minh họa từng bước), cập nhật từ Release, kiểm tra cài đặt.
 - Hướng dẫn dùng theo tab: Báo / Truyện chữ / Truyện tranh / EPUB & Thư viện / Wi-Fi; bảng danh mục báo; đường dẫn dữ liệu; FAQ.
 - Nguồn: [`website/`](website/) tĩnh (HTML/CSS/JS, không build). Sửa nội dung ở `website/index.html`, style ở `website/styles.css`.
@@ -25,8 +25,8 @@ Dùng như trình đọc RSS / thư viện cá nhân. Không phát tán nội du
 | Mục | Nguồn | Ghi chú |
 |---|---|---|
 | **Báo** | 17 tờ, 633 kênh RSS | 9 báo Việt, 8 nguồn nước ngoài; thêm RSS tùy chỉnh; tìm toàn văn trong bài đã tải |
-| **Truyện** | DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full | Tìm / duyệt / **duyệt thể loại**, tải chương, đọc lại offline |
-| **Truyện tranh** | Truyện Tuổi Thơ, TruyenQQ | Duyệt/tìm, mục lục, tải một/khoảng/toàn bộ tập, tải tiếp, đọc CBZ offline; **Đọc xong không lưu** xoá chương tải trong phiên khi đóng |
+| **Truyện** | DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full, AkayTruyen, AzTruyen, Bàn Long VIP, Con Đường Bá Chủ, DualeoTruyenFull, Mê Truyện Chữ VN, Mê Truyện VN, Storya, TruyenC, Truyendich, XTruyen | Tìm / duyệt / **duyệt thể loại**, tải chương, đọc lại offline |
+| **Truyện tranh** | Truyện Tuổi Thơ, TruyenQQ, Cbunu, Dưa Leo Truyện | Duyệt/tìm, mục lục, tải một/khoảng/toàn bộ tập, tải tiếp, đọc CBZ offline; **Đọc xong không lưu** xoá chương tải trong phiên khi đóng |
 | **Sách & cloud** | File local + OneDrive | Duyệt thư mục trên máy, tìm sách offline; duyệt thư mục OneDrive và tải sách về |
 | **Gửi sách qua Wi-Fi** | Điện thoại / máy tính cùng mạng | Mở web hoặc quét QR, gửi nhiều sách vào thư viện; tối đa 512 MiB/file |
 

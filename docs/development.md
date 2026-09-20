@@ -9,6 +9,9 @@
 - Module nhỏ, đúng một việc; tách trước khi file ~400 dòng.
 - HTTP đi qua `booxbook.http` (Referer, Cookie, rate limit, retry). Caller bọc `Network.whenOnline` / `NetworkMgr:beforeWifiAction`.
 - Adapter tuân [hợp đồng `booxbook.source`](system-architecture.md#adapter-contract-booxbooksource). `getChapter` không vượt paywall/VIP.
+  - **Ngoại lệ đã ghi nhận:** `sources/cbunu.lua` giữ cơ chế unlock của nguồn gốc Z-Truyenviet
+    (thử mật khẩu chung của site khi trang trả 403) theo yêu cầu người dùng. Không thêm ngoại lệ
+    mới mà không ghi vào đây.
 - Adapter tự khai `view` / `locate` / `chapterRef` (+ `seriesUrl` cho comic). Thêm nguồn chỉ sửa file adapter và `source.lua`; không tạo file UI mới, không thêm nhánh `if source_id == …`.
 - Mặc định lưu truyện: một file HTML mỗi chương. EPUB tùy chọn.
 

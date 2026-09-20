@@ -140,6 +140,29 @@ xóa link đã xong hoặc xóa cả hàng đợi. Không tự tải nền.
 - ID truyện là `{host}-{bookid}` (cùng bookid có thể trùng giữa nguồn gốc). Lưu HTML tại `koreader/booxbook/novels/sangtacviet/{host}-{bookid}/`. Chương id dài (fanqie) giữ dạng chuỗi, không `tonumber`. Icon menu trên mục lục mở **Tải khoảng / toàn bộ** như DocLN; tải toàn bộ có thể chậm vì giãn cách ≥ 2 giây và dừng khi captcha/rate-limit.
 - Chỉ dùng cá nhân; nhiều bản dịch máy. Không vượt captcha/VIP. Bảng glyph PUA (sangtac/dich) theo [Nekori SangTacViet](https://github.com/Yuneko-dev/Nekori-plugins/tree/master/plugins/vietnamese/SangTacViet) — [MIT](../booxbook.koplugin/THIRD-PARTY-NOTICES.md).
 
+## Các nguồn truyện bổ sung
+
+Mọi nguồn dưới đây nằm chung mục **Truyện** và dùng chung mục lục, tải khoảng/toàn bộ, HTML/EPUB
+và đọc offline như DocLN. Khác biệt đáng lưu ý:
+
+| Nguồn | Tìm kiếm | Ghi chú |
+|---|---|---|
+| AkayTruyen | từ khóa | Một lần tải trang chủ cho cả Hot / Đang ra / Hoàn thành; mục lục dài phân trang |
+| AzTruyen | từ khóa | 28 thể loại; không có mục 18+ |
+| Bàn Long VIP | từ khóa | API riêng; chương VIP bị bỏ qua và báo khoá |
+| Con Đường Bá Chủ | theo tên (lọc tại máy) | 4 thể loại từ chuyên mục WordPress |
+| DualeoTruyenFull | từ khóa | `dualeotruyenhn.com` nay 301 sang `dualeotruyenvt.com`; khả dụng phụ thuộc mạng |
+| Mê Truyện Chữ VN | từ khóa | Mục lục qua `/get/listchap/<id>`; 10 thể loại 18+ ẩn đến khi bật |
+| Mê Truyện VN | từ khóa | 66 thể loại, 10 nhóm 18+ |
+| Storya | từ khóa | Duyệt thể loại chỉ trang 1 |
+| TruyenC | **không có** | Dán URL `/truyen/<tên>-<id>`; 7 thể loại 18+ |
+| Truyendich | từ khóa | Mục lục lấy từ API JSON của site |
+| XTruyen | từ khóa | Nội dung chương giải nén từ `data_x` (zlib) |
+
+Nguồn truyện tranh mới — **Cbunu** và **Dưa Leo Truyện** — nằm cùng mục **Truyện** với
+Truyện Tuổi Thơ / TruyenQQ và tải CBZ từng tập như nhau. **Cbunu** giữ cơ chế mở khoá của nguồn
+gốc khi trang trả 403; chương vẫn không đọc được thì báo khoá.
+
 ## EPUB và Thư viện
 
 EPUB mới giữ tên truyện gốc và metadata nguồn có cung cấp (tác giả, mô tả,
@@ -150,7 +173,7 @@ cần tải lại để nhận metadata và bìa mới.
 
 - Bật **Cài đặt → Đọc và tải → Lưu truyện thành EPUB**. Mặc định vẫn là HTML.
 - Không cần bật công tắc để đóng gói thủ công: trong menu mục lục chọn **Tạo EPUB từ chương đã tải**, nhập khoảng. Plugin chỉ dùng HTML đang có, báo số chương thiếu và luôn giữ HTML/index.
-- Áp dụng DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen và Truyện Full: mỗi khoảng tải xong có file
+- Áp dụng mọi nguồn truyện chữ (kể cả các nguồn bổ sung ở trên): mỗi khoảng tải xong có file
   `chapters-<từ>-<đến>.epub` trong thư mục truyện, chứa các chương tải được theo
   thứ tự và mục lục. Tải toàn bộ tạo một EPUB cho khoảng đó. Chương khóa bị bỏ qua.
 - Chọn dòng **(EPUB)** ở đầu kết quả để đọc. **Giữ bản HTML khi lưu EPUB** bật

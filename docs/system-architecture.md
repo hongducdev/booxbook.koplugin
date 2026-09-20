@@ -1,6 +1,6 @@
 # Kiến trúc hệ thống
 
-Plugin KOReader `booxbook.koplugin` cho Onyx Boox và thiết bị khác: RSS/Atom lưu HTML cục bộ; adapter truyện DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full. Thư viện mở thư mục tải bằng trình quản lý file KOReader.
+Plugin KOReader `booxbook.koplugin` cho Onyx Boox và thiết bị khác: RSS/Atom lưu HTML cục bộ; adapter truyện DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full và truyện tranh Truyện Tuổi Thơ, TruyenQQ, Cbunu. Thư viện mở thư mục tải bằng trình quản lý file KOReader.
 
 Trình đọc cá nhân. Không vượt VIP / paywall / captcha.
 
@@ -80,7 +80,7 @@ main.lua  →  booxbook.ui (Báo + Truyện / Thư viện file / Cài đặt / C
               ↓
          booxbook.html → HTML bài/chương (mặc định) / booxbook.epub (tùy chọn)
               ↓
-         booxbook.source → rss / docln / wattpad / sangtacviet / metruyencv / tvtruyen / truyenfull
+         booxbook.source → 25 nguồn: rss (báo), 19 nguồn truyện chữ, 5 nguồn truyện tranh CBZ
 ```
 
 Điểm vào mạng bọc `Network.whenOnline`. Selftest GET `https://example.com` kèm Referer, ghi `_selftest.html` (`Tiếng Việt`) và `_selftest.epub` dưới `koreader/booxbook/`.
@@ -96,7 +96,7 @@ Mọi request đi qua `booxbook.http`. Caller không gọi `socket.http` trực 
 | Header | UA desktop Chrome/142 (không phải Android); override không phân biệt hoa thường; `referer` tùy chọn |
 | VnExpress | Cookie trình bày `device_env=4; device_env_real=4` chỉ trên vnexpress.net |
 | Log | `Cookie`, `Authorization`, `Set-Cookie` ghi `[redacted]` |
-| Redirect | `redirect = false`; theo Location tối đa 5 hop; 303 → GET |
+| Redirect | `redirect = false`; theo Location tối đa `opts.max_hops` hop (mặc định 5); 303 → GET; chạm trần thì trả luôn `Set-Cookie` của chính phản hồi redirect |
 | Credential khi đổi host | Bỏ cookie tùy chọn và header Cookie/Authorization khi Location khác host |
 | Retry | 3 lần khi timeout; 403: một backoff rồi dừng; 429: dừng ngay |
 | Rate limit | `rate_limit.wait(host)` trước mỗi lần thử; `delay_ms` mặc định 1200ms |
@@ -304,6 +304,45 @@ Staging giữ khi lỗi/hủy; thành công xóa các trang đã dùng. CBZ dư�
 `comics/truyentuoitho/<series>/<chapter>.cbz`, mở offline qua FileManager.
 Đã xác minh ReaderUI/WebP và fit-page trên điện thoại Samsung Android; chưa xác minh Boox/Kindle/Kobo.
 
+## Nguồn truyện bổ sung từ Z-Truyenviet
+
+17 nguồn truyện chữ và 4 nguồn truyện tranh được port từ `magicxlll/Z-Truyenviet.koplugin` (MIT).
+Mỗi nguồn là một adapter `booxbook/sources/<id>.lua` cộng shim 1 dòng `ui/<id>.lua`, mục menu
+trong `main.lua` và `tests/<id>.lua`; không có file UI riêng, không có nhánh `if source_id == …`.
+
+Điểm khác thường đã gặp khi port (giữ lại trong code kèm chú thích):
+
+- **AkayTruyen** (`akaytruyen.lua` + `akaytruyen-parser.lua`): một lần GET trang chủ phục vụ cả ba
+danh sách Hot / Đang ra / Hoàn thành, cover được ghép theo URL; mục lục lấy từ endpoint
+`search-chapters` (trả 422 khi `search=` rỗng nên có fallback phân trang toàn bộ) và site xếp
+**mới nhất trước** nên adapter đảo về thứ tự đọc.
+- **Bàn Long VIP**: API ở host khác (`api.blhvip.vn`), 50 chương/trang, thứ tự chương lấy từ
+trường `ord` chứ không suy từ số trang; `/v1/story/<slug>` trả 403 nên metadata lấy từ HTML;
+chương VIP phát hiện qua `content-lock` và báo khoá thay vì lưu đoạn teaser.
+- **XTruyen**: nội dung chương không nằm trong HTML — trang gửi `const data_x = "…"` và trình duyệt
+giải nén bằng pako. Adapter tái hiện pipeline: bảng chữ base64 tự chế → base64 chuẩn → zlib
+(`ffi.loadlib("z", 1)`, cùng cách `gzip.lua` dùng).
+- **Truyendich**: đã đổi tên miền hai lần (`.ai` → `.fit` → `.space`); `parseRef` nhận cả ba host
+nhưng `base_url` là `truyendich.space`, và mục lục lấy từ API JSON của chính site (HTML chỉ kèm
+50 chương đầu).
+- **DualeoTruyenFull**: site chèn thẻ `<a>` SEO **không đóng**, làm `Html.elements` theo anchor sai;
+listing được cắt theo mốc card thay vì quét anchor.
+- **TruyenC**: không có tìm kiếm phía server (`capabilities.search = false`, `search()` trả câu giải
+thích); 7 thể loại 18+ ẩn đến khi bật `adult_content`.
+- **Mê Truyện Chữ VN**: `/danh-sach/truyen-moi` trả 404 nên `browse("latest")` fallback về trang chủ;
+mục lục lấy từ `/get/listchap/<id>?page=N` (JSON escape).
+- **Cbunu**: xem mục "Cbunu CBZ" ở trên.
+
+Ba nguồn của Z-Truyenviet đã bị loại vì kiểm tra thật cho thấy không dùng được, không đưa vào menu:
+
+- **Mizzya**: `mizzya.wordpress.com` trả 403 JS challenge cho mọi client không-JS, kể cả khi gửi
+  đủ header như bản gốc.
+- **Gia Tộc Vượng Tài**: cả `giatocvuongtai.com` lẫn `/api/public/*` trả 401 `"Bạn cần đăng nhập"`.
+- **Hắc Ám Chi Các**: chương gửi `InitMangaEncryptedChapter` (PBKDF2-HMAC-SHA512 999 vòng +
+AES-256-CBC). Z giải mã bằng `ffi.load` hàng chục tên `libcrypto.so*`, trái quy ước trong
+[development.md](development.md); không có phần giải mã thì nguồn chỉ duyệt được chứ không tải
+được ảnh, nên đã bỏ thay vì để một mục menu luôn báo lỗi.
+
 ## TruyenQQ CBZ
 
 Cùng pipeline `comic-download`/`comic-cbz` như Truyện Tuổi Thơ nhưng qua adapter riêng
@@ -311,6 +350,24 @@ Cùng pipeline `comic-download`/`comic-cbz` như Truyện Tuổi Thơ nhưng qua
 Parser custom (không phải Madara), chỉ nhận ảnh từ `truyenqqko.com` (+ `m.`/`st.`)
 và CDN `hinhhinh.com` / `truyenvua.com`; HTTP 429 báo thử lại sau, không retry dồn dập. Lưu dưới
 `comics/truyenqq/<series>/<chapter>.cbz`. Giới hạn 600 trang/tập như trên.
+
+## Cbunu CBZ
+
+Cùng pipeline `comic-download`/`comic-cbz`. Site trả lời trên hai tên miền — `cbunu.com` và
+`cucbongunu.com` — nhưng mọi liên kết, bìa và ảnh trang đều tuyệt đối trên `cucbongunu.com`,
+nên đó là `base_url`; `parseSeriesRef`/`parseRef` nhận cả hai host. Series
+`/truyen-tranh/<slug>-<id>`, chapter `/truyen-tranh/<slug>-<id>-chap-<n>.html` (n có thể lẻ,
+ví dụ `19.5`). Mục lục nằm ngay trong `.works-chapter-list` của trang bộ, xếp mới-nhất-trước nên
+adapter sắp lại theo thứ tự đọc và loại trùng theo số chương. Chỉ nhận ảnh từ chính host của site
+(cả ảnh "thông báo chương" trong `.story-see-content` đều bị loại vì không có class `lazy` và
+không nằm dưới `/chap/`).
+
+Khi một trang trả 403 hoặc trang đăng nhập, adapter **giữ cơ chế unlock của nguồn gốc
+Z-Truyenviet** (theo yêu cầu người dùng): POST `access_pass` với mật khẩu chung của site và
+dùng lại session cookie nhận được, rồi GET lại trang. Việc này cần `Http.post(..., { max_hops = 0 })`
+để không đi theo redirect và mất `Set-Cookie` trên chính phản hồi 302. Đây là ngoại lệ đã ghi nhận
+với quy ước "không vượt paywall" trong [development.md](development.md); chương vẫn không đọc được
+thì báo khoá chứ không làm hỏng cả khoảng tải. Cookie phiên chỉ nằm trong bộ nhớ module, TTL 30 phút.
 
 ## Đọc tiếp nối (EndOfBook)
 

@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.0.19 — 2026-09-20
+
+- **Thêm 13 nguồn truyện từ `magicxlll/Z-Truyenviet.koplugin` (MIT)**: 11 nguồn truyện chữ
+  (AkayTruyen, AzTruyen, Bàn Long VIP, Con Đường Bá Chủ, DualeoTruyenFull, Mê Truyện Chữ VN,
+  Mê Truyện VN, Storya, TruyenC, Truyendich, XTruyen) và 2 nguồn truyện tranh (Cbunu, Dưa Leo
+  Truyện). Hai plugin khác kiến trúc nên từng nguồn được viết lại theo hợp đồng
+  `booxbook.source` (adapter + shim `ui/<id>.lua` + mục menu + test stub HTTP), không copy-paste.
+  Registry giờ có 22 nguồn (17 chữ, 4 tranh, RSS).
+- `booxbook/http.lua`: thêm `opts.max_hops` và trả luôn `Set-Cookie` của chính phản hồi redirect
+  khi chạm trần hop — cần cho cổng truy cập của Cbunu, nơi cookie phiên nằm trên phản hồi 302.
+- `Cbunu`: giữ cơ chế unlock của nguồn gốc (thử mật khẩu chung của site khi trang trả 403 hoặc
+  trang đăng nhập) theo yêu cầu người dùng — ngoại lệ đã ghi trong `docs/development.md` và
+  `docs/system-architecture.md`. Chương vẫn không đọc được thì báo khoá, không làm hỏng cả khoảng tải.
+- Kiểm thử: 13 file `tests/<nguồn>.lua` mới (parseRef, danh sách/tìm kiếm, mục lục, nội dung
+  chương, khoá/trống, chặn 18+, trần trang, và riêng Cbunu là nhánh unlock + 429).
+  `luajit tests/run.lua` đạt toàn bộ.
+- Đã GET thật từng site/API khi port (trừ vài nơi bị chặn — xem ghi chú bên dưới) và sửa lại chỗ
+  Z đã lỗi thời: AkayTruyen dùng `key_word`; Bàn Long VIP 50 chương/trang và dùng trường `ord`;
+  DualeoTruyenFull chuyển sang phân trang WordPress; XTruyen giải nén `data_x` (base64 bảng chữ tự
+  chế → zlib); Truyendich đã đổi tên miền sang `truyendich.space` và dùng API JSON của chính site.
+- **Ba nguồn của Z-Truyenviet đã bị loại sau khi GET thật, vì không dùng được** (không đưa vào menu,
+  thay vì để một mục luôn báo lỗi): `Mizzya` (wordpress.com trả 403 JS challenge cho mọi client
+  không-JS), `Gia Tộc Vượng Tài` (cả domain trả 401 `"Bạn cần đăng nhập"`) và `Hắc Ám Chi Các`
+  (chương gửi `InitMangaEncryptedChapter` — PBKDF2-HMAC-SHA512 999 vòng + AES-256-CBC; Z giải mã bằng
+  `ffi.load` hàng chục tên `libcrypto.so*`, trái quy ước `docs/development.md`, nên không có phần
+  giải mã thì nguồn chỉ duyệt được chứ không tải được ảnh).
+- **`Dưa Leo Truyện`** parse đã đối chiếu với HTML thật qua proxy: tên miền chính
+  `dualeotruyenhn.com` nay 301 sang `dualeotruyenvt.com`, nên khả dụng phụ thuộc mạng của bạn.
+
 ## 0.0.18 — 2026-09-20
 
 - **Xoá nốt thư mục cài đặt của KOReader khi đóng tài liệu**: `transient.cleanup` (Đọc xong
