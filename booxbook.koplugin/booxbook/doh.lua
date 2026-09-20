@@ -1,6 +1,7 @@
 local ltn12 = require("ltn12")
 local socket = require("socket")
 local Fault = require("booxbook.fault")
+local Async = require("booxbook.async")
 
 local Dns = {}
 -- http.lua installs its budget reader here so a connect cannot outlive the
@@ -13,8 +14,8 @@ local DOH_MAX_BODY = 64 * 1024
 -- Short on purpose. A DoH lookup is tiny, and a content connection that has not
 -- answered in a few seconds is almost always a dead host. The old 60s timeout
 -- multiplied by every address and retry was freezing the UI thread for minutes.
-local DOH_TIMEOUT = 5
-local TLS_TIMEOUT = 8
+local DOH_TIMEOUT = 4
+local TLS_TIMEOUT = 5
 local MAX_ADDRESSES = 3
 
 local function dnsNameMatches(pattern, host)
@@ -110,6 +111,8 @@ local function connector(resolve, fallback, cafile, default_timeout)
                 for index, address in ipairs(items) do
                     if index > MAX_ADDRESSES then break end
                     if Dns.remaining and Dns.remaining() and Dns.remaining() <= 0 then break end
+                    -- Give the UI thread a turn between addresses too.
+                    Async.step()
                     local result, err = tlsSocket(host, port, address, params, cafile ~= nil, perAttempt())
                     if result then
                         self.sock = result

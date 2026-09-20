@@ -56,6 +56,33 @@ local function online(message, action, done, budget)
     end)
 end
 
+-- Same contract as online(), but the work runs resumably: the transport hands the
+-- UI thread back between requests, so loading a long table of contents (dozens of
+-- requests) no longer blocks input long enough for Android to call KOReader
+-- unresponsive. Downloads keep online() because they need Trapper's progress line
+-- and its tap-to-cancel.
+local function onlineResumable(message, action, done, budget)
+    UIManager:nextTick(function()
+        Network.whenOnline(function()
+            if busy then notify(_("Đang tải DocLN, vui lòng chờ.")); return end
+            busy = true
+            local Http = require("booxbook.http")
+            local Async = require("booxbook.async")
+            Async.run(function()
+                -- Outside Trapper:wrap there is no progress widget to fill in.
+                pcall(Trapper.info, Trapper, message)
+                return Http.withBudget(budget, action)
+            end, function(ok, result, err)
+                busy = false
+                pcall(Trapper.clear, Trapper)
+                if not ok then notify(tostring(result)); return end
+                if not result then notify(tostring(err or result)); return end
+                UIManager:nextTick(function() done(result) end)
+            end)
+        end)
+    end)
+end
+
 local function dropClosedGrid()
     if session.grid and session.grid._closed then
         session.grid = nil
@@ -113,7 +140,7 @@ local function applyPage(result, site_page, offset)
 end
 
 local function fetchList(site_page, offset)
-    online(_("Đang tải danh sách truyện…"), function()
+    onlineResumable(_("Đang tải danh sách truyện…"), function()
         if session.mode == "search" then
             return Docln.search(session.query, site_page)
         end
@@ -351,7 +378,7 @@ end
 
 function Novels.showSeries(ref, adapter)
     adapter = adapter or Docln
-    online(_("Đang lấy mục lục…"), function()
+    onlineResumable(_("Đang lấy mục lục…"), function()
         -- A long series paginates for a while; the table of contents gets its own
         -- ceiling so a slow source keeps what it read instead of timing out early.
         local Http = require("booxbook.http")
@@ -417,7 +444,7 @@ function Novels.prevPage()
         return
     end
     if session.site_page > 1 then
-        online(_("Đang tải danh sách truyện…"), function()
+        onlineResumable(_("Đang tải danh sách truyện…"), function()
             if session.mode == "search" then
                 return Docln.search(session.query, session.site_page - 1)
             end

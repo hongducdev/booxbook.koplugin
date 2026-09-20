@@ -6,13 +6,14 @@ local RateLimit = require("booxbook.rate_limit")
 local Settings = require("booxbook.store.settings")
 local Dns = require("booxbook.doh")
 local Fault = require("booxbook.fault")
+local Async = require("booxbook.async")
 
 local Http = {
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
     MAX_BODY = 2 * 1024 * 1024,
     -- One request must not block the UI thread for long.
-    DEFAULT_TIMEOUT = 6,
-    DEFAULT_MAXTIME = 15,
+    DEFAULT_TIMEOUT = 5,
+    DEFAULT_MAXTIME = 10,
     -- One user action (open a source, list, table of contents, one chapter) gets
     -- OP_TIMEOUT. A table of contents may legitimately paginate for a long series,
     -- so it gets its own ceiling. Bulk jobs (CBZ/EPUB/cloud download) get
@@ -390,6 +391,10 @@ function Http.request(opts)
         if opts.allow_url and not opts.allow_url(url) then
             return false, "URL not allowed"
         end
+        -- Hand the UI thread back between requests when we are inside a
+        -- resumable action: this is what keeps Android from calling us
+        -- unresponsive while a long table of contents loads.
+        Async.step()
         attempts = attempts + 1
         if Http.expired() then
             return false, "operation-timeout", nil, nil

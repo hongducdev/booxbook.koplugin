@@ -190,9 +190,18 @@ không phản hồi (ANR) chỉ sau ~5 giây, nên mọi đường mạng đều
   `Fault.clean(text)` chỉ bỏ tiền tố vị trí, dùng ở tầng HTTP/DoH.
 - Không nhánh nào im lặng: guard `busy` cũng hiện "Đang tải, vui lòng chờ."
 
-**Còn lại (Phase 2, chưa làm):** fetch vẫn chạy đồng bộ trên main thread, nên ngân sách 20s
-vẫn có thể bị Android coi là không phản hồi nếu người dùng chạm liên tục trong lúc chờ.
-Muốn hết hẳn phải chạy fetch trong coroutine và nhường `UIManager:nextTick` giữa các request.
+**Resumable (Phase 2, đã làm cho các đường "load")** — `booxbook/async.lua`: một coroutine
+nhỏ, `Async.step()` được `Http.request` và vòng thử địa chỉ của DoH gọi trước mỗi bước mạng.
+Trong `Async.run` nó `coroutine.yield()`, scheduler nhường `UIManager:nextTick` rồi resume — nên
+mỗi request chỉ chặn main thread trong thời gian của chính nó (≤ 5s), giữa các request UI vẫn vẽ
+và nhận chạm (hết ANR khi mục lục dài). Ngoài `Async.run` thì `Async.step()` là no-op, nên
+morning-sync, cloud, test và mọi caller cũ giữ nguyên hành vi đồng bộ.
+Yield qua `pcall` là tính năng của LuaJIT nên `withBudget`/`runWithBudget` vẫn dùng được.
+
+Áp dụng cho các đường load: danh sách/tìm kiếm/phân trang của DocLN và các nguồn chữ
+(`onlineResumable` trong `ui/novels.lua`), danh sách và mục lục truyện tranh (`ui/comic-page.lua`).
+Đường **tải** (CBZ, khoảng chương, EPUB) vẫn dùng `Trapper:wrap` đồng bộ vì cần dòng tiến trình
+và chạm-để-huỷ; chúng chỉ được giới hạn bởi `BULK_TIMEOUT` và timeout từng request.
 
 ## UI và mặc định
 

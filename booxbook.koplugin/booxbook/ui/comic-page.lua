@@ -33,6 +33,7 @@ function Page.create(adapter)
     local name = adapter.name or adapter.id
     local loading = view.loading and _(view.loading) or _("Đang tải tập %s…")
     local UI = { adapter = adapter, view = view }
+    local Async = require("booxbook.async")
     local busy = false
 
     -- Every failure reaches the reader as a sentence, never as a file:line.
@@ -57,6 +58,29 @@ function Page.create(adapter)
                     busy = false
                     Trapper:clear()
                     if not ok or not result then notify(ok and err or result); return end
+                    UIManager:nextTick(function() done(result) end)
+                end)
+            end)
+        end)
+    end
+
+    -- Same contract, resumable: lists and tables of contents yield between
+    -- requests so Android never sees a blocked main thread. CBZ downloads keep
+    -- online() because they need the progress line and tap-to-cancel.
+    local function onlineResumable(message, action, done, budget)
+        UIManager:nextTick(function()
+            Network.whenOnline(function()
+                if busy then notify(_("Đang tải, vui lòng chờ.")); return end
+                busy = true
+                local Http = require("booxbook.http")
+                Async.run(function()
+                    pcall(Trapper.info, Trapper, message)
+                    return Http.withBudget(budget, action)
+                end, function(ok, result, err)
+                    busy = false
+                    pcall(Trapper.clear, Trapper)
+                    if not ok then notify(tostring(result)); return end
+                    if not result then notify(tostring(err or result)); return end
                     UIManager:nextTick(function() done(result) end)
                 end)
             end)
@@ -149,7 +173,7 @@ function Page.create(adapter)
 
     function UI.list(kind, query, page, grid, last_screen)
         page = page or 1
-        online(_("Đang tải danh sách truyện…"), function()
+        onlineResumable(_("Đang tải danh sách truyện…"), function()
             if query then return adapter.search(query, page) end
             return adapter.browse(kind, page)
         end, function(result)
@@ -256,7 +280,7 @@ function Page.create(adapter)
     end
 
     function UI.showSeries(ref)
-        online(_("Đang lấy mục lục…"), function() return adapter.getSeries(ref) end, function(series)
+        onlineResumable(_("Đang lấy mục lục…"), function() return adapter.getSeries(ref) end, function(series)
             local first_ch = series.chapters and series.chapters[1]
             local ref_first = first_ch and adapter.parseRef and adapter.parseRef(first_ch.url or first_ch)
             if ref_first and Download.writeManifest then

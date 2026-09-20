@@ -35,6 +35,23 @@
 - Chưa làm (Phase 2): fetch vẫn đồng bộ trên main thread, nên ngân sách 20s vẫn có thể bị coi là
   ANR nếu chạm liên tục trong lúc chờ. Cần coroutine + `nextTick` giữa các request.
 
+### Phase 2 — hết ANR cho các đường load
+
+- `booxbook/async.lua`: coroutine + nhường `UIManager:nextTick` giữa các bước mạng; `Http.request`
+  và vòng địa chỉ của DoH gọi `Async.step()`. Ngoài `Async.run` thì no-op, nên caller cũ (morning-sync,
+  cloud, test) không đổi hành vi.
+- Áp dụng cho danh sách / tìm kiếm / phân trang / **mục lục** (`onlineResumable` trong novels và
+  comic-page). Đường **tải** giữ `Trapper:wrap` đồng bộ để còn dòng tiến trình và chạm-để-huỷ.
+- Hạ burst chặn lớn nhất: request 6s→**5s** (maxtime 15s→**10s**), DoH 4s/5s (trước 5s/8s).
+- Kiểm chứng: probe trực tiếp trên module thật cho thấy 2 request → **2 lần nhường UI**, giá trị trả
+  về nguyên vẹn, caller đồng bộ không đổi; `luajit tests/run.lua` đạt toàn bộ (fixture vốn chạy theo
+  hàng đợi `nextTick`, nên phần async được chạy thật trong test); trên Galaxy S24 FE chạm 6 lần
+  trong lúc tải mục lục **không ANR**, logcat không có lỗi Lua.
+- Chưa xác nhận: một lượt mục lục **thành công nhiều trang qua mạng thật** trên đường async chưa
+  quan sát được trên thiết bị (truyenfull.live đang rate-limit những lần thử hôm nay); thông báo lỗi
+  hiện ra giống hệt bản đồng bộ trước đó. Đường tải vẫn có thể bị ANR khi mạng rất chậm vì phải giữ
+  modal Trapper.
+
 ## Chưa phát hành — dọn trùng lặp nguồn
 
 - **Một trang UI chung cho mọi nguồn**: thêm `booxbook/ui/source-page.lua` (truyện chữ) và
