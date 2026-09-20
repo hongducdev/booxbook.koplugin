@@ -503,6 +503,17 @@ function BooxBook:settingsMenu()
                 }
             end,
         },
+        -- Appended last on purpose: settingsMenu() groups items by array index, so
+        -- inserting in the middle silently regroups every following setting.
+        {
+            text = _("Ảnh bìa trong danh sách (tắt cho nhanh)"),
+            checked_func = function()
+                return Settings.listCovers()
+            end,
+            callback = function()
+                Settings.set("list_covers", not Settings.listCovers())
+            end,
+        },
     }
     return {
         { text = _("Đọc và tải"), sub_item_table = { items[4], items[5], items[6], items[7], items[8] } },

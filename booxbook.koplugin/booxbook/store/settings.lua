@@ -6,6 +6,10 @@ local DEFAULTS = {
     wifi_label = "",
     delay_ms = 1200,
     include_images = true,
+    -- Thumbnails in the news and novels lists. Separate from include_images so a
+    -- reader can keep article pictures while making lists open without any cover
+    -- download.
+    list_covers = true,
     covers_max_bytes = 50 * 1024 * 1024,
     novel_epub = false,
     novel_keep_html = true,
@@ -108,6 +112,10 @@ end
 
 function Settings.includeImages()
     return Settings.get("include_images") == true
+end
+
+function Settings.listCovers()
+    return Settings.get("list_covers") == true
 end
 
 function Settings.adultContent()

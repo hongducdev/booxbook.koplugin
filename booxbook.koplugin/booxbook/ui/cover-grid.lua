@@ -56,7 +56,7 @@ function CoverGrid:init()
     self.site_page = self.site_page or 1
     self.has_more = not not self.has_more
     self.source_id = self.source_id or "unknown"
-    if self.covers_enabled == nil then self.covers_enabled = Settings.includeImages() end
+    if self.covers_enabled == nil then self.covers_enabled = Settings.listCovers() end
     self._cover_job = false
     self._cover_failed = {}
     PagedScreen.init(self)

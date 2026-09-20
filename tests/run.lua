@@ -360,7 +360,7 @@ for _, group in ipairs(settings_groups) do
 end
 assert_eq(table.concat(group_names, ","), "Đọc và tải,Bộ nhớ,Nguồn và cookie,OneDrive,Hệ thống",
     "settings groups follow task order")
-assert_eq(setting_count, 22, "grouping preserves every setting")
+assert_eq(setting_count, 23, "grouping preserves every setting")
 local toggle_count = 0
 for _, group in ipairs(settings_groups) do
     for _, item in ipairs(group.sub_item_table) do
@@ -483,6 +483,7 @@ dofile("tests/news-images.lua")
 dofile("tests/doh.lua")
 dofile("tests/fault.lua")
 dofile("tests/http-budget.lua")
+dofile("tests/list-covers.lua")
 dofile("tests/news-http.lua")
 dofile("tests/docln.lua")
 dofile("tests/wattpad.lua")
