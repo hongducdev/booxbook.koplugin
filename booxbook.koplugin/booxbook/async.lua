@@ -12,9 +12,14 @@ local Async = {}
 local running = nil
 
 -- Called by the transport before each blocking step.
+-- Yielding is not possible on every stack: LuaSocket's http.request calls our DoH
+-- connector from inside a C function, and LuaJIT then raises "attempt to yield
+-- across C-call boundary". Failing to yield is not fatal — that request simply
+-- blocks a little longer — so the attempt is contained here instead of breaking
+-- the whole fetch.
 function Async.step()
     if running and coroutine.running() == running then
-        coroutine.yield()
+        pcall(coroutine.yield)
     end
 end
 

@@ -1,7 +1,6 @@
 local ltn12 = require("ltn12")
 local socket = require("socket")
 local Fault = require("booxbook.fault")
-local Async = require("booxbook.async")
 
 local Dns = {}
 -- http.lua installs its budget reader here so a connect cannot outlive the
@@ -111,8 +110,6 @@ local function connector(resolve, fallback, cafile, default_timeout)
                 for index, address in ipairs(items) do
                     if index > MAX_ADDRESSES then break end
                     if Dns.remaining and Dns.remaining() and Dns.remaining() <= 0 then break end
-                    -- Give the UI thread a turn between addresses too.
-                    Async.step()
                     local result, err = tlsSocket(host, port, address, params, cafile ~= nil, perAttempt())
                     if result then
                         self.sock = result
