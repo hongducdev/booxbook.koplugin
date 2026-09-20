@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>BooxBook — Đọc báo & truyện offline trong KOReader</title>
-<meta name="description" content="BooxBook là plugin KOReader để đọc báo RSS và truyện chữ, truyện tranh offline trên máy đọc sách. Miễn phí, mã nguồn mở AGPL-3.0." />
+<meta name="description" content="BooxBook là plugin KOReader để đọc báo RSS và truyện chữ, truyện tranh offline trên máy đọc sách — mọi lượt tải có trần thời gian nên không treo máy, lỗi hiện thành câu tiếng Việt, và có chế độ đọc chương tranh không giữ file. Miễn phí, mã nguồn mở AGPL-3.0." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,750&family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -22,6 +22,7 @@
     </a>
     <nav class="nav" aria-label="Điều hướng chính">
       <a href="#tinh-nang">Tính năng</a>
+      <a href="#moi">Mới</a>
       <a href="#cai-dat">Cài đặt</a>
       <a href="#huong-dan">Hướng dẫn</a>
       <a href="#bao-chi">Báo chí</a>
@@ -41,7 +42,7 @@
     <div class="hero-copy">
       <p class="kicker"><span class="dot" aria-hidden="true"></span> Plugin KOReader · AGPL-3.0 · Tiếng Việt</p>
       <h1>Đọc báo &amp; truyện<br /><span class="ink-accent">offline</span> trên<br />máy đọc sách.</h1>
-      <p class="lede">BooxBook tải HTML về máy để đọc trong KOReader — 17 đầu báo với 633 kênh RSS, truyện chữ từ 6 nguồn, truyện tranh CBZ, thư viện cá nhân và gửi sách qua Wi-Fi. Không tài khoản, không paywall, không VIP.</p>
+      <p class="lede">BooxBook tải HTML về máy để đọc trong KOReader — 17 đầu báo với 633 kênh RSS, truyện chữ từ 6 nguồn, truyện tranh CBZ, thư viện cá nhân và gửi sách qua Wi-Fi. Mỗi lượt tải đều có trần thời gian và lỗi hiện thành câu tiếng Việt, nên mạng chậm không làm treo máy. Không tài khoản, không paywall, không VIP.</p>
       <div class="cta-row">
         <a class="btn btn-accent" href="#cai-dat">Cài trong 5 bước</a>
         <a class="btn btn-ghost" href="#huong-dan">Xem hướng dẫn</a>
@@ -104,27 +105,76 @@
           <li>Số bài mỗi danh mục: 1–20 tiêu đề</li>
           <li>Tự xóa HTML báo sau khi đọc xong (tùy chọn)</li>
           <li>Fallback tóm tắt RSS khi toàn văn lỗi</li>
+          <li><span><strong>Tìm trong tin đã tải</strong>: tìm toàn văn trong bài đã lưu, không phân biệt dấu</span></li>
         </ul>
       </article>
       <article class="feat feat-side">
         <p class="feat-tag">Truyện chữ · 6 nguồn</p>
         <h3>Tải khoảng chương, đọc offline.</h3>
-        <p>DocLN · Wattpad · Sangtacviet · MeTruyenCV · TVTruyen · Truyện Full. Tìm / duyệt grid bìa, tải khoảng / toàn bộ / mở chương bất kỳ.</p>
+        <p>DocLN · Wattpad · Sangtacviet · MeTruyenCV · TVTruyen · Truyện Full. Tìm / duyệt grid bìa, <strong>duyệt theo thể loại</strong> (TVTruyen 63, Truyện Full 46, nhóm 18+ ẩn đến khi bật), tải khoảng / toàn bộ / mở chương bất kỳ.</p>
         <code class="path">novels/&lt;nguồn&gt;/&lt;id&gt;/ + index.json</code>
       </article>
       <article class="feat feat-side">
         <p class="feat-tag">Truyện tranh · CBZ · 2 nguồn</p>
         <h3>Truyện Tuổi Thơ + TruyenQQ từng tập.</h3>
-        <p>Duyệt Mới cập nhật / Lượt xem, tải một / khoảng / toàn bộ tập, tải tiếp khi dở. Mỗi tập một file CBZ, mặc định hiển thị vừa trang. Đọc tới cuối tập được hỏi mở / tải tiếp tập kế.</p>
+        <p>Duyệt Mới cập nhật / Lượt xem, tải một / khoảng / toàn bộ tập, tải tiếp khi dở. Mỗi tập một file CBZ, mặc định hiển thị vừa trang. Đọc tới cuối tập được hỏi mở / tải tiếp tập kế. Bật <strong>Đọc xong không lưu</strong> để đọc mà không giữ file: chương dài mở ngay sau 12 trang đầu, đóng tài liệu là sạch.</p>
       </article>
       <article class="feat feat-wide">
         <div>
           <p class="feat-tag">EPUB · Thư viện · Wi-Fi</p>
           <h3>Xuất EPUB, quản lý file, gửi sách không dây.</h3>
-          <p>Bật <strong>Lưu truyện thành EPUB</strong> để mỗi khoảng chương có file <code>chapters-&lt;từ&gt;-&lt;đến&gt;.epub</code> kèm mục lục, bìa và metadata gốc. <strong>Thư viện</strong> mở thư mục tải bằng FileManager KOReader. <strong>Gửi sách qua Wi-Fi</strong>: cùng mạng → quét QR → gửi nhiều file tới 512 MiB.</p>
+          <p>Bật <strong>Lưu truyện thành EPUB</strong> để mỗi khoảng chương có file <code>chapters-&lt;từ&gt;-&lt;đến&gt;.epub</code> kèm mục lục, bìa và metadata gốc — mọi HTML/EPUB sinh ra dùng chung khối CSS đọc trên e-ink và không ghi đè typography của KOReader. <strong>Thư viện</strong> mở thư mục tải bằng FileManager KOReader. <strong>Gửi sách qua Wi-Fi</strong>: cùng mạng → quét QR → gửi nhiều file tới 512 MiB.</p>
         </div>
         <ul class="format-list" aria-label="Định dạng gửi qua Wi-Fi">
           <li>EPUB</li><li>PDF</li><li>CBZ</li><li>CBR</li><li>FB2</li><li>MOBI</li><li>AZW</li><li>DJVU</li><li>TXT</li><li>DOC</li><li>CHM</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <!-- WHAT'S NEW -->
+  <section class="wrap section" id="moi">
+    <div class="sec-head">
+      <p class="kicker">Mới ở v{{BOOXBOOK_VERSION}}</p>
+      <h2>Đọc nhanh hơn, không treo máy,<br />không để lại dấu vết.</h2>
+      <p>Các bản gần đây làm lại ba thứ: đọc chương tranh mà không giữ file, mọi lượt tải có trần thời gian, và lỗi hiện thành câu tiếng Việt thay vì mã nguồn.</p>
+    </div>
+    <div class="feat-grid">
+      <article class="feat feat-big">
+        <p class="feat-tag">Đọc xong không lưu</p>
+        <h3>Đọc chương tranh mà máy không đầy.</h3>
+        <p>Bật công tắc ở cuối menu nguồn — <strong>Truyện → TruyenQQ → Đọc xong không lưu</strong>. Chương tải trong phiên này bị xoá ngay khi bạn đóng tài liệu, kể cả metadata KOReader ghi kèm, nên không còn thư mục rác.</p>
+        <ul class="check">
+          <li><span>Chương dài hơn 12 trang mở ngay sau 12 trang đầu; phần còn lại tải khi chọn lại chương đó</span></li>
+          <li><span>Bản cắt dở nằm ở tên ẩn <code>.chap-N-first.cbz</code>, không chiếm tên tập chính</span></li>
+          <li><span>Chương đã có trên máy từ trước <strong>không bao giờ</strong> bị xoá kèm</span></li>
+        </ul>
+        <code class="path">comics/&lt;nguồn&gt;/&lt;bộ&gt;/.&lt;tập&gt;-first.cbz</code>
+      </article>
+      <article class="feat feat-side">
+        <p class="feat-tag">Không còn treo máy</p>
+        <h3>Mọi lượt tải đều có trần.</h3>
+        <p>Một request 10–20 giây, một hành động 20 giây, mục lục 60 giây, lượt tải lớn 300 giây. Giữa các request plugin trả lại luồng giao diện nên Android không còn hiện “KOReader không phản hồi” khi mạng chậm hay host chết. Mục lục quá dài dừng ở 60 trang và giữ phần đã lấy.</p>
+      </article>
+      <article class="feat feat-side">
+        <p class="feat-tag">Lỗi là câu tiếng Việt</p>
+        <h3>“Không kết nối được tới máy chủ.”</h3>
+        <p>Thay cho <code>doh.lua:41: connection refused</code>, mọi lỗi đi qua một lớp đổi thành câu đọc được: hết thời gian, lỗi TLS, 403 / 404 / 429 / 5xx, Cloudflare. Đang bận thì báo “Đang tải, vui lòng chờ.” thay vì im lặng; câu đã rõ nghĩa theo từng nguồn được giữ nguyên.</p>
+      </article>
+      <article class="feat feat-side">
+        <p class="feat-tag">Tìm &amp; duyệt</p>
+        <h3>Tìm offline, duyệt theo thể loại.</h3>
+        <ul class="check">
+          <li><span><strong>Tìm trong tin đã tải</strong>: toàn văn bài báo đã lưu, không phân biệt dấu (trần 200 file / 30 kết quả)</span></li>
+          <li><span><strong>Thể loại</strong> cho TVTruyen (63) và Truyện Full (46) — nhóm 18+ chỉ hiện khi bật Nội dung 18+</span></li>
+        </ul>
+      </article>
+      <article class="feat feat-side">
+        <p class="feat-tag">Đọc trên e-ink</p>
+        <h3>Danh sách nhanh, bản đọc gọn.</h3>
+        <ul class="check">
+          <li><span>Tắt <strong>Ảnh bìa trong danh sách</strong> (mục cuối <strong>Cài đặt</strong>) để danh sách và kết quả tìm kiếm không phải chờ ảnh</span></li>
+          <li><span><strong>CSS đọc chung</strong> cho bài báo, chương tải về và EPUB: ảnh vừa bề rộng, figure, blockquote, bảng — không ghi đè cỡ chữ, giãn dòng hay căn lề của KOReader</span></li>
         </ul>
       </article>
     </div>
@@ -202,6 +252,7 @@
           <li><strong>Chạm tiêu đề</strong>: tải toàn văn và mở bằng KOReader; lỗi thì dùng tóm tắt RSS.</li>
           <li><strong>Tin đã tải</strong>: đọc lại offline. <strong>Thêm RSS tùy chỉnh</strong>: dán URL http(s), nằm trong nhóm riêng.</li>
           <li><strong>Số bài mỗi danh mục</strong>: chỉnh 1–20 tiêu đề hiển thị.</li>
+          <li><strong>Tìm trong tin đã tải</strong>: tìm toàn văn trong bài đã lưu, không phân biệt dấu; kết quả hiện trích đoạn quanh từ khóa.</li>
         </ol>
       </article>
       <article id="panel-truyen" role="tabpanel" aria-labelledby="tab-truyen" hidden>
@@ -219,6 +270,7 @@
         <ol>
           <li>Vào <strong>Truyện → Truyện Tuổi Thơ / TruyenQQ</strong>, duyệt Mới cập nhật / Lượt xem / Truyện mới / Thịnh hành, hoặc tìm tên / dán URL bộ &amp; tập.</li>
           <li>Icon menu mục lục → <strong>Tải khoảng tập / Tải toàn bộ tập</strong>. Mỗi tập một CBZ riêng.</li>
+          <li><strong>Đọc xong không lưu</strong> (mục cuối menu nguồn): chương tải trong phiên bị xoá khi đóng tài liệu; chương dài mở ngay sau 12 trang đầu, chọn lại chương để tải đủ.</li>
           <li>Chạm thông báo tiến độ để tạm dừng / hủy / tiếp tục. Chọn lại tập để tải tiếp trang thiếu.</li>
           <li>Đọc tới cuối tập được hỏi mở tiếp (đã tải) hoặc tải tiếp tập kế; hết bộ thì báo đã đọc hết.</li>
           <li>Đọc offline ở <strong>Thư viện → comics → truyentuoitho / truyenqq → tên bộ → tập.cbz</strong>.</li>
@@ -299,6 +351,8 @@
             <li>Nội dung 18+: tắt mặc định · Ảnh minh họa: bật</li>
             <li>Lưu EPUB: tắt · Giữ HTML khi EPUB: bật</li>
             <li>Tự xóa HTML báo sau khi đọc xong: tắt</li>
+            <li>Đọc xong không lưu (menu nguồn tranh): tắt</li>
+            <li>Ảnh bìa trong danh sách: bật (tắt cho danh sách nhanh)</li>
             <li>Ảnh bìa trần 50 MB + mục dọn ảnh thừa</li>
           </ul>
         </div>
@@ -308,6 +362,7 @@
             <li><span>Báo đã mở</span><code>koreader/booxbook/news/&lt;feed-id&gt;/</code></li>
             <li><span>Chương truyện</span><code>koreader/booxbook/novels/&lt;nguồn&gt;/&lt;id&gt;/</code></li>
             <li><span>CBZ tranh</span><code>koreader/booxbook/comics/&lt;truyentuoitho|truyenqq&gt;/…</code></li>
+            <li><span>Tập đọc tạm</span><code>comics/&lt;bộ&gt;/.&lt;tập&gt;-first.cbz (tự xoá khi đóng)</code></li>
             <li><span>Cài đặt + cookie</span><code>koreader/settings/booxbook.lua</code></li>
           </ul>
         </div>
@@ -337,6 +392,14 @@
       <div class="faq-item">
         <button class="faq-q" aria-expanded="false" aria-controls="faq-a4" id="faq-q4"><span>Đọc hết tập / chương rồi sao?</span><span class="faq-icon" aria-hidden="true"></span></button>
         <div class="faq-a" id="faq-a4" role="region" aria-labelledby="faq-q4"><div class="faq-a-in"><p>Tới trang cuối, plugin hỏi mở tiếp nếu tập/chương kế đã tải, hỏi tải tiếp nếu chưa — hết bộ thì báo đã đọc hết. Mất mạng khi dò mục lục thì bấm <strong>Thử lại</strong>.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq-a6" id="faq-q6"><span>Đọc xong không lưu dùng thế nào?</span><span class="faq-icon" aria-hidden="true"></span></button>
+        <div class="faq-a" id="faq-a6" role="region" aria-labelledby="faq-q6"><div class="faq-a-in"><p>Vào nguồn truyện tranh (<strong>Truyện → TruyenQQ</strong>), chọn mục cuối <strong>“Đọc xong không lưu: BẬT”</strong>. Từ đó chương tải trong phiên vẫn mở đọc bình thường nhưng bị xoá khi bạn đóng tài liệu, kể cả metadata KOReader ghi kèm. Chương dài hơn 12 trang mở ngay sau 12 trang đầu và hiện thông báo “Đang mở 12 trang đầu” — chọn lại chương đó để tải đủ. Tập đã có trên máy từ trước không bị xoá.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq-a7" id="faq-q7"><span>Mạng chậm hoặc máy chủ chết thì sao?</span><span class="faq-icon" aria-hidden="true"></span></button>
+        <div class="faq-a" id="faq-a7" role="region" aria-labelledby="faq-q7"><div class="faq-a-in"><p>Mỗi request có trần 10–20 giây, một hành động 20 giây, mục lục 60 giây, lượt tải lớn 300 giây; giữa các request plugin trả lại luồng giao diện nên máy vẫn dùng được, không bị “KOReader không phản hồi”. Hết thời gian thì dừng và báo “Việc tải mất quá nhiều thời gian nên đã dừng lại.”, còn lỗi mạng hiện thành câu tiếng Việt (ví dụ “Không kết nối được tới máy chủ.”) thay vì đường dẫn file và số dòng.</p></div></div>
       </div>
       <div class="faq-item">
         <button class="faq-q" aria-expanded="false" aria-controls="faq-a5" id="faq-q5"><span>Phát triển / test thế nào?</span><span class="faq-icon" aria-hidden="true"></span></button>
@@ -395,6 +458,7 @@
       <button type="button">Cập nhật bản mới ra sao?</button>
       <button type="button">Không tải được chương?</button>
       <button type="button">File EPUB là gì?</button>
+      <button type="button">Đọc xong không lưu là gì?</button>
     </div>
     <label class="chat-label" for="chat-input">Câu hỏi của bạn</label>
     <textarea id="chat-input" rows="3" placeholder="VD: Cài BooxBook trong KOReader thế nào?"></textarea>
