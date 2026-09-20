@@ -14,8 +14,8 @@ local DOH_MAX_BODY = 64 * 1024
 -- Short on purpose. A DoH lookup is tiny, and a content connection that has not
 -- answered in a few seconds is almost always a dead host. The old 60s timeout
 -- multiplied by every address and retry was freezing the UI thread for minutes.
-local DOH_TIMEOUT = 4
-local TLS_TIMEOUT = 5
+local DOH_TIMEOUT = 8
+local TLS_TIMEOUT = 10
 local MAX_ADDRESSES = 3
 
 local function dnsNameMatches(pattern, host)

@@ -15,8 +15,8 @@ local Http = {
     -- Android's ~5s input-dispatch watchdog: the first value is the per-operation
     -- stall timeout (a stalled socket aborts here), maxtime still lets a slow but
     -- streaming transfer finish.
-    DEFAULT_TIMEOUT = 4,
-    DEFAULT_MAXTIME = 10,
+    DEFAULT_TIMEOUT = 10,
+    DEFAULT_MAXTIME = 20,
     -- One user action (open a source, list, table of contents, one chapter) gets
     -- OP_TIMEOUT. A table of contents may legitimately paginate for a long series,
     -- so it gets its own ceiling. Bulk jobs (CBZ/EPUB/cloud download) get
