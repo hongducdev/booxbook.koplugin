@@ -170,7 +170,7 @@ không phản hồi (ANR) chỉ sau ~5 giây, nên mọi đường mạng đều
   bên trong có lấy mục lục (OP) thì vẫn giữ ngân sách dài.
 - `Http.check` trước **mỗi** request và **mỗi** lần chờ rate-limit; hết ngân sách thì trả
   `false, "operation-timeout"` ngay chứ không thử lại.
-- Timeout một request: `DEFAULT_TIMEOUT = 6s`, `DEFAULT_MAXTIME = 15s`; timeout được **cắt**
+- Timeout một request: `DEFAULT_TIMEOUT = 4s`, `DEFAULT_MAXTIME = 10s`; timeout được **cắt**
   theo thời gian còn lại để request cuối không vượt quá ngân sách. Tải file giữ 60s/180s.
 - `RateLimit.wait(host, delay_ms, max_ms)` trả `false` khi phải ngủ quá `max_ms`, để caller
   dừng trước khi gửi request sớm.
@@ -189,6 +189,13 @@ không phản hồi (ANR) chỉ sau ~5 giây, nên mọi đường mạng đều
   nên đã dừng lại.", còn lại → "Không tải được nội dung. Kiểm tra Wi-Fi rồi thử lại."
   `Fault.clean(text)` chỉ bỏ tiền tố vị trí, dùng ở tầng HTTP/DoH.
 - Không nhánh nào im lặng: guard `busy` cũng hiện "Đang tải, vui lòng chờ."
+
+**Chặn UI — ai đã nhường sẵn:** `Trapper` của KOReader cũng chạy trên coroutine và `Trapper:info`
+gọi `coroutine.yield()` (0,1s, để xử lý chạm huỷ) khi widget hiện hành là InfoMessage — mà hộp
+"Đang tải…" của plugin đúng là InfoMessage. Đường **tải** gọi `Trapper:info` sau mỗi ảnh nên **đã
+nhường UI từ trước**; đường **load** (mục lục/danh sách) không gọi gì giữa các request nên bị chặn —
+đó chính là chỗ `Async` vá. Vì vậy đơn vị chặn lớn nhất còn lại ở mọi đường mạng là **một request**
+(`DEFAULT_TIMEOUT = 4s`, dưới ngưỡng watchdog ~5s của Android).
 
 **Resumable (Phase 2, đã làm cho các đường "load")** — `booxbook/async.lua`: một coroutine
 nhỏ, `Async.step()` được `Http.request` và vòng thử địa chỉ của DoH gọi trước mỗi bước mạng.

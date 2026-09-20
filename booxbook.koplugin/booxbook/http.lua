@@ -11,8 +11,11 @@ local Async = require("booxbook.async")
 local Http = {
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
     MAX_BODY = 2 * 1024 * 1024,
-    -- One request must not block the UI thread for long.
-    DEFAULT_TIMEOUT = 5,
+    -- One request must not block the UI thread for long. 4s is deliberately under
+    -- Android's ~5s input-dispatch watchdog: the first value is the per-operation
+    -- stall timeout (a stalled socket aborts here), maxtime still lets a slow but
+    -- streaming transfer finish.
+    DEFAULT_TIMEOUT = 4,
     DEFAULT_MAXTIME = 10,
     -- One user action (open a source, list, table of contents, one chapter) gets
     -- OP_TIMEOUT. A table of contents may legitimately paginate for a long series,

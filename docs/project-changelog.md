@@ -49,8 +49,14 @@
   trong lúc tải mục lục **không ANR**, logcat không có lỗi Lua.
 - Chưa xác nhận: một lượt mục lục **thành công nhiều trang qua mạng thật** trên đường async chưa
   quan sát được trên thiết bị (truyenfull.live đang rate-limit những lần thử hôm nay); thông báo lỗi
-  hiện ra giống hệt bản đồng bộ trước đó. Đường tải vẫn có thể bị ANR khi mạng rất chậm vì phải giữ
-  modal Trapper.
+  hiện ra giống hệt bản đồng bộ trước đó.
+- Đường tải không còn là nguồn ANR riêng: đọc source KOReader cho thấy `Trapper` cũng chạy trên
+  coroutine và `Trapper:info` gọi `coroutine.yield()` (0,1s, để bắt chạm huỷ) khi widget hiện hành là
+  InfoMessage — hộp "Đang tải…" của plugin là InfoMessage, nên đường tải vốn đã nhường UI sau mỗi
+  ảnh (khớp với lượt tải CBZ 1,5MB trên máy vẫn hiện tiến trình và không ANR). Hạ nốt
+  `DEFAULT_TIMEOUT` 5s→**4s** để một request đơn lẻ nằm dưới ngưỡng watchdog ~5s của Android;
+  `maxtime` giữ 10s cho luồng chậm nhưng đang chảy. Vậy đơn vị chặn lớn nhất ở mọi đường mạng giờ là
+  một request.
 
 ## Chưa phát hành — dọn trùng lặp nguồn
 
