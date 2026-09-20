@@ -117,8 +117,9 @@ function Fault.message(text, subject)
         -- Already readable (per-source wording, our own Vietnamese). Only an
         -- exact transport code is translated: substring patterns must never run
         -- on text a reader is meant to see ("…chỉ lấy được 500 chương đầu."
-        -- would otherwise match the 5xx pattern).
-        return EXACT[raw:lower()] or raw
+        -- would otherwise match the 5xx pattern). A bare HTTP status is the one
+        -- case that is code-like on its own ("500" from Http.request).
+        return EXACT[raw:lower()] or (raw:match("^%d%d%d$") and Fault.cause(raw)) or raw
     end
 
     local stripped = Fault.clean(raw)

@@ -24,12 +24,22 @@ assert(Transient.enabled() == false, "off by default")
 assert(Transient.cleanup(path) == false, "an unmarked file is never deleted")
 assert(exists(path) and exists(meta), "unmarked chapter and sidecar survive")
 
+-- The setting is re-checked at close time: a reader who switched the feature off
+-- keeps the file.
 Transient.mark(path)
 assert(Transient.isMarked(path), "a fresh download is marked")
+assert(Transient.cleanup(path) == false, "switched off means nothing is deleted")
+assert(exists(path) and exists(meta), "the chapter survives a switched-off cleanup")
+assert(Transient.isMarked(path) == false, "the mark is dropped either way")
+
+local Settings = require("booxbook.store.settings")
+Settings.set("transient_comics", true)
+Transient.mark(path)
 assert(Transient.cleanup(path) == true, "a marked chapter is dropped on close")
 assert(not exists(path) and not exists(meta), "cbz and sidecar are gone")
 assert(Transient.cleanup(path) == false, "cleanup is idempotent")
 assert(Transient.isMarked(path) == false, "a cleaned path is forgotten")
+Settings.set("transient_comics", false)
 
 Transient.mark(nil)
 Transient.mark("")

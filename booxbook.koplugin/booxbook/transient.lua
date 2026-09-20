@@ -9,6 +9,19 @@ local Transient = {}
 
 local marked = {}
 
+-- KOReader may report a document path under a different alias than the one we
+-- wrote (Android: /sdcard vs /storage/emulated/0), so both sides are normalised
+-- before they are compared.
+local function normalize(path)
+    if type(path) ~= "string" or path == "" then return nil end
+    local ok, ffiutil = pcall(require, "ffi/util")
+    if ok and ffiutil and ffiutil.realpath then
+        local real = ffiutil.realpath(path)
+        if type(real) == "string" and real ~= "" then return real end
+    end
+    return path
+end
+
 function Transient.enabled()
     local ok, Settings = pcall(require, "booxbook.store.settings")
     return ok and type(Settings.transientComics) == "function" and Settings.transientComics() == true
@@ -16,19 +29,24 @@ end
 
 -- Called right after a fresh download, never for a file that already existed.
 function Transient.mark(path)
-    if type(path) ~= "string" or path == "" then return end
+    path = normalize(path)
+    if not path then return end
     marked[path] = true
 end
 
 function Transient.isMarked(path)
+    path = normalize(path)
     return path ~= nil and marked[path] == true
 end
 
 -- Delete a marked chapter and its sidecar once its document is closed.
--- Returns true when something was removed.
+-- Returns true when something was removed. A reader who switched the feature off
+-- keeps the file: the setting is re-checked here, not only when downloading.
 function Transient.cleanup(path)
-    if not Transient.isMarked(path) then return false end
+    path = normalize(path)
+    if path == nil or marked[path] ~= true then return false end
     marked[path] = nil
+    if not Transient.enabled() then return false end
     os.remove(path)
     os.remove(path .. ".meta.json")
     return true

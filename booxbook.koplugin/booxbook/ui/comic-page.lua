@@ -141,6 +141,7 @@ function Page.create(adapter)
         -- budget is spent once per chapter per session, so asking for the same
         -- chapter again downloads it in full instead of never getting there.
         local transient = Settings.transientComics() and not fast_opened[url]
+        local keep_nothing = Settings.transientComics()
         local budget_cancel = false
         online(string.format(loading, name), function()
             -- One CBZ is a bulk job: extend past the short budget `online` starts with.
@@ -170,7 +171,15 @@ function Page.create(adapter)
                     local packed = Download.packageStaging(result.url)
                     if packed then
                         local hidden = require("booxbook.transient").hiddenName(packed)
-                        if hidden and os.rename(packed, hidden) then packed = hidden end
+                        if hidden and os.rename(packed, hidden) then
+                            packed = hidden
+                        else
+                            -- Never leave a truncated CBZ at the canonical path: savedPath()
+                            -- would take it for a complete chapter from now on.
+                            os.remove(packed)
+                            notify(_("Không mở được bản tải trước; thử lại sau."))
+                            return
+                        end
                         require("booxbook.transient").mark(packed)
                         local pages = (result.partial and result.partial.downloaded) or FIRST_PAGES
                         notify(string.format(_("Đang mở %d trang đầu — chọn lại chương để tải đủ."), pages))
@@ -181,8 +190,10 @@ function Page.create(adapter)
                 UI.onChapterCancelled(result.url, result.partial)
                 return
             end
-            if Settings.transientComics() then
+            if keep_nothing then
                 -- Fresh download in this session: drop it when the document closes.
+                -- Uses the setting captured when the download STARTED, so toggling it
+                -- mid-download cannot change the outcome.
                 require("booxbook.transient").mark(result)
             end
             Catalog.clearStack(); ReaderUI:showReader(result)

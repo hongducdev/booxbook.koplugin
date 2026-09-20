@@ -269,7 +269,7 @@ function MorningSync.runIfDue(deps, on_progress, on_done)
                             local ok, series = require("booxbook.http").runWithBudget(nil, function()
                                 return adapter.getSeries(ref)
                             end)
-                            if ok and type(series) == "table" then
+                            if ok and type(series) == "table" and not series.truncated then
                                 local live = type(series.chapters) == "table" and #series.chapters or 0
                                 local new_count = Follow.checkUpdate(entry, live)
                                 Follow.noteChecked(saved_followed, entry.source_id, entry.id, live)

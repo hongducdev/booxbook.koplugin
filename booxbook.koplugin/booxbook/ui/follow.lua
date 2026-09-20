@@ -71,8 +71,14 @@ local function checkOne(entry, done)
                 -- Without the adapter's own message the reader would see "nil".
                 err_msg = tostring(failed or series)
             else
-                live = type(series.chapters) == "table" and #series.chapters or 0
-                new_count = Follow.checkUpdate(entry, live)
+                if series.truncated then
+                    -- A partial table of contents looks like chapters disappeared, and
+                    -- would corrupt the "chương mới" baseline.
+                    err_msg = _("Mục lục chưa đầy đủ, bỏ qua lần này.")
+                else
+                    live = type(series.chapters) == "table" and #series.chapters or 0
+                    new_count = Follow.checkUpdate(entry, live)
+                end
             end
         end)
         UIManager:nextTick(function()
