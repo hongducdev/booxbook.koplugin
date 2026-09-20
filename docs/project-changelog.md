@@ -1,6 +1,6 @@
 # Changelog
 
-## Chưa phát hành — giới hạn thời gian tải & lỗi dễ đọc
+## 0.0.17 — 2026-09-20
 
 - **Trần thời gian cho mọi hành động**: `booxbook/http.lua` có ngân sách theo hành động
   (`beginOperation`/`endOperation`/`remaining`/`expired`). Mặc định 20 giây cho một hành động,
@@ -57,6 +57,36 @@
   `DEFAULT_TIMEOUT` 5s→**4s** để một request đơn lẻ nằm dưới ngưỡng watchdog ~5s của Android;
   `maxtime` giữ 10s cho luồng chậm nhưng đang chảy. Vậy đơn vị chặn lớn nhất ở mọi đường mạng giờ là
   một request.
+
+### Đọc chương truyện tranh không giữ file
+
+- **Công tắc mới "Đọc xong không lưu"** (mục cuối menu nguồn truyện tranh, ví dụ
+  **Truyện → TruyenQQ**; lưu ở `transient_comics`, mặc định tắt): chương **tải trong phiên này**
+  được xoá ngay khi đóng tài liệu, nên đọc xong không để lại file. Chương đã có trong thư viện từ
+  trước **không** bị xoá — chỉ file do chính phiên hiện tại tải mới được đánh dấu, và công tắc được
+  đọc lại lúc xoá nên tắt giữa chừng vẫn giữ file.
+- **Chương dài mở sau 12 trang đầu**: chương nhiều hơn 12 trang được tải 12 trang đầu rồi mở ngay,
+  phần còn lại tải khi chọn lại chương đó (`FIRST_PAGES = 12`, ngân sách chỉ dùng một lần mỗi
+  chương mỗi phiên). Bản cắt dở **không** chiếm tên chuẩn: nó nằm ở tên ẩn `.chap-N-first.cbz` cùng
+  thư mục, nên `savedPath()` không bao giờ coi một chương cụt là đã tải xong và tên chuẩn vẫn trống
+  cho lần tải đủ sau đó. Thông báo "Đang mở 12 trang đầu — chọn lại chương để tải đủ." giải thích
+  điều vừa xảy ra.
+- **Công tắc riêng cho ảnh bìa trong danh sách** (`list_covers`, mục cuối **Cài đặt** — "Ảnh
+  bìa trong danh sách (tắt cho nhanh)", mặc định bật): tắt để danh sách chữ không phải chờ ảnh.
+- **Kiểm chứng trên Galaxy S24 FE (KOReader v2026.07 Android), 20/09/2026** — hai điều trước đó chỉ
+  có test đơn vị, nay xác nhận trên máy thật:
+  - *Chương dài*: **Hoa Sơn Tái Khởi** chương 2 (126 trang) tải đúng 12 trang vào
+    `.chap-2-first.cbz` (1,29 MB) kèm tiến trình "Tải ảnh: 8/126 — chạm để hủy", **không** sinh
+    `chap-2.cbz`, KOReader mở đúng file ẩn và hiện "Đang mở 12 trang đầu — chọn lại chương để tải
+    đủ." (thấy được sau thông báo "Opening file" của KOReader).
+  - *Xoá khi đóng*: đóng tài liệu bằng nút **File browser** trên thanh menu của KOReader → file ẩn
+    **biến mất**; ca tải đủ (chương ≤ 12 trang, bộ **Ông Xã Thú Tính**) cho kết quả tương tự với
+    `chap-1.cbz` (1,05 MB), trong khi `chap-0.cbz` có sẵn từ phiên trước **vẫn còn nguyên**.
+  - Hộp thoại **Đọc tiếp nối** của plugin thay đúng hộp mặc định của KOReader ở trang cuối; lượt
+    trước đó tưởng lỗi chỉ vì một cú chạm thừa đóng hộp của plugin.
+  - `luajit tests/run.lua` đạt toàn bộ; logcat không có lỗi Lua, không ANR.
+- Còn sót: KOReader vẫn giữ thư mục cài đặt `.chap-N-first.sdr` (`metadata.cbz.lua` ~2,6 KB) sau khi
+  file ẩn bị xoá. Chưa dọn trong bản này; muốn sạch thì `transient.cleanup` phải xoá luôn `<tên>.sdr`.
 
 ## Chưa phát hành — dọn trùng lặp nguồn
 

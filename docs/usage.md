@@ -225,7 +225,12 @@ Chưa xác minh giao diện và CBZ WebP trên Boox thật.
 3. Nguồn này chặn rate khá gắt (HTTP 429): gặp thì thử lại sau hoặc đổi mạng,
    plugin không tự retry dồn dập. Ảnh chỉ từ `truyenqqko.com` và CDN
    `hinhhinh.com` / `truyenvua.com`. Giới hạn 600 trang/tập như trên.
-4. **Đọc tiếp nối tập / chương**: xem mục Đọc tiếp nối tập/chương bên dưới.
+4. **Đọc xong không lưu** (mục cuối menu nguồn): bật để chương tải trong phiên này tự xoá khi
+   đóng tài liệu — đọc xong không để lại file. Chương dài hơn 12 trang được mở ngay sau 12 trang
+   đầu, phần còn lại tải khi chọn lại chương đó; bản cắt dở nằm ở tên ẩn `.chap-N-first.cbz` cùng
+   thư mục, không chiếm tên `<tập>.cbz` nên lần tải đủ sau đó vẫn đúng chỗ. Chương đã có trên máy
+   từ trước không bị xoá.
+5. **Đọc tiếp nối tập / chương**: xem mục Đọc tiếp nối tập/chương bên dưới.
 
 ## Đọc tiếp nối tập/chương
 
@@ -252,6 +257,7 @@ mới); truyện chữ dùng
 | Chương truyện | `koreader/booxbook/novels/<nguồn>/<id>/` |
 | Tập truyện tranh CBZ | `koreader/booxbook/comics/<truyentuoitho|truyenqq>/<bộ>/<tập>.cbz` |
 | Metadata đọc tiếp CBZ | `koreader/booxbook/comics/<nguồn>/<bộ>/<tập>.cbz.meta.json` + `manifest.json` |
+| Tập đọc tạm (**Đọc xong không lưu**) | `koreader/booxbook/comics/<nguồn>/<bộ>/.<tập>-first.cbz` (tự xoá khi đóng tài liệu) |
 | Sách nhận qua Wi-Fi/OneDrive | `koreader/booxbook/received/` |
 | Cài đặt + cookie | `koreader/settings/booxbook.lua` |
 
