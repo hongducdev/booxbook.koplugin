@@ -32,17 +32,32 @@ local function notify(text, subject)
     return require("booxbook.fault").notify(text, subject)
 end
 
+-- A resumable action can finish seconds later, when the reader has left this page
+-- or started another one. Only the newest action may touch the screen afterwards;
+-- a stale one must not open a widget over what the reader is doing now, nor clear
+-- the progress of the action that replaced it.
+local generation = 0
+local function beginAction()
+    generation = generation + 1
+    return generation
+end
+local function isCurrent(gen)
+    return generation == gen
+end
+
 local function online(message, action, done, budget)
     UIManager:nextTick(function()
         Network.whenOnline(function()
             if busy then notify(_("Đang tải DocLN, vui lòng chờ.")); return end
             busy = true
+            local gen = beginAction()
             Trapper:wrap(function()
                 local ok, result, err
                 local wrapped_ok, wrapped_err = pcall(function()
                     Trapper:info(message)
                     ok, result, err = require("booxbook.http").runWithBudget(budget, action)
                 end)
+                if not isCurrent(gen) then return end
                 busy = false
                 Trapper:clear()
                 if not wrapped_ok then
@@ -66,6 +81,7 @@ local function onlineResumable(message, action, done, budget)
         Network.whenOnline(function()
             if busy then notify(_("Đang tải DocLN, vui lòng chờ.")); return end
             busy = true
+            local gen = beginAction()
             local Http = require("booxbook.http")
             local Async = require("booxbook.async")
             Async.run(function()
@@ -73,6 +89,7 @@ local function onlineResumable(message, action, done, budget)
                 pcall(Trapper.info, Trapper, message)
                 return Http.withBudget(budget, action)
             end, function(ok, result, err)
+                if not isCurrent(gen) then return end
                 busy = false
                 pcall(Trapper.clear, Trapper)
                 if not ok then notify(tostring(result)); return end

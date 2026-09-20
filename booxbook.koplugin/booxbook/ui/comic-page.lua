@@ -52,15 +52,29 @@ function Page.create(adapter)
     end
 
     -- Serialise network work for this source and report failures in one place.
+    -- A resumable action can finish seconds later, when the reader has left this page
+    -- or started another one. Only the newest action may touch the screen afterwards,
+    -- and only it may clear the shared progress widget.
+    local generation = 0
+    local function beginAction()
+        generation = generation + 1
+        return generation
+    end
+    local function isCurrent(gen)
+        return generation == gen
+    end
+
     local function online(message, action, done, budget)
         UIManager:nextTick(function()
             Network.whenOnline(function()
                 if busy then notify(_("Đang tải, vui lòng chờ.")); return end
                 busy = true
+                local gen = beginAction()
                 Trapper:wrap(function()
                     local ok, result, err = require("booxbook.http").runWithBudget(budget, function()
                         Trapper:info(message); return action()
                     end)
+                    if not isCurrent(gen) then return end
                     busy = false
                     Trapper:clear()
                     if not ok or not result then notify(ok and err or result); return end
@@ -78,11 +92,13 @@ function Page.create(adapter)
             Network.whenOnline(function()
                 if busy then notify(_("Đang tải, vui lòng chờ.")); return end
                 busy = true
+                local gen = beginAction()
                 local Http = require("booxbook.http")
                 Async.run(function()
                     pcall(Trapper.info, Trapper, message)
                     return Http.withBudget(budget, action)
                 end, function(ok, result, err)
+                    if not isCurrent(gen) then return end
                     busy = false
                     pcall(Trapper.clear, Trapper)
                     if not ok then notify(tostring(result)); return end
