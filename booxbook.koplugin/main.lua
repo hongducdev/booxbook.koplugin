@@ -165,11 +165,50 @@ function BooxBook:showMainMenu()
                             { text = "Truyện Full", keep_menu_open = true, callback = function()
                                 require("booxbook.ui.truyenfull").openSource()
                             end },
+                            { text = _("Mê Truyện VN"), keep_menu_open = true, callback = function()
+                                require("booxbook.ui.metruyenvn").openSource()
+                            end },
+                            { text = _("Bàn Long VIP"), keep_menu_open = true, callback = function()
+                                require("booxbook.ui.blhvip").openSource()
+                            end },
+                            { text = "Storya", keep_menu_open = true, callback = function()
+                                require("booxbook.ui.storyaclick").openSource()
+                            end },
+                            { text = "AkayTruyen", keep_menu_open = true, callback = function()
+                                require("booxbook.ui.akaytruyen").openSource()
+                            end },
+                            { text = "DualeoTruyenFull", keep_menu_open = true, callback = function()
+                                require("booxbook.ui.dualeotruyenfull").openSource()
+                            end },
+                            { text = "AzTruyen", keep_menu_open = true, callback = function()
+                                require("booxbook.ui.aztruyen").openSource()
+                            end },
+                            { text = "XTruyen", keep_menu_open = true, callback = function()
+                                require("booxbook.ui.xtruyen").openSource()
+                            end },
+                            { text = "Truyendich", keep_menu_open = true, callback = function()
+                                require("booxbook.ui.truyendich").openSource()
+                            end },
+                            { text = "TruyenC", keep_menu_open = true, callback = function()
+                                require("booxbook.ui.truyenc").openSource()
+                            end },
+                            { text = _("Con Đường Bá Chủ"), keep_menu_open = true, callback = function()
+                                require("booxbook.ui.conduongbachu").openSource()
+                            end },
+                            { text = _("Mê Truyện Chữ VN"), keep_menu_open = true, callback = function()
+                                require("booxbook.ui.metruyenchuvn").openSource()
+                            end },
                             { text = _("Truyện Tuổi Thơ"), keep_menu_open = true, callback = function()
                                 require("booxbook.ui.truyentuoitho").openSource()
                             end },
                             { text = "TruyenQQ", keep_menu_open = true, callback = function()
                                 require("booxbook.ui.truyenqq").openSource()
+                            end },
+                            { text = "Cbunu", keep_menu_open = true, callback = function()
+                                require("booxbook.ui.cbunu").openSource()
+                            end },
+                            { text = _("Dưa Leo Truyện"), keep_menu_open = true, callback = function()
+                                require("booxbook.ui.dualeo").openSource()
                             end },
                             { text = _("Truyện đang theo dõi"), keep_menu_open = true, callback = function()
                                 require("booxbook.ui.follow").open()

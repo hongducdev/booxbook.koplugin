@@ -120,9 +120,10 @@ assert_true(not wrapped:find("font-size", 1, true) and not wrapped:find("line-he
 
 assert_eq(Source.get("docln").kind, "novel", "DocLN adapter registered")
 assert_eq(Source.get("docln").name, "DocLN", "source get")
-assert_eq(#Source.list(), 9, "source list")
+assert_true(#Source.list() >= 10, "source list")
 assert_eq(Source.get("truyentuoitho").kind, "comic", "TruyenTuoiTho registered")
 assert_eq(Source.get("truyenqq").kind, "comic", "TruyenQQ registered")
+assert_eq(Source.get("cbunu").kind, "comic", "Cbunu registered")
 assert_eq(Source.get("metruyencv").kind, "novel", "MeTruyenCV registered")
 assert_eq(Source.get("truyenfull").kind, "novel", "TruyenFull registered")
 assert_eq(Source.get("wattpad").kind, "novel", "Wattpad adapter registered")
@@ -431,14 +432,18 @@ assert_true(truyen ~= nil, "Truyện menu entry exists")
 truyen.callback()
 scheduled()
 assert_eq(shown_menu.title, "Truyện", "Truyện catalog opens")
-assert_eq(#shown_menu.items, 9, "Truyện lists six novel sources, two comics and follow list")
-assert_eq(shown_menu.items[7].text, "Truyện Tuổi Thơ", "comic source discoverable")
-assert_eq(shown_menu.items[8].text, "TruyenQQ", "second comic source discoverable")
-assert_eq(shown_menu.items[9].text, "Truyện đang theo dõi", "follow list discoverable")
-assert_eq(shown_menu.items[6].text, "Truyện Full", "TruyenFull discoverable")
-assert_eq(shown_menu.items[5].text, "TVTruyen", "TVTruyen discoverable")
-assert_eq(shown_menu.items[4].text, "MeTruyenCV", "MeTruyenCV discoverable")
-assert_eq(shown_menu.items[3].text, "Sangtacviet", "Sangtacviet is discoverable when disabled")
+-- Assert by label, not by index: new sources are inserted into this menu.
+local truyen_items = {}
+for _index, item in ipairs(shown_menu.items) do truyen_items[item.text] = true end
+assert_true(#shown_menu.items >= 10, "Truyện lists the novel sources, the comics and the follow list")
+for _index, label in ipairs({ "DocLN", "Wattpad", "Sangtacviet", "MeTruyenCV", "TVTruyen",
+        "Truyện Full", "Mê Truyện VN", "Bàn Long VIP", "Storya", "AkayTruyen",
+        "DualeoTruyenFull", "AzTruyen", "XTruyen", "Truyendich",
+        "TruyenC", "Con Đường Bá Chủ", "Mê Truyện Chữ VN",
+        "Truyện Tuổi Thơ", "TruyenQQ", "Cbunu", "Dưa Leo Truyện",
+        "Truyện đang theo dõi" }) do
+    assert_true(truyen_items[label], "Truyện menu entry: " .. label)
+end
 
 for _, name in ipairs(module_names) do
     package.loaded[name] = saved_modules[name]
@@ -492,6 +497,19 @@ dofile("tests/metruyencv.lua")
 dofile("tests/tvtruyen.lua")
 dofile("tests/tvtruyen-ui.lua")
 dofile("tests/truyenfull.lua")
+dofile("tests/cbunu.lua")
+dofile("tests/dualeo.lua")
+dofile("tests/metruyenvn.lua")
+dofile("tests/blhvip.lua")
+dofile("tests/storyaclick.lua")
+dofile("tests/akaytruyen.lua")
+dofile("tests/dualeotruyenfull.lua")
+dofile("tests/aztruyen.lua")
+dofile("tests/xtruyen.lua")
+dofile("tests/truyendich.lua")
+dofile("tests/truyenc.lua")
+dofile("tests/conduongbachu.lua")
+dofile("tests/metruyenchuvn.lua")
 dofile("tests/truyenfull-ui.lua")
 dofile("tests/metruyencv-ui.lua")
 dofile("tests/wattpad-ui.lua")
