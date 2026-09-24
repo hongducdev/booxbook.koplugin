@@ -170,11 +170,15 @@ không phản hồi (ANR) chỉ sau ~5 giây, nên mọi đường mạng đều
   bên trong có lấy mục lục (OP) thì vẫn giữ ngân sách dài.
 - `Http.check` trước **mỗi** request và **mỗi** lần chờ rate-limit; hết ngân sách thì trả
   `false, "operation-timeout"` ngay chứ không thử lại.
-- Timeout một request: `DEFAULT_TIMEOUT = 4s`, `DEFAULT_MAXTIME = 10s`; timeout được **cắt**
-  theo thời gian còn lại để request cuối không vượt quá ngân sách. Tải file giữ 60s/180s.
+- Timeout một request: `DEFAULT_TIMEOUT = 10s`, `DEFAULT_MAXTIME = 20s` (nới lại ở `ec5d2c0` vì
+  4s quá sát với mạng thật); timeout được **cắt** theo thời gian còn lại để request cuối không vượt
+  quá ngân sách. Tải file giữ 60s/180s. Hệ quả: một request **không** nằm trong ngân sách có thể
+  chặn tới 20s, nên mọi đường mạng đồng bộ đều phải mở ngân sách bằng `Http.beginOperation` —
+  trông cậy vào timeout nhỏ là không đủ.
 - `RateLimit.wait(host, delay_ms, max_ms)` trả `false` khi phải ngủ quá `max_ms`, để caller
   dừng trước khi gửi request sớm.
-- DoH (`booxbook/doh.lua`): connect/query 5s, handshake TLS 8s, tối đa 3 địa chỉ mỗi host.
+- DoH (`booxbook/doh.lua`): query 8s, handshake TLS 10s, tối đa 3 địa chỉ mỗi host (nới cùng
+  `ec5d2c0`); mỗi lần thử địa chỉ đều gọi `Async.step()` nên chỉ chặn trong một bước DNS.
   Lỗi được `error(reason, 0)` nên không còn tiền tố `file.lua:dòng:`.
 - Mục lục dài: `MAX_TOC_PAGES = 60` cho Truyện Full và TVTruyen; hết trần hoặc hết ngân sách
   thì dừng và giữ phần đã đọc, đặt `series.truncated = true`; UI báo
@@ -188,14 +192,27 @@ không phản hồi (ANR) chỉ sau ~5 giây, nên mọi đường mạng đều
   403/404/429/5xx → câu tương ứng, `operation-timeout` → "Việc tải mất quá nhiều thời gian
   nên đã dừng lại.", còn lại → "Không tải được nội dung. Kiểm tra Wi-Fi rồi thử lại."
   `Fault.clean(text)` chỉ bỏ tiền tố vị trí, dùng ở tầng HTTP/DoH.
+- **Mọi thông báo phải có `timeout`**: mặc định của KOReader là `InfoMessage.timeout = nil` =
+  "nằm đến khi chạm", mà InfoMessage còn là `modal = true` — hộp không timeout sẽ nuốt cú chạm kế
+  tiếp, và nhiều hộp thì xếp lớp lên nhau nên rất giống máy đang treo. `Fault.notify`
+  (`Fault.NOTIFY_TIMEOUT = 6`) và `Update.NOTIFY_TIMEOUT = 6` luôn truyền `timeout`; chỗ gọi trực
+  tiếp `InfoMessage` cũng phải truyền (`ui/series.lua` 5s; `ui/wifi-transfer.lua` 8s cho lỗi, 20s
+  cho địa chỉ/mã phiên để còn kịp đọc và gõ từ điện thoại). Hộp tiến trình dài hạn thì tự đóng:
+  `Update.installAsync` giữ widget và `UIManager:close` khi công việc trả về.
 - Không nhánh nào im lặng: guard `busy` cũng hiện "Đang tải, vui lòng chờ."
+
+Ghi chú: khi KOReader đang ở silent mode (suspend/screensaver), `UIManager:show` thoát sớm với
+widget có `honor_silent_mode = true` (InfoMessage là một trong số đó). Thông báo lúc đó **mất
+im lặng** chứ không treo máy — đừng dựa vào thông báo để biết một tác vụ nền đã xong.
 
 **Chặn UI — ai đã nhường sẵn:** `Trapper` của KOReader cũng chạy trên coroutine và `Trapper:info`
 gọi `coroutine.yield()` (0,1s, để xử lý chạm huỷ) khi widget hiện hành là InfoMessage — mà hộp
 "Đang tải…" của plugin đúng là InfoMessage. Đường **tải** gọi `Trapper:info` sau mỗi ảnh nên **đã
 nhường UI từ trước**; đường **load** (mục lục/danh sách) không gọi gì giữa các request nên bị chặn —
-đó chính là chỗ `Async` vá. Vì vậy đơn vị chặn lớn nhất còn lại ở mọi đường mạng là **một request**
-(`DEFAULT_TIMEOUT = 4s`, dưới ngưỡng watchdog ~5s của Android).
+đó chính là chỗ `Async` vá. Đơn vị chặn lớn nhất còn lại ở đường mạng là **một request**
+(`DEFAULT_TIMEOUT = 10s`, `DEFAULT_MAXTIME = 20s`) — vẫn trên ngưỡng watchdog ~5s của Android, nên
+cách bảo vệ thật sự là: đường nào không yield thì phải có **ngân sách hành động** (hoặc trần riêng
+nhỏ hơn) chứ không thể trông vào timeout từng request.
 
 **Resumable (Phase 2, đã làm cho các đường "load")** — `booxbook/async.lua`: một coroutine
 nhỏ, `Async.step()` được `Http.request` và vòng thử địa chỉ của DoH gọi trước mỗi bước mạng.
@@ -204,11 +221,33 @@ mỗi request chỉ chặn main thread trong thời gian của chính nó (≤ 5
 và nhận chạm (hết ANR khi mục lục dài). Ngoài `Async.run` thì `Async.step()` là no-op, nên
 morning-sync, cloud, test và mọi caller cũ giữ nguyên hành vi đồng bộ.
 Yield qua `pcall` là tính năng của LuaJIT nên `withBudget`/`runWithBudget` vẫn dùng được.
+**Một coroutine tại một thời điểm**: `Async.run` chỉ giữ một `running`; nếu có hành động thứ hai
+bắt đầu khi hành động trước đang parked thì nó vào hàng đợi `waiting` và chỉ chạy khi coroutine kia
+chết. Ghi đè `running` sẽ làm coroutine đang parked mất chỗ resume (`Async.step` so khớp danh tính)
+và bỏ rơi nó vĩnh viễn — trước đây `ui/novels.lua` và `ui/comic-page.lua` là hai đường duy nhất,
+giờ thêm update-check/self-test nên rủi ro chồng lấn tăng lên. `Async.waiting()` để test/đo.
+
+**Ngân sách của bước kiểm tra cập nhật không áp cho phần tải**: `Update.CHECK_TIMEOUT = 15s` chỉ
+bọc `fetchLatest` (3 lần thử + hop redirect). `Update.installAsync` cố ý **không** đặt ngân sách —
+mỗi request tải vẫn 60s/180s (`Http.downloadToFile`) vì zip 30 MiB không thể xong trong vài giây;
+cái làm nó không đơ UI là coroutine + sink nhường UI, không phải trần thời gian.
 
 Áp dụng cho các đường load: danh sách/tìm kiếm/phân trang của DocLN và các nguồn chữ
-(`onlineResumable` trong `ui/novels.lua`), danh sách và mục lục truyện tranh (`ui/comic-page.lua`).
-Đường **tải** (CBZ, khoảng chương, EPUB) vẫn dùng `Trapper:wrap` đồng bộ vì cần dòng tiến trình
-và chạm-để-huỷ; chúng chỉ được giới hạn bởi `BULK_TIMEOUT` và timeout từng request.
+(`onlineResumable` trong `ui/novels.lua`), danh sách và mục lục truyện tranh (`ui/comic-page.lua`),
+**kiểm tra cập nhật lúc mở menu và khi bấm Cập nhật** (`main.lua:maybeCheckUpdate` →
+`Async.run` + `Http.withBudget(Update.CHECK_TIMEOUT = 15)`), **self-test** (`main.lua:performSelfTest`,
+ngân sách 10s) và **tải/cài bản cập nhật** (`Update.installAsync`). Đường **tải** (CBZ, khoảng
+chương, EPUB) vẫn dùng `Trapper:wrap` đồng bộ vì cần dòng tiến trình và chạm-để-huỷ; chúng chỉ được
+giới hạn bởi `BULK_TIMEOUT` và timeout từng request.
+
+Trong `Async.run`, thân phản hồi cũng nhường UI: sink của `http.lua` gọi `Async.step()` mỗi 256 KiB,
+nên một zip 30 MiB chỉ chặn main thread từng đoạn ngắn thay vì suốt cả lần stream. Đây cũng là lý do
+`Update.installAsync` đặt `Update.install` trong coroutine — ngoài `Async.run` (Trapper, cloud, test)
+thì `Async.step()` vẫn là no-op.
+
+Mốc "đã kiểm tra cập nhật" (`update_last_check`) được ghi **trước** request: nếu chỉ ghi khi thành
+công thì một mạng chặn GitHub sẽ khiến mỗi lần mở menu chạy lại toàn bộ lượt kiểm tra (3 request) +
+thêm một thông báo.
 
 ## UI và mặc định
 

@@ -1,5 +1,27 @@
 # Lộ trình phát triển
 
+## Kiểm tra cập nhật & thông báo không còn chặn UI — 2026-09-24
+
+- [x] `maybeCheckUpdate`: chạy `fetchLatest` trong `Async.run` + `Http.withBudget(15)`; ghi mốc
+  `update_last_check` **trước** request để mạng hỏng không lặp lại mỗi lần mở menu.
+- [x] `Update._checkOnline` và self-test cùng cơ chế (trần 15s và 10s).
+- [x] Mọi `InfoMessage` đều có `timeout` (`Fault.NOTIFY_TIMEOUT = 6`, `Update.NOTIFY_TIMEOUT = 6`,
+  `ui/series.lua` 5s, `ui/wifi-transfer.lua` 8s/20s).
+- [x] `Update.installAsync`: tải + giải nén trong coroutine, tự đóng hộp tiến trình.
+- [x] Sink `http.lua` nhường UI mỗi 256 KiB thân phản hồi (chỉ khi ở trong `Async.run`).
+- [x] `booxbook/async.lua`: chỉ một coroutine mỗi lúc; hành động thứ hai vào hàng đợi thay vì ghi đè
+  `running` (tránh bỏ rơi coroutine đang parked). Phần tải không bị đặt ngân sách ngắn.
+- [x] `tests/update-menu.lua`: 10 nhóm kiểm tra; đối chiếu mềm trên mã cũ cho **12/18 điểm sai**
+  (`thread=MAIN`, `remaining=nil`, `update_last_check=0`, `attempts 3 -> 6`, `ticks 1 -> 1`, thứ tự
+  chồng lấn `A:start,B:start,A:end,…`), và bộ quét nguồn khớp ngoặc cân bằng đỏ nếu một chỗ
+  `InfoMessage:new` mất `timeout`. `luajit tests/run.lua` xanh.
+- [x] Cập nhật `docs/system-architecture.md` (số timeout thật 10s/20s, quy tắc timeout thông báo,
+  silent mode) và `docs/project-changelog.md` 0.0.20.
+- [ ] Xác nhận trên Boox thật: mở menu BooxBook khi GitHub bị chặn → menu vẫn nhận chạm, chỉ một
+  thông báo lỗi mỗi ngày; bấm Cập nhật → thấy hộp tiến trình và máy không đơ.
+- [ ] Còn tồn: `Catalog._stack` giữ mọi trang fullscreen đang mở (mỗi lưới bìa ≤6 `ImageWidget` đã
+  decode) — điều hướng sâu vẫn tốn RAM; lưới bìa vẫn tải từng ảnh đồng bộ (3s/5s × 3 lần thử).
+
 ## Thêm nguồn truyện từ Z-Truyenviet — 2026-09-20
 
 Port các nguồn truyện mà `magicxlll/Z-Truyenviet.koplugin` (MIT) có mà BooxBook chưa có,

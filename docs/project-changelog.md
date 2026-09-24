@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.0.20 — 2026-09-24
+
+- **Hết đơ khi mở menu BooxBook trên mạng hỏng** (`main.lua`): `maybeCheckUpdate` gọi
+  `fetchLatest()` **đồng bộ trên main thread** — 3 lần thử với trần 10s/20s mỗi lần, tức tới ~60s
+  không vẽ, không nhận chạm (Android gọi đó là ANR) — và mốc "đã kiểm tra" chỉ được ghi **khi
+  thành công**, nên mỗi lần mở menu lại chặn lại từ đầu. Nay hàm chạy trong `Async.run` dưới
+  `Http.withBudget(Update.CHECK_TIMEOUT = 15)`, và mốc ngày được ghi **trước** request: mạng hỏng
+  thì mỗi ngày chặn đúng một lần. Cùng cách xử lý cho `Update._checkOnline` và self-test.
+- **Thông báo không còn là hộp modal vĩnh viễn**: mặc định của KOReader là `InfoMessage.timeout = nil`
+  = nằm tới khi người dùng chạm, mà InfoMessage là `modal = true`, nên mọi `notify()` cũ chặn tap
+  tiếp theo và xếp lớp lên nhau. Nay `Fault.notify` (và `Update.NOTIFY_TIMEOUT = 6`) luôn truyền
+  `timeout`; 4 chỗ gọi `InfoMessage` trực tiếp trong `ui/series.lua` và 5 chỗ trong
+  `ui/wifi-transfer.lua` (địa chỉ/mã phiên 20s, lỗi 8s) cũng vậy.
+- **Tải bản cập nhật không chặn UI nữa**: `Update.installAsync` chạy `install` trong coroutine và
+  tự đóng hộp tiến trình khi xong (`Update.install` nguyên vẹn cho test). Sink trong
+  `http.lua` gọi `Async.step()` mỗi 256 KiB thân phản hồi, nên zip 30 MiB nhường UI thread suốt
+  quá trình stream thay vì chặn hết một lần. Ngoài `Async.run` (`Trapper`, cloud, test) đây vẫn
+  là no-op. Phần tải **không** bị đặt ngân sách ngắn: mỗi request vẫn 60s/180s — zip 30 MiB không
+  thể xong trong vài giây, nên cái làm nó không đơ là coroutine, không phải trần thời gian.
+  Ở silent mode `progress()` không tạo hộp nào (vì `UIManager:show` bỏ qua widget
+  `honor_silent_mode`), nên cũng không có chuyện đóng một widget chưa từng được show.
+- `booxbook/async.lua`: chỉ **một** coroutine chạy tại một thời điểm. Trước đây `Async.run` thứ hai
+  ghi đè `running`, làm coroutine đang parked mất chỗ resume vĩnh viễn; nay nó vào hàng đợi và chạy
+  khi coroutine trước chết. Thêm update-check/self-test vào danh sách caller nên rủi ro chồng lấn
+  (DocLN + tự kiểm tra + update) tăng lên, và đây là cách đóng nó mà không cần sửa
+  `ui/novels.lua`/`ui/comic-page.lua`.
+- Kiểm thử: `tests/update-menu.lua` mới — 10 nhóm kiểm tra (timeout thông báo; lookup ngoài UI
+  thread + có ngân sách; mốc ngày ghi khi thất bại; mở menu lần hai không lặp; đường thành công;
+  install ngoài UI thread + tự đóng hộp + không tạo hộp ở silent mode; yield khi stream body lớn;
+  ngân sách chặn lần thử kế tiếp; hai hành động resumable được xếp hàng; và bộ quét nguồn bắt buộc
+  mọi `InfoMessage:new` có `timeout`). Bộ kiểm tra mềm chạy đối chiếu trên mã **trước** bản sửa:
+  **12/18 điểm sai** — `thread=MAIN`, `remaining=nil`, `update_last_check=0`, `attempts 3 -> 6`,
+  `ticks 1 -> 1`, thứ tự chồng lấn `A:start,B:start,A:end,…`, `Update.installAsync` là nil. Hai
+  điểm F1/F2 (ngân sách cắt lần thử kế tiếp) đúng ở cả hai bản — đây là điểm ghim tiền đề của bản
+  sửa, không phải ca hồi quy. `luajit tests/run.lua` đạt toàn bộ (64 file test).
+- Hệ quả người dùng thấy được (cố ý): sau một lần kiểm tra thất bại, booxbook **không** thử lại cho
+  tới hôm sau — bấm nút “Cập nhật” trong menu vẫn kiểm tra ngay lập tức. Đổi lại, mở menu không
+  còn chặn máy.
+- Chưa làm trong đợt này: `Catalog._stack` vẫn giữ mọi trang fullscreen đang mở (mỗi lưới bìa
+  ≤6 `ImageWidget` đã decode) nên điều hướng sâu vẫn tốn RAM; đổi `DEFAULT_TIMEOUT`/`DEFAULT_MAXTIME`
+  (10s/20s) là quyết định riêng của commit `ec5d2c0`, đợt này chỉ bảo đảm mọi đường **không**
+  yield đều có ngân sách hành động.
+
 ## 0.0.19 — 2026-09-20
 
 - **Thêm 13 nguồn truyện từ `magicxlll/Z-Truyenviet.koplugin` (MIT)**: 11 nguồn truyện chữ
