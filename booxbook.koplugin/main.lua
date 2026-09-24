@@ -38,8 +38,8 @@ function BooxBook:init()
     self.ui.menu:registerToMainMenu(self)
 end
 
-local function notify(text, subject)
-    return require("booxbook.fault").notify(text, subject)
+local function notify(text, subject, timeout)
+    return require("booxbook.fault").notify(text, subject, timeout)
 end
 
 function BooxBook:addToMainMenu(menu_items)
@@ -63,24 +63,33 @@ end
 
 function BooxBook:maybeCheckUpdate()
     if not network().ifOnline then return end
-    local checked = network().ifOnline(function()
+    network().ifOnline(function()
         if not update().shouldCheck(update().lastCheck()) then return end
-        local ok_release, release = pcall(update().fetchLatest)
-        if not ok_release or not release then
-            -- Checked at most once a day, so a single message is not noise.
-            notify(_("Không kiểm tra được bản cập nhật mới."))
-            return
-        end
+        -- Stamp before the request. It used to be stamped only on success, so a
+        -- lookup that failed left the timestamp at 0 and every single menu open
+        -- repeated three blocking HTTP attempts plus another message.
         update().noteChecked()
-        if update().needsUpdate(release.version, update().currentVersion()) then
-            Settings.set("update_available", release.version)
-            notify(_("Có bản BooxBook mới: ") .. tostring(release.version)
-                .. _(" — vào Cài đặt → Hệ thống → Cập nhật từ GitHub."))
-        else
-            Settings.set("update_available", "")
-        end
+        local Async = require("booxbook.async")
+        local Http = require("booxbook.http")
+        -- Resumable and time-boxed: the transport hands the UI thread back between
+        -- attempts, so a dead network cannot hold the menu for 3 x 20s.
+        Async.run(function()
+            return Http.withBudget(update().CHECK_TIMEOUT, update().fetchLatest)
+        end, function(ok, release)
+            if not ok or not release then
+                -- Checked at most once a day, so a single message is not noise.
+                notify(_("Không kiểm tra được bản cập nhật mới."))
+                return
+            end
+            if update().needsUpdate(release.version, update().currentVersion()) then
+                Settings.set("update_available", release.version)
+                notify(_("Có bản BooxBook mới: ") .. tostring(release.version)
+                    .. _(" — vào Cài đặt → Hệ thống → Cập nhật từ GitHub."))
+            else
+                Settings.set("update_available", "")
+            end
+        end)
     end)
-    if checked == nil then return end
 end
 
 function BooxBook:maybeMorningSync()
@@ -663,29 +672,43 @@ function BooxBook:onBooxBookSelfTest()
 end
 
 function BooxBook:performSelfTest()
-    local ok, code = http().get("https://example.com", {
-        referer = "https://booxbook.local/",
-        delay_ms = 0,
-    })
-    local dir = Settings.downloadDir()
-    local html_path = dir .. "/_selftest.html"
-    local body = html().wrapDocument("Kiểm tra BooxBook", "<p>Tiếng Việt</p><p>BooxBook selftest.</p>")
-    local html_ok, html_err = html().writeFile(html_path, body)
+    local Async = require("booxbook.async")
+    local Http = require("booxbook.http")
+    -- Probe request plus two file writes: in a coroutine, so a stalled host cannot
+    -- hold the UI thread for three socket timeouts before the report appears.
+    Async.run(function()
+        local ok, code = Http.withBudget(10, function()
+            return http().get("https://example.com", {
+                referer = "https://booxbook.local/",
+                delay_ms = 0,
+            })
+        end)
+        local dir = Settings.downloadDir()
+        local html_path = dir .. "/_selftest.html"
+        local body = html().wrapDocument("Kiểm tra BooxBook", "<p>Tiếng Việt</p><p>BooxBook selftest.</p>")
+        local html_ok, html_err = html().writeFile(html_path, body)
 
-    local epub_path = dir .. "/_selftest.epub"
-    local epub_ok, epub_err = epub().write(epub_path, {
-        title = "Kiểm tra BooxBook",
-        chapters = {
-            { title = "Tiếng Việt", html = "<p>Tiếng Việt</p>" },
-        },
-    })
+        local epub_path = dir .. "/_selftest.epub"
+        local epub_ok, epub_err = epub().write(epub_path, {
+            title = "Kiểm tra BooxBook",
+            chapters = {
+                { title = "Tiếng Việt", html = "<p>Tiếng Việt</p>" },
+            },
+        })
 
-    local lines = {
-        _("HTTP:") .. " " .. (ok and _("OK") or tostring(code)),
-        _("HTML:") .. " " .. (html_ok and html_path or tostring(html_err)),
-        _("EPUB:") .. " " .. (epub_ok and epub_path or tostring(epub_err)),
-    }
-    notify(table.concat(lines, "\n"))
+        return table.concat({
+            _("HTTP:") .. " " .. (ok and _("OK") or tostring(code)),
+            _("HTML:") .. " " .. (html_ok and html_path or tostring(html_err)),
+            _("EPUB:") .. " " .. (epub_ok and epub_path or tostring(epub_err)),
+        }, "\n")
+    end, function(ok, report)
+        if not ok then
+            notify(_("Không chạy được kiểm tra cài đặt."))
+            return
+        end
+        -- Three lines of paths: give the reader time to read them.
+        notify(report, nil, 15)
+    end)
 end
 
 return BooxBook

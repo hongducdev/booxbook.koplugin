@@ -9,7 +9,22 @@
 -- sync, tests, cloud helpers) keeps today's plain synchronous behaviour.
 local Async = {}
 
+-- One resumable action at a time, and the parked one is never abandoned: a second
+-- caller waits in `waiting` for the current coroutine to die. `Async.step` matches
+-- the running coroutine by identity, so overwriting `running` would strand the
+-- parked action without anything left to resume it.
 local running = nil
+local waiting = {}
+
+local start
+
+local function startNext()
+    local queued = table.remove(waiting, 1)
+    if not queued then return end
+    local UIManager = require("ui/uimanager")
+    -- `start`, not `Async.run`: taking the queue head must not queue it again.
+    UIManager:nextTick(function() start(queued.fn, queued.done) end)
+end
 
 -- Called by the transport before each blocking step.
 -- Yielding is not possible on every stack: LuaSocket's http.request calls our DoH
@@ -31,23 +46,26 @@ end
 -- a step. `done(ok, ...)` receives the coroutine's return values, or (false, err)
 -- when it raised. Yield across pcall is a LuaJIT feature, so a caller may wrap
 -- network calls in pcall/Http.withBudget as usual.
-function Async.run(fn, done)
+-- Internal entry point: callers go through `Async.run`, which serialises them.
+start = function(fn, done)
     local UIManager = require("ui/uimanager")
     local co = coroutine.create(fn)
-    local previous = running
+    running = co
 
     local function step(...)
         if coroutine.status(co) == "dead" then return end
         running = co
         local ok, a, b, c = coroutine.resume(co, ...)
         if not ok then
-            running = previous
+            running = nil
             if done then done(false, a) end
+            startNext()
             return
         end
         if coroutine.status(co) == "dead" then
-            running = previous
+            running = nil
             if done then done(true, a, b, c) end
+            startNext()
             return
         end
         -- Yielded at a network step: let the UI thread breathe, then continue.
@@ -55,6 +73,22 @@ function Async.run(fn, done)
     end
 
     step()
+end
+
+function Async.run(fn, done)
+    -- The queue is the gate as well as the running coroutine: a caller arriving in
+    -- the tick between one action dying and the queued one starting must not jump
+    -- ahead of it.
+    if running or #waiting > 0 then
+        waiting[#waiting + 1] = { fn = fn, done = done }
+        return
+    end
+    start(fn, done)
+end
+
+-- Number of actions queued behind the running one (tests and diagnostics).
+function Async.waiting()
+    return #waiting
 end
 
 return Async

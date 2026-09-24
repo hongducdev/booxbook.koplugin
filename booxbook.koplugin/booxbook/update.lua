@@ -7,6 +7,12 @@ local Update = {
     MAX_ZIP = 30 * 1024 * 1024,
     MAX_EXTRACT = 80 * 1024 * 1024,
     MAX_FILES = 2000,
+    -- One release lookup: three transport attempts plus a redirect hop. Outside a
+    -- coroutine this used to hold the UI thread for 3 x DEFAULT_MAXTIME (60s),
+    -- which is what Android calls an unresponsive app.
+    CHECK_TIMEOUT = 15,
+    -- Result messages the reader only has to glance at.
+    NOTIFY_TIMEOUT = 6,
 }
 
 Update.API_URL = "https://api.github.com/repos/" .. Update.REPO .. "/releases/latest"
@@ -19,13 +25,55 @@ local function gettext()
     return function(text) return text end
 end
 
-local function notify(text)
+local function ui()
     local ok, UIManager = pcall(require, "ui/uimanager")
     local ok_im, InfoMessage = pcall(require, "ui/widget/infomessage")
     if not ok or not ok_im then
         return
     end
-    UIManager:show(InfoMessage:new{ text = text })
+    return UIManager, InfoMessage
+end
+
+-- Every message here carries a timeout: KOReader's InfoMessage has none by
+-- default, so a message without one is a modal box that stays until tapped and
+-- stacks on top of the previous one.
+local function notify(text, timeout)
+    local UIManager, InfoMessage = ui()
+    if not UIManager then
+        return
+    end
+    UIManager:show(InfoMessage:new{
+        text = text,
+        timeout = tonumber(timeout) or Update.NOTIFY_TIMEOUT,
+    })
+end
+
+-- Long-running box the caller closes itself when the work returns, so a slow
+-- download cannot leave a message behind. Returns nil when UI stubs are absent or
+-- when KOReader is in silent mode: `UIManager:show` drops such a widget instead of
+-- pushing it, and we would then be closing something we never owned.
+local function progress(text, timeout)
+    local UIManager, InfoMessage = ui()
+    if not UIManager then
+        return nil
+    end
+    if type(UIManager.isInSilentMode) == "function" and UIManager:isInSilentMode() then
+        return nil
+    end
+    local widget = InfoMessage:new{ text = text, timeout = tonumber(timeout) or Update.CHECK_TIMEOUT * 20 }
+    UIManager:show(widget)
+    return widget
+end
+
+local function closeWidget(widget)
+    if not widget then
+        return
+    end
+    local UIManager = ui()
+    if not UIManager or type(UIManager.close) ~= "function" then
+        return
+    end
+    pcall(UIManager.close, UIManager, widget)
 end
 
 local function lfsMod()
@@ -361,47 +409,72 @@ function Update.checkAndPrompt()
     end)
 end
 
+function Update.installAsync(release)
+    local _ = gettext()
+    local Async = require("booxbook.async")
+    -- Up to 30 MiB of zip and 80 MiB of extraction: run it in a coroutine so the
+    -- transport can hand the UI thread back between chunks instead of holding the
+    -- menu for the whole transfer. The box is ours to close when the work returns.
+    local box = progress(_("Đang tải bản cập nhật…"))
+    Async.run(function()
+        return Update.install(release)
+    end, function(ok, result, install_err, detail)
+        closeWidget(box)
+        if ok and result == true then
+            promptRestart(release.version)
+            return
+        end
+        local err = ok and install_err or result
+        local suffix = detail and (" (" .. tostring(detail) .. ")") or ""
+        if err == "download" then
+            notify(_("Tải bản cập nhật thất bại.") .. suffix)
+        elseif err == "extract" or err == "invalid_zip" then
+            notify(_("Giải nén thất bại.") .. suffix)
+        else
+            notify(_("Cài đặt bản cập nhật thất bại.") .. suffix)
+        end
+    end)
+end
+
 function Update._checkOnline()
     local _ = gettext()
-    notify(_("Đang kiểm tra bản cập nhật…"))
-    local release, err, extra = Update.fetchLatest()
-    if not release then
-        if err == "no_asset" then
-            notify(_("Chưa có gói cài đặt trên GitHub."))
-        else
-            local suffix = extra and (" (" .. tostring(extra) .. ")") or ""
-            notify(_("Không kiểm tra được cập nhật.") .. suffix)
+    notify(_("Đang kiểm tra bản cập nhật…"), Update.CHECK_TIMEOUT + 5)
+    local Async = require("booxbook.async")
+    local Http = require("booxbook.http")
+    -- Resumable, and under a budget: the lookup may retry three times, and the
+    -- reader must keep seeing the menu and answering taps while it does.
+    Async.run(function()
+        return Http.withBudget(Update.CHECK_TIMEOUT, Update.fetchLatest)
+    end, function(ok, release, err, extra)
+        if not ok then
+            notify(_("Không kiểm tra được cập nhật."))
+            return
         end
-        return
-    end
-    local current = Update.currentVersion()
-    if not Update.needsUpdate(release.version, current) then
-        notify(_("Đã là bản mới nhất") .. " (" .. current .. ").")
-        return
-    end
-    local Catalog = require("booxbook.ui.catalog")
-    Catalog.confirm(
-        _("Có bản mới") .. ": " .. release.version .. "\n"
-            .. _("Đang dùng") .. ": " .. current .. "\n\n"
-            .. _("Tải và cài đặt?"),
-        function()
-            notify(_("Đang tải bản cập nhật…"))
-            local ok, install_err, detail = Update.install(release)
-            if not ok then
-                local suffix = detail and (" (" .. tostring(detail) .. ")") or ""
-                if install_err == "download" then
-                    notify(_("Tải bản cập nhật thất bại.") .. suffix)
-                elseif install_err == "extract" or install_err == "invalid_zip" then
-                    notify(_("Giải nén thất bại.") .. suffix)
-                else
-                    notify(_("Cài đặt bản cập nhật thất bại.") .. suffix)
-                end
-                return
+        if not release then
+            if err == "no_asset" then
+                notify(_("Chưa có gói cài đặt trên GitHub."))
+            else
+                local suffix = extra and (" (" .. tostring(extra) .. ")") or ""
+                notify(_("Không kiểm tra được cập nhật.") .. suffix)
             end
-            promptRestart(release.version)
-        end,
-        { ok_text = _("Cập nhật") }
-    )
+            return
+        end
+        local current = Update.currentVersion()
+        if not Update.needsUpdate(release.version, current) then
+            notify(_("Đã là bản mới nhất") .. " (" .. current .. ").")
+            return
+        end
+        local Catalog = require("booxbook.ui.catalog")
+        Catalog.confirm(
+            _("Có bản mới") .. ": " .. release.version .. "\n"
+                .. _("Đang dùng") .. ": " .. current .. "\n\n"
+                .. _("Tải và cài đặt?"),
+            function()
+                Update.installAsync(release)
+            end,
+            { ok_text = _("Cập nhật") }
+        )
+    end)
 end
 
 return Update

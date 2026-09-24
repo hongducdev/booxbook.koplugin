@@ -243,6 +243,7 @@ end
 local function requestOnce(opts)
     local chunks = {}
     local received = 0
+    local stepped = 0
     local headers = {}
     for k, v in pairs(opts.headers or {}) do
         headers[headerKey(k)] = v
@@ -303,6 +304,14 @@ local function requestOnce(opts)
             if chunk then
                 received = received + #chunk
                 if received > max_body then return nil, "body too large" end
+                -- Hand the UI thread back every 256 KiB of body. A 30 MiB update
+                -- download would otherwise hold the main thread for the whole
+                -- transfer; Async.step() is a no-op outside Async.run, so the
+                -- synchronous callers keep today's behaviour.
+                if Async.active() and received - stepped >= 262144 then
+                    stepped = received
+                    Async.step()
+                end
                 if fh then
                     local written, write_err = fh:write(chunk)
                     if not written then return nil, write_err or "write failed" end

@@ -6,6 +6,13 @@
 -- message (and every message a test pins) exactly as it was.
 local Fault = {}
 
+-- Seconds a plain notification stays on screen before it closes itself.
+-- KOReader's InfoMessage defaults to `timeout = nil`, which means "stay until
+-- tapped": a modal box with no timeout swallows the tap that follows and, with
+-- several of them stacked, reads as a frozen device. Callers that need longer
+-- (a report to read, a progress line) pass their own value.
+Fault.NOTIFY_TIMEOUT = 6
+
 -- Bare transport codes that carry no meaning for a reader.
 local EXACT = {
     ["timeout"] = "Máy chủ phản hồi quá chậm.",
@@ -136,10 +143,13 @@ end
 
 -- Single place where a failure becomes something the reader sees. Depends on
 -- UIManager/InfoMessage at call time so widget stubs and reloads keep working.
-function Fault.notify(text, subject)
+function Fault.notify(text, subject, timeout)
     local UIManager = require("ui/uimanager")
     local InfoMessage = require("ui/widget/infomessage")
-    UIManager:show(InfoMessage:new{ text = Fault.message(text, subject) })
+    UIManager:show(InfoMessage:new{
+        text = Fault.message(text, subject),
+        timeout = tonumber(timeout) or Fault.NOTIFY_TIMEOUT,
+    })
 end
 
 return Fault

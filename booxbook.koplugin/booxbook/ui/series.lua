@@ -39,7 +39,7 @@ function SeriesUI.show(series, opts)
                 on_submit = function(value)
                     local number = tonumber(value)
                     if not number or number % 1 ~= 0 or number < 1 or number > #series.chapters then
-                        UIManager:show(InfoMessage:new{ text = _("Số chương không hợp lệ.") }); return
+                        UIManager:show(InfoMessage:new{ text = _("Số chương không hợp lệ."), timeout = 5 }); return
                     end
                     opts.on_go(number)
                 end,
@@ -67,6 +67,7 @@ function SeriesUI.show(series, opts)
     if #items == 0 then
         UIManager:show(InfoMessage:new{
             text = _("Không có chương."),
+            timeout = 5,
         })
         return
     end
@@ -118,7 +119,7 @@ function SeriesUI.askRange(max_chapter, on_submit, verb)
         on_submit = function(from_text)
             local from = tonumber(from_text)
             if not from or from % 1 ~= 0 or from < 1 or from > max_chapter then
-                UIManager:show(InfoMessage:new{ text = _("Số chương không hợp lệ.") }); return
+                UIManager:show(InfoMessage:new{ text = _("Số chương không hợp lệ."), timeout = 5 }); return
             end
             Catalog.promptText({
                 title = _("Đến chương"),
@@ -126,7 +127,7 @@ function SeriesUI.askRange(max_chapter, on_submit, verb)
                 on_submit = function(to_text)
                     local to = tonumber(to_text)
                     if not to or to % 1 ~= 0 or to < from or to > max_chapter then
-                        UIManager:show(InfoMessage:new{ text = _("Số chương không hợp lệ.") }); return
+                        UIManager:show(InfoMessage:new{ text = _("Số chương không hợp lệ."), timeout = 5 }); return
                     end
                     if on_submit then
                         on_submit(from, to)

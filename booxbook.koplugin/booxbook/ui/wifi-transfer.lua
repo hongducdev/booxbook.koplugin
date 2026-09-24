@@ -114,11 +114,12 @@ local function start(expected_generation)
     if Settings.ensureDir(dir) then
         server, err = Server.new(dir, Server.localAddresses(preferredInterface()), Server.sessionToken())
     else err = _("Không tạo được thư mục nhận sách.") end
-    if not server then UIManager:show(InfoMessage:new{ text=err }); return end
+    if not server then UIManager:show(InfoMessage:new{ text=err, timeout=8 }); return end
     if not openFirewall(server.port) then
         Transfer.stop()
         UIManager:show(InfoMessage:new{
             text=_("Không mở được cổng nhận sách qua tường lửa Kindle. Hãy khởi động lại KOReader và thử lại."),
+            timeout=8,
         })
         return
     end
@@ -145,10 +146,12 @@ local function start(expected_generation)
                     width=size, height=size, scale_factor=1 })
             end },
             { text=_("Xem địa chỉ và mã phiên"), keep_menu_open=true, callback=function()
-                UIManager:show(InfoMessage:new{ text=addressText(current) })
+                -- Addresses and the session token must be readable from the phone for
+                -- a while, but not forever: no timeout would leave a modal box behind.
+                UIManager:show(InfoMessage:new{ text=addressText(current), timeout=20 })
             end },
             { text=_("Kiểm tra kết nối và kết quả"), keep_menu_open=true, callback=function()
-                UIManager:show(InfoMessage:new{ text=resultText(current, dir) })
+                UIManager:show(InfoMessage:new{ text=resultText(current, dir), timeout=20 })
             end },
             { text=_("Dừng nhận sách"), callback=Transfer.stop },
         },
@@ -159,7 +162,7 @@ local function start(expected_generation)
         local ok, busy = pcall(current.poll, current)
         if not ok then
             Transfer.stop()
-            UIManager:show(InfoMessage:new{ text=_("Nhận sách bị gián đoạn. Hãy mở lại phiên nhận.") })
+            UIManager:show(InfoMessage:new{ text=_("Nhận sách bị gián đoạn. Hãy mở lại phiên nhận."), timeout=8 })
             return
         end
         -- 20 Hz only while a device is connected; an idle session wakes 4x less often.
