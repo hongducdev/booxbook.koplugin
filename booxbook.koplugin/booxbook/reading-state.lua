@@ -63,9 +63,13 @@ local function copyProgress(info)
     local percent = tonumber(info.read_percent) or 0
     if percent < 0 then percent = 0 elseif percent > 100 then percent = 100 end
     percent = math.floor(percent + 0.5)
+    -- `title` is recorded from now on so the "Đang đọc dở" list never has to open
+    -- index.json/manifest.json while the menu is being built (see listHistory).
+    local title = type(info.title) == "string" and info.title ~= "" and info.title or nil
     return {
         status = status,
         read_percent = percent,
+        title = title,
         last_read_chapter = info.last_read_chapter,
         last_read_file = info.last_read_file,
         last_read_time = tonumber(info.last_read_time) or now(),
@@ -170,6 +174,9 @@ local function resolveNovel(path)
         dir = dir,
         file_path = path,
         file = filename,
+        -- index.json is already in memory here: no extra read just for the title.
+        title = (type(index) == "table" and type(index.title) == "string" and index.title ~= "")
+            and index.title or series_id,
         chapters = chapters,
         chapter_id = first and first.id,
         chapter_number = first and first.number,
@@ -215,6 +222,9 @@ local function resolveComic(path)
         dir = dir,
         file_path = path,
         file = chapter .. ".cbz",
+        title = (type(manifest) == "table" and type(manifest.title) == "string" and manifest.title ~= "")
+            and manifest.title
+            or ((type(meta) == "table" and type(meta.title) == "string" and meta.title ~= "") and meta.title or series_id),
         chapter = chapter,
         chapter_number = index,
         chapter_title = current and current.title or (meta and meta.chapter_title),
@@ -260,6 +270,31 @@ function ReadingState.getProgress(kind, source_id, series_id, dir)
     return readSettingsProgress(kind, source_id, series_id) or readMirrorProgress(kind, source_id, series_id, dir)
 end
 
+-- Display cap for the "Đang đọc dở" list, and the storage cap for the history it
+-- reads. The history is keyed by series, so it grows with every series ever opened,
+-- not with every read; pruning on write keeps settings/booxbook.lua bounded. A pruned
+-- series still has its mirror (index.json/manifest.json) and comes back on next read.
+ReadingState.MAX_HISTORY = 30
+ReadingState.MAX_STORED = 200
+
+local function pruneHistory(history)
+    local entries, count = {}, 0
+    for key, info in pairs(history) do
+        count = count + 1
+        entries[#entries + 1] = {
+            key = key,
+            at = type(info) == "table" and (tonumber(info.last_read_time) or 0) or 0,
+        }
+    end
+    local excess = count - ReadingState.MAX_STORED
+    if excess <= 0 then return end
+    table.sort(entries, function(a, b)
+        if a.at ~= b.at then return a.at < b.at end
+        return tostring(a.key) < tostring(b.key)
+    end)
+    for i = 1, excess do history[entries[i].key] = nil end
+end
+
 local function saveSettingsProgress(target, info)
     local key = historyKey(target.kind, target.source_id, target.series_id)
     if not key then return false end
@@ -267,6 +302,7 @@ local function saveSettingsProgress(target, info)
     local history = S.get and S.get("reading_history")
     if type(history) ~= "table" then history = {} end
     history[key] = copyProgress(info)
+    pruneHistory(history)
     if S.set then S.set("reading_history", history) end
     return true
 end
@@ -313,6 +349,7 @@ function ReadingState.recordProgress(file_path, current_page, total_pages, is_en
     local info = {
         status = complete and "complete" or "reading",
         read_percent = complete and 100 or percent,
+        title = target.title,
         last_read_chapter = chapter,
         last_read_file = target.file,
         last_read_time = now(),
@@ -337,6 +374,8 @@ function ReadingState.markComplete(kind_or_path, source_id, series_id, dir)
     local info = {
         status = "complete",
         read_percent = 100,
+        -- Without this the manual toggles would wipe the title the resume list shows.
+        title = current.title or target.title,
         last_read_chapter = current.last_read_chapter or target.last_chapter_number or target.chapter_number or target.chapter,
         last_read_file = current.last_read_file or target.file,
         last_read_time = now(),
@@ -353,6 +392,7 @@ function ReadingState.markReading(kind_or_path, source_id, series_id, dir)
     local info = {
         status = "reading",
         read_percent = percent,
+        title = current.title or target.title,
         last_read_chapter = current.last_read_chapter or target.chapter_number or target.chapter,
         last_read_file = current.last_read_file or target.file,
         last_read_time = now(),
@@ -366,6 +406,73 @@ function ReadingState.formatStatusBadge(info)
     if progress.status == "complete" then return "[Đã xong]" end
     if progress.read_percent > 0 then return "[" .. tostring(progress.read_percent) .. "%]" end
     return ""
+end
+
+-- Directory of one series, from the on-disk layout shared with novel-download and
+-- comic-download. Separators are rejected so a stored id can never point outside it.
+local function seriesDir(kind, source_id, series_id)
+    local S = getSettings()
+    local download_dir = S.downloadDir and S.downloadDir()
+    if not download_dir then return nil end
+    local subdir
+    if kind == "novel" then subdir = "novels"
+    elseif kind == "comic" then subdir = "comics"
+    else return nil end
+    if type(source_id) ~= "string" or type(series_id) ~= "string" then return nil end
+    if source_id == "" or series_id == "" then return nil end
+    if source_id:match("[/\\]") or series_id:match("[/\\]")
+        or source_id:match("^%.") or series_id:match("^%.") then return nil end
+    return download_dir .. "/" .. subdir .. "/" .. source_id .. "/" .. series_id
+end
+
+-- Absolute path of the exact file the reader was last in. The file itself is not
+-- touched here; the caller decides what a missing file means.
+function ReadingState.historyPath(entry)
+    if type(entry) ~= "table" then return nil end
+    local filename = entry.last_read_file
+    if type(filename) ~= "string" or filename == "" then return nil end
+    if filename:match("[/\\]") or filename:match("^%.") then return nil end
+    local dir = seriesDir(entry.kind, entry.source_id, entry.series_id)
+    if not dir then return nil end
+    return dir .. "/" .. filename
+end
+
+-- Most recently read series first. Pure in-memory work: no file-exists check, no
+-- index.json read, so opening the menu stays instant with a long history. The cap
+-- is applied before the caller does anything per entry.
+function ReadingState.listHistory(limit)
+    limit = tonumber(limit) or ReadingState.MAX_HISTORY
+    if limit < 1 then return {} end
+    local S = getSettings()
+    local history = S.get and S.get("reading_history")
+    if type(history) ~= "table" then return {} end
+    local out = {}
+    for key, info in pairs(history) do
+        if type(info) == "table" then
+            local progress = copyProgress(info)
+            local kind, source_id, series_id = tostring(key):match("^([^:]+):([^:]+):([^:]+)$")
+            if progress and kind and source_id and series_id then
+                progress.key = key
+                progress.kind = kind
+                progress.source_id = source_id
+                progress.series_id = series_id
+                progress.title = progress.title or series_id
+                -- copyProgress defaults a missing stamp to now(); for the list a
+                -- legacy entry without a stamp must sink to the bottom instead.
+                progress.last_read_time = tonumber(info.last_read_time) or 0
+                out[#out + 1] = progress
+            end
+        end
+    end
+    table.sort(out, function(a, b)
+        local at, bt = tonumber(a.last_read_time) or 0, tonumber(b.last_read_time) or 0
+        if at ~= bt then return at > bt end
+        return tostring(a.key) < tostring(b.key)
+    end)
+    if #out <= limit then return out end
+    local capped = {}
+    for i = 1, limit do capped[i] = out[i] end
+    return capped
 end
 
 return ReadingState

@@ -182,6 +182,36 @@ local search_res = Library.searchFullText("/scan", "nonexistent_query", {
     file_lister = mock_lister,
     file_reader = function() return "empty" end,
 })
+-- 5. "Đang đọc dở": the screen must read exactly the fields ReadingState writes.
+-- Stubs in reading-history-ui.lua cannot catch a rename on either side of this seam,
+-- so this check runs the real screen against the real history written above.
+package.loaded["booxbook.ui.reading-history"] = nil
+local HistoryUI = require("booxbook.ui.reading-history")
+local Catalog = package.loaded["booxbook.ui.catalog"]
+local orig_show = Catalog.show
+local captured
+Catalog.show = function(opts) captured = opts end
+HistoryUI.open()
+Catalog.show = orig_show
+assert(captured and captured.title == "Đang đọc dở", "resume screen opens from the real history")
+local comic_row, novel_row
+for _index, row in ipairs(captured.items) do
+    if row.text:find("Bộ truyện thử nghiệm", 1, true) then comic_row = row end
+    if row.text:find("s1", 1, true) then novel_row = row end
+end
+assert(comic_row, "resume row shows the title resolveComic read from manifest.json")
+assert(comic_row.mandatory ~= nil, "resume row shows the read date")
+assert(novel_row, "resume row renders a series with no recorded title")
+assert(novel_row.text:find("[Đã xong]", 1, true), "resume row keeps the complete badge")
+
+local comic_entry
+for _index, entry in ipairs(ReadingState.listHistory()) do
+    if entry.series_id == "refresh-test" then comic_entry = entry end
+end
+assert(comic_entry, "comic entry survives into listHistory")
+assert(ReadingState.historyPath(comic_entry) == "test-output/comics/truyenqq/refresh-test/chap-1.cbz",
+    "resume path points at the last read file, got " .. tostring(ReadingState.historyPath(comic_entry)))
+
 -- Cleanup
 io.open = old_open
 os.remove = old_remove

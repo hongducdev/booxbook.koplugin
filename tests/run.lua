@@ -303,20 +303,29 @@ assert_true(type(scheduled) == "function", "fullscreen work is deferred")
 scheduled()
 assert_eq(table.concat(menu_events, ","), "close,nextTick,clear,show", "fullscreen menu resets and opens in order")
 assert_eq(shown_menu.subtitle, "✓ Đã kết nối mạng", "home TitleBar shows network status")
-assert_eq(#shown_menu.items, 5, "home actions fit comfortably on one page")
-assert_eq(shown_menu.items[4].text, "Gửi sách qua Wi-Fi", "primary transfer action precedes settings")
-assert_eq(shown_menu.items[5].text, "Cài đặt", "settings remain available last")
+assert_eq(#shown_menu.items, 6, "home actions fit comfortably on one page")
+-- "Đang đọc dở" leads: resuming is the most frequent action on an e-reader.
+assert_eq(shown_menu.items[1].text, "Đang đọc dở", "resume list leads the home menu")
+assert_eq(shown_menu.items[1].keep_menu_open, true, "resume navigation keeps its parent menu")
+local opened_resume = false
+package.loaded["booxbook.ui.reading-history"] = { open = function() opened_resume = true end }
+shown_menu.items[1].callback()
+assert_eq(shown_menu.title, "BooxBook", "resume screen is deferred")
+scheduled()
+assert_true(opened_resume, "resume screen opens after selection")
+assert_eq(shown_menu.items[5].text, "Gửi sách qua Wi-Fi", "primary transfer action precedes settings")
+assert_eq(shown_menu.items[6].text, "Cài đặt", "settings remain available last")
 assert_eq(shown_menu.footer_slots[2].text, "v" .. require("booxbook.update").currentVersion(),
     "home footer shows the version read from _meta.lua")
 assert_eq(shown_menu.footer_slots[3].action, "update", "home footer exposes one labeled update action")
 assert_eq(shown_menu.footer_slots[4].text, "1/1", "home footer confirms all actions fit on one page")
 assert_true(type(shown_menu.on_footer) == "function", "home footer actions are handled")
-assert_eq(shown_menu.items[3].text, "Sách & cloud", "local and cloud libraries share one home action")
-assert_eq(#shown_menu.items[3].sub_item_table, 5, "book menu exposes library, search, clouds and queue")
-assert_eq(shown_menu.items[3].sub_item_table[3].text, "OneDrive", "OneDrive is discoverable")
-assert_eq(shown_menu.items[3].sub_item_table[4].text, "Google Drive", "Google Drive is discoverable")
+assert_eq(shown_menu.items[4].text, "Sách & cloud", "local and cloud libraries share one home action")
+assert_eq(#shown_menu.items[4].sub_item_table, 5, "book menu exposes library, search, clouds and queue")
+assert_eq(shown_menu.items[4].sub_item_table[3].text, "OneDrive", "OneDrive is discoverable")
+assert_eq(shown_menu.items[4].sub_item_table[4].text, "Google Drive", "Google Drive is discoverable")
 local home_menu = shown_menu
-local library = home_menu.items[3].sub_item_table[1]
+local library = home_menu.items[4].sub_item_table[1]
 local old_fm = package.loaded["apps/filemanager/filemanager"]
 local old_reader = package.loaded["apps/reader/readerui"]
 local library_path, reader_closed
@@ -407,8 +416,8 @@ assert_true(reader_closed, "reader closed normally before library to save readin
 package.loaded["apps/filemanager/filemanager"] = old_fm
 package.loaded["apps/reader/readerui"] = old_reader
 shown_menu = home_menu
-assert_eq(shown_menu.items[1].keep_menu_open, true, "news navigation keeps its parent menu")
-shown_menu.items[1].callback()
+assert_eq(shown_menu.items[2].keep_menu_open, true, "news navigation keeps its parent menu")
+shown_menu.items[2].callback()
 assert_eq(shown_menu.title, "BooxBook", "news screen is deferred")
 scheduled()
 assert_eq(shown_menu.title, "Báo", "news screen opens after selection")
@@ -541,6 +550,7 @@ dofile("tests/continuation.lua")
 dofile("tests/morning-sync.lua")
 dofile("tests/opml.lua")
 dofile("tests/reading-state.lua")
+dofile("tests/reading-history-ui.lua")
 dofile("tests/fulltext-search.lua")
 dofile("tests/quota-cleanup.lua")
 dofile("tests/cloud-upload.lua")

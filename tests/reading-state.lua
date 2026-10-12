@@ -48,6 +48,34 @@ Settings.get = function(k) return mock_store[k] end
 Settings.set = function(k, v) mock_store[k] = v end
 Settings.downloadDir = function() return "test-output" end
 
+-- Fixtures live in memory: plain LuaJIT has no mkdir, and what matters here is what
+-- recordProgress stores, not the filesystem. readJson reads through io.open, so both
+-- halves of the write/read pair have to be doubled.
+local files = {}
+local orig_html_write, orig_io_open = Html.writeFile, io.open
+Html.writeFile = function(path, body) files[path] = body; return true end
+io.open = function(path)
+    local body = files[path]
+    if not body then return nil end
+    local pos = 0
+    return {
+        read = function(_, count)
+            if type(count) == "number" then
+                local chunk = body:sub(pos + 1, pos + count)
+                pos = pos + #chunk
+                if chunk == "" then return nil end
+                return chunk
+            end
+            local rest = body:sub(pos + 1)
+            pos = #body
+            if rest == "" then return nil end
+            return rest
+        end,
+        close = function() return true end,
+        write = function() return true end,
+    }
+end
+
 -- 3. Resolve target
 local novel_path = "test-output/novels/docln/truyen-1/chapter-1.html"
 local target_novel = ReadingState.resolveTarget(novel_path)
@@ -134,8 +162,89 @@ ReadingState.markReading("novel", "docln", "truyen-1", novel_dir)
 local marked_reading = ReadingState.getProgress("novel", "docln", "truyen-1", novel_dir)
 assert(marked_reading.status == "reading", "manual markReading works")
 
+-- 7. listHistory / historyPath: the "Đang đọc dở" screen reads Settings only.
+local novel_entry_now = mock_store["reading_history"]["novel:docln:truyen-1"]
+assert(novel_entry_now.title == "Test Novel", "novel entry records the series title")
+local comic_entry_now = mock_store["reading_history"]["comic:truyenqq:comic-1"]
+assert(comic_entry_now.title == "Test Comic", "comic entry records the series title")
+
+local listed = ReadingState.listHistory()
+assert(#listed == 2, "listHistory returns both series, got " .. tostring(#listed))
+assert(listed[1].key == "comic:truyenqq:comic-1", "most recently read first")
+assert(listed[1].kind == "comic" and listed[1].source_id == "truyenqq" and listed[1].series_id == "comic-1",
+    "list entry carries its identity")
+assert(listed[2].key == "novel:docln:truyen-1", "novel second")
+assert(listed[2].title == "Test Novel", "title survives the copy into the list")
+
+assert(ReadingState.historyPath(listed[2]) == "test-output/novels/docln/truyen-1/chapter-1.html",
+    "novel resume path")
+assert(ReadingState.historyPath(listed[1]) == "test-output/comics/truyenqq/comic-1/tap-1.cbz",
+    "comic resume path")
+
+-- A stored entry must never escape its series folder.
+assert(ReadingState.historyPath{ kind = "novel", source_id = "docln", series_id = "truyen-1",
+    last_read_file = "../../evil.html" } == nil, "traversal filename rejected")
+assert(ReadingState.historyPath{ kind = "novel", source_id = "docln", series_id = "../x",
+    last_read_file = "chapter-1.html" } == nil, "traversal series id rejected")
+assert(ReadingState.historyPath{ kind = "novel", source_id = "docln", series_id = "..",
+    last_read_file = "chapter-1.html" } == nil, "dot-dot series id rejected")
+assert(ReadingState.historyPath{ kind = "novel", source_id = "..", series_id = "truyen-1",
+    last_read_file = "chapter-1.html" } == nil, "dot-dot source id rejected")
+assert(ReadingState.historyPath{ kind = "novel", source_id = ".hidden", series_id = "truyen-1",
+    last_read_file = "chapter-1.html" } == nil, "hidden source id rejected")
+assert(ReadingState.historyPath{ kind = "novel", source_id = "docln", series_id = ".hidden",
+    last_read_file = "chapter-1.html" } == nil, "hidden series id rejected")
+assert(ReadingState.historyPath{ kind = "other", source_id = "docln", series_id = "truyen-1",
+    last_read_file = "chapter-1.html" } == nil, "unknown kind rejected")
+assert(ReadingState.historyPath{ kind = "novel", source_id = "docln", series_id = "truyen-1" } == nil,
+    "missing file name rejected")
+assert(ReadingState.historyPath("novel:docln:truyen-1") == nil, "non-table entry rejected")
+
+-- Legacy entry without a stamp sinks to the bottom; the cap holds at 30.
+local synthetic = {}
+for n = 1, 40 do
+    synthetic["novel:docln:s" .. n] = { status = "reading", read_percent = n,
+        last_read_file = "chapter-1.html", last_read_time = n }
+end
+synthetic["novel:docln:legacy"] = { status = "reading", read_percent = 5, last_read_file = "chapter-1.html" }
+mock_store["reading_history"] = synthetic
+local capped = ReadingState.listHistory()
+assert(#capped == ReadingState.MAX_HISTORY, "listHistory caps at MAX_HISTORY, got " .. tostring(#capped))
+assert(capped[1].series_id == "s40", "newest first")
+local all = ReadingState.listHistory(100)
+assert(#all == 41, "limit above the entry count returns everything, got " .. tostring(#all))
+assert(all[#all].series_id == "legacy", "no-stamp entry sorts last")
+assert(all[#all].last_read_time == 0, "no-stamp entry reports 0 instead of now()")
+assert(all[#all].title == "legacy", "no-title entry falls back to the series id")
+assert(#ReadingState.listHistory(0) == 0, "limit 0 returns nothing")
+mock_store["reading_history"] = nil
+assert(#ReadingState.listHistory() == 0, "missing history returns an empty list")
+
+-- 8. Storage stays bounded: the history is keyed by series, so it grows with every
+-- series ever opened. A save must drop the oldest entries past the storage cap, and
+-- must keep the entry it just wrote.
+local bulk = {}
+for n = 1, ReadingState.MAX_STORED + 50 do
+    bulk["novel:docln:b" .. n] = { status = "reading", read_percent = 1,
+        last_read_file = "ch-1.html", last_read_time = n }
+end
+mock_store["reading_history"] = bulk
+ReadingState.markReading("novel", "docln", "newest", "test-output/novels/docln/newest")
+local stored = mock_store["reading_history"]
+local stored_count = 0
+for _key in pairs(stored) do stored_count = stored_count + 1 end
+assert(stored_count == ReadingState.MAX_STORED,
+    "history pruned on write, got " .. tostring(stored_count))
+assert(stored["novel:docln:b1"] == nil, "oldest entry dropped")
+assert(stored["novel:docln:b51"] == nil, "exactly the oldest entries are dropped")
+assert(stored["novel:docln:b52"] ~= nil, "the first kept entry survives")
+assert(stored["novel:docln:b" .. (ReadingState.MAX_STORED + 50)] ~= nil, "newest bulk entry survives")
+assert(stored["novel:docln:newest"] ~= nil, "the entry just written survives")
+assert(#ReadingState.listHistory() == ReadingState.MAX_HISTORY, "the pruned store still fills the list")
+
 -- Cleanup
 os.remove(novel_dir .. "/index.json")
+Html.writeFile, io.open = orig_html_write, orig_io_open
 Settings.get = orig_get
 Settings.set = orig_set
 Settings.downloadDir = orig_dl

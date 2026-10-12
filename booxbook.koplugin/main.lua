@@ -125,6 +125,16 @@ function BooxBook:showMainMenu()
         end,
         items = {
             {
+                -- First on purpose: resuming is the most frequent action on an e-reader.
+                text = _("Đang đọc dở"),
+                keep_menu_open = true,
+                callback = function()
+                    UIManager:nextTick(function()
+                        require("booxbook.ui.reading-history").open()
+                    end)
+                end,
+            },
+            {
                 text = _("Báo"),
                 keep_menu_open = true,
                 callback = function()
