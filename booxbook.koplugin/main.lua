@@ -24,6 +24,18 @@ local BooxBook = WidgetContainer:extend{
 }
 
 function BooxBook:onDispatcherRegisterActions()
+    Dispatcher:registerAction("booxbook_open_menu", {
+        category = "none",
+        event = "BooxBookOpenMenu",
+        title = _("BooxBook: mở menu chính"),
+        general = true,
+    })
+    Dispatcher:registerAction("booxbook_reading_history", {
+        category = "none",
+        event = "BooxBookReadingHistory",
+        title = _("BooxBook: mở Đang đọc dở"),
+        general = true,
+    })
     Dispatcher:registerAction("booxbook_selftest", {
         category = "none",
         event = "BooxBookSelfTest",
@@ -668,6 +680,24 @@ function BooxBook:editCookie(source_id, title)
             end
         end,
     })
+end
+
+function BooxBook:onBooxBookOpenMenu()
+    UIManager:nextTick(function()
+        Catalog.clearStack()
+        self:showMainMenu()
+        self:maybeCheckUpdate()
+        self:maybeMorningSync()
+    end)
+    return true
+end
+
+function BooxBook:onBooxBookReadingHistory()
+    UIManager:nextTick(function()
+        Catalog.clearStack()
+        require("booxbook.ui.reading-history").open()
+    end)
+    return true
 end
 
 function BooxBook:runSelfTest()

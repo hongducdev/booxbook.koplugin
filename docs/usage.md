@@ -329,3 +329,15 @@ bên cạnh chương. Plugin tải riêng chương đó và mở ngay HTML hoặ
 Áp dụng cả sáu nguồn, thứ tự tính xuyên các tập. Đây là số thứ tự mục lục, không
 phải ID hoặc số nằm trong tiêu đề (các số này có thể bị khuyết/lặp).
 Chương khóa hoặc tải lỗi hiện lý do; không tự mở file lỗi.
+
+## Cử chỉ mở nhanh (Gesture management)
+
+Bạn có thể gán cử chỉ (vuốt mép màn hình, vuốt hai ngón, chạm góc…) trong KOReader để mở BooxBook mọi lúc, kể cả khi đang đọc sách:
+
+1. Mở menu KOReader: **Cài đặt thiết bị → Quản lý cử chỉ (Gesture management)**.
+2. Chọn thao tác cử chỉ mong muốn (ví dụ: *Vuốt hai ngón lên* hoặc *Vuốt từ mép trái*).
+3. Chọn một trong các hành động của BooxBook:
+   - **BooxBook: mở menu chính**: mở màn hình chính BooxBook.
+   - **BooxBook: mở Đang đọc dở**: mở thẳng danh sách các truyện đang đọc dở để đọc tiếp.
+   - **BooxBook: kiểm tra cài đặt**: tự kiểm tra kết nối và khả năng ghi file.
+

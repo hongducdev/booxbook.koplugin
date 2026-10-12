@@ -35,6 +35,10 @@
   `luajit tests/run.lua` đạt toàn bộ (65 file test).
 - Hệ quả người dùng thấy được: **Cài đặt** giờ là hàng thứ 6 trong menu chính, và test cấu trúc
   menu trong `tests/run.lua` được cập nhật theo (trước đó nó ghim đúng 5 hàng).
+- **Hỗ trợ Quản lý cử chỉ KOReader (Gesture management)**: đăng ký thêm hai hành động
+  toàn cục (`general = true`) vào `Dispatcher`: `booxbook_open_menu` (**BooxBook: mở menu chính**)
+  và `booxbook_reading_history` (**BooxBook: mở Đang đọc dở**). Người dùng có thể gán bất kỳ
+  cử chỉ vuốt/chạm nào trong KOReader để mở ngay BooxBook hoặc danh sách đọc dở khi đang đọc sách.
 - Chưa làm trong đợt này: **tình trạng nguồn** (ghi nhận thụ động nguồn nào vừa lỗi) — đã bàn
   hướng nhưng chưa chọn điểm chặn, sẽ làm sau khi bản này được xác nhận trên Boox thật. Vẫn giữ
   nguyên: không polling nền, cloud chỉ đọc, không TTS, không xuất highlight.

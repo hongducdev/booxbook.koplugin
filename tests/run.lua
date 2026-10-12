@@ -242,7 +242,12 @@ local saved_modules = {}
 for _, name in ipairs(module_names) do
     saved_modules[name] = package.loaded[name]
 end
-package.loaded["dispatcher"] = { registerAction = function() end }
+local registered_actions = {}
+package.loaded["dispatcher"] = {
+    registerAction = function(_, id, action)
+        registered_actions[id] = action
+    end,
+}
 package.loaded["ui/widget/infomessage"] = { new = function(_, value) return value end }
 package.loaded["ui/network/manager"] = {}
 package.loaded["ui/uimanager"] = {
@@ -289,6 +294,31 @@ package.loaded["ffi/util"] = { realpath = function(path)
 end }
 
 local BooxBook = dofile(plugin_root .. "/main.lua")
+BooxBook:onDispatcherRegisterActions()
+assert_true(registered_actions["booxbook_open_menu"] ~= nil, "open menu gesture action is registered")
+assert_eq(registered_actions["booxbook_open_menu"].event, "BooxBookOpenMenu", "open menu gesture dispatches BooxBookOpenMenu")
+assert_true(registered_actions["booxbook_open_menu"].general, "open menu gesture is available everywhere")
+assert_true(registered_actions["booxbook_reading_history"] ~= nil, "reading history gesture action is registered")
+assert_eq(registered_actions["booxbook_reading_history"].event, "BooxBookReadingHistory", "reading history gesture dispatches BooxBookReadingHistory")
+assert_true(registered_actions["booxbook_reading_history"].general, "reading history gesture is available everywhere")
+assert_true(registered_actions["booxbook_selftest"] ~= nil, "selftest gesture action is registered")
+
+local opened_resume = false
+package.loaded["booxbook.ui.reading-history"] = { open = function() opened_resume = true end }
+
+-- Gesture triggers for main menu and reading history
+local gesture_handled = BooxBook:onBooxBookOpenMenu()
+assert_true(gesture_handled, "open menu gesture reports handled")
+scheduled()
+assert_eq(shown_menu.title, "BooxBook", "open menu gesture opens main menu")
+
+opened_resume = false
+local resume_handled = BooxBook:onBooxBookReadingHistory()
+assert_true(resume_handled, "reading history gesture reports handled")
+scheduled()
+assert_true(opened_resume, "reading history gesture opens reading history")
+menu_events = {}
+
 local menu_items = {}
 BooxBook:addToMainMenu(menu_items)
 assert_eq(menu_items.booxbook.sorting_hint, "tools", "plugin is top-level in Tools")
@@ -307,8 +337,7 @@ assert_eq(#shown_menu.items, 6, "home actions fit comfortably on one page")
 -- "Đang đọc dở" leads: resuming is the most frequent action on an e-reader.
 assert_eq(shown_menu.items[1].text, "Đang đọc dở", "resume list leads the home menu")
 assert_eq(shown_menu.items[1].keep_menu_open, true, "resume navigation keeps its parent menu")
-local opened_resume = false
-package.loaded["booxbook.ui.reading-history"] = { open = function() opened_resume = true end }
+opened_resume = false
 shown_menu.items[1].callback()
 assert_eq(shown_menu.title, "BooxBook", "resume screen is deferred")
 scheduled()
@@ -339,12 +368,12 @@ menu_settings.ensureDir = function() return true end
 menu_settings.downloadDir = function() return "/storage/emulated/0/downloads" end
 local comic_options, layout_events = {}, {}
 local comic_config = {
-    readSetting = function(self, key) return comic_options[key] end,
-    saveSetting = function(self, key, value) comic_options[key] = value end,
+    readSetting = function(_, key) return comic_options[key] end,
+    saveSetting = function(_, key, value) comic_options[key] = value end,
 }
 BooxBook.ui = { document = { file = "/sdcard/downloads/comics/truyentuoitho/test/tap-1.cbz" }, paging = {},
-    view = { onSetScrollMode = function(self, value) assert(value == false); layout_events[#layout_events + 1] = "paged" end },
-    zooming = { setZoomMode = function(self, mode, quiet) assert(mode == "page" and quiet); layout_events[#layout_events + 1] = "fit" end } }
+    view = { onSetScrollMode = function(_, value) assert(value == false); layout_events[#layout_events + 1] = "paged" end },
+    zooming = { setZoomMode = function(_, mode, quiet) assert(mode == "page" and quiet); layout_events[#layout_events + 1] = "fit" end } }
 BooxBook:onReaderReady(comic_config)
 assert_eq(table.concat(layout_events, ","), "paged,fit", "comics default to whole pages instead of continuous slices")
 assert_eq(comic_options.kopt_page_scroll, 0, "paged mode persists per comic")
@@ -443,9 +472,9 @@ scheduled()
 assert_eq(shown_menu.title, "Truyện", "Truyện catalog opens")
 -- Assert by label, not by index: new sources are inserted into this menu.
 local truyen_items = {}
-for _index, item in ipairs(shown_menu.items) do truyen_items[item.text] = true end
+for _, item in ipairs(shown_menu.items) do truyen_items[item.text] = true end
 assert_true(#shown_menu.items >= 10, "Truyện lists the novel sources, the comics and the follow list")
-for _index, label in ipairs({ "DocLN", "Wattpad", "Sangtacviet", "MeTruyenCV", "TVTruyen",
+for _, label in ipairs({ "DocLN", "Wattpad", "Sangtacviet", "MeTruyenCV", "TVTruyen",
         "Truyện Full", "Mê Truyện VN", "Bàn Long VIP", "Storya", "AkayTruyen",
         "DualeoTruyenFull", "AzTruyen", "XTruyen", "Truyendich",
         "TruyenC", "Con Đường Bá Chủ", "Mê Truyện Chữ VN",
