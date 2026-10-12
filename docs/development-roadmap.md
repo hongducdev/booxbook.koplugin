@@ -1,5 +1,29 @@
 # Lộ trình phát triển
 
+## “Đang đọc dở” — hàng đầu màn hình chính — 2026-09-24
+
+Mục tiêu: đưa dữ liệu `reading_history` đã có sẵn ra chỗ dùng được, không thêm mạng, không thêm I/O
+lúc dựng menu.
+
+- [x] `ReadingState.listHistory(limit)`: chỉ đọc Settings, sắp xếp mới-nhất-trước, cắt trần 30,
+  không kiểm tra file, không đọc `index.json`.
+- [x] `ReadingState.historyPath(entry)`: đường dẫn tuyệt đối, chặn `../` và tên bắt đầu bằng `.`.
+- [x] Cắt lịch sử **khi ghi** (`MAX_STORED = 200`) để `settings/booxbook.lua` không phình theo số
+  bộ đã từng mở; entry bị bỏ tự quay lại từ bản sao `index.json`/`manifest.json`.
+- [x] Ghi `title` vào lịch sử từ `index.json`/`manifest.json` đã có trong bộ nhớ; giữ trường này
+  qua `copyProgress`, `recordProgress`, `markComplete`, `markReading`.
+- [x] Entry cũ thiếu tên → hiện `series_id`; thiếu mốc thời gian → xuống cuối (không gán `now()`).
+- [x] `booxbook/ui/reading-history.lua`: dòng `Tên · chương N · [42%]`, một chạm mở đúng file;
+  file đã bị dọn thì báo câu đọc được thay vì lỗi trình đọc.
+- [x] `main.lua`: hàng đầu menu chính; cập nhật test cấu trúc menu (5 → 6 hàng).
+- [x] Test: `tests/reading-state.lua` (7 nhóm mới, fixture `index.json` trong bộ nhớ) và
+  `tests/reading-history-ui.lua` mới; `luajit tests/run.lua` xanh.
+- [ ] Xác nhận trên Boox thật: mở menu vẫn nhanh khi lịch sử dài; chạm mở đúng chương đang dở;
+  xoá file rồi chạm thì thấy thông báo, không màn hình trắng; 6 hàng vẫn gọn một trang.
+- [ ] Đợt sau (chưa chọn điểm chặn): **tình trạng nguồn** — ghi nhận thụ động nguồn nào vừa
+  thành công/lỗi trong lúc dùng bình thường, thay vì quét chủ động 22 nguồn (tốn request, sai
+  với nguồn cần cookie/18+, không kiểm chứng được trong CI).
+
 ## Kiểm tra cập nhật & thông báo không còn chặn UI — 2026-09-24
 
 - [x] `maybeCheckUpdate`: chạy `fetchLatest` trong `Async.run` + `Http.withBudget(15)`; ghi mốc

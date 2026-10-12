@@ -429,6 +429,28 @@ Novel: `resolveNovelNext` đọc `novels/<nguồn>/<id>/index.json`, nhận
 mới là đã tải. Chưa tải → `Novels.downloadChapter` (validate nguồn/id/số chương, báo
 hết truyện khi vượt số chương mục lục mới).
 
+## Đang đọc dở (reading history)
+
+`reading-state.lua` ghi tiến độ vào `settings/booxbook.lua` khóa `reading_history`
+(`kind:source_id:series_id` → `{status, read_percent, title, last_read_chapter,
+last_read_file, last_read_time}`) và soi bản sao vào `index.json`/`manifest.json`.
+`ui/reading-history.lua` (hàng đầu menu chính) đọc **chỉ** Settings qua
+`ReadingState.listHistory`: sắp xếp mới-nhất-trước, cắt trần 30 mục, **không** kiểm tra
+tồn tại file và **không** đọc `index.json` — menu chính không được phép sinh I/O.
+`ReadingState.historyPath` dựng đường dẫn tuyệt đối từ `kind`/`source_id`/`series_id`
++ `last_read_file`, từ chối `/`, `\` và tên bắt đầu bằng `.`; việc kiểm tra file nằm ở
+lúc chạm (file đã bị dọn → `Fault.notify`, không mở trình đọc).
+`title` được lấy từ `index.json`/`manifest.json` **đã nằm trong bộ nhớ** của
+`resolveNovel`/`resolveComic` — không thêm lượt đọc file nào; `markComplete`/`markReading`
+phải giữ lại trường này nếu không muốn xoá tên vừa ghi. Entry cũ thiếu `title` → hiện
+`series_id`; thiếu mốc thời gian → xuống cuối danh sách (không được gán `now()`).
+`saveSettingsProgress` cắt lịch sử **khi ghi** (`MAX_STORED = 200`, bỏ entry cũ nhất) vì
+khóa là bộ truyện nên bảng lớn lên theo số bộ đã từng mở; entry bị bỏ tự quay lại từ bản
+sao trong `index.json`/`manifest.json` ở lần đọc sau. Trần hiển thị (`MAX_HISTORY = 30`) và
+trần lưu là hai con số tách nhau có chủ ý.
+Test: `tests/reading-state.lua` (fixture `index.json` trong bộ nhớ vì `mkdir` không có
+trong LuaJIT thuần) và `tests/reading-history-ui.lua`.
+
 ## Tự động hóa & Tính năng nâng cao (0.0.12)
 
 - **Morning Sync** (`morning-sync.lua`): Tự động kiểm tra chương mới và tạo digest ngày mới vào mỗi buổi sáng. Chạy thụ động qua `Network.ifOnline` (không bao giờ hiện hộp thoại bật Wi-Fi); chia tick qua `UIManager:nextTick` và bọc tác vụ mạng bằng `Trapper:wrap`. Dùng rotating cursor tránh bỏ sót các truyện theo dõi phía sau và con trỏ `(mtime, path)` bảo đảm không bỏ sót bài báo nào.

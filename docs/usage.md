@@ -2,6 +2,23 @@
 
 Màn hình chính hiện phiên bản ngay dưới tiêu đề. Điều hướng dùng **Quay lại / Trước / Sau** ở chân trang.
 
+## Đang đọc dở
+
+Hàng đầu menu chính là **Đang đọc dở**: mọi bộ bạn đang đọc (truyện chữ, truyện tranh), bộ vừa đọc
+xong gần nhất ở trên cùng. Mỗi dòng có tên bộ, chương đang dở và phần trăm đã đọc, kèm ngày đọc gần
+nhất ở bên phải.
+
+- Chạm một dòng để mở lại **đúng file** bạn đang dở, không phải chương đầu của bộ.
+- Truyện đã đọc xong hiện `[Đã xong]`; bộ chưa đọc tới đâu hiện `[N%]`.
+- Bộ tải về từ trước bản 0.0.21 chưa lưu tên trong lịch sử thì tạm hiện mã bộ (ví dụ `truyen-1`);
+  mở lại một lần là tên thật được ghi vào.
+- File đã bị dọn (báo đọc xong tự xoá, hoặc chương đọc kiểu *Đọc xong không lưu*) thì plugin báo
+  **“Không tìm thấy tệp. Mục này có thể đã bị xoá.”** — danh sách không tự xoá mục đó, cứ mở lại
+  bộ từ **Truyện** là lịch sử được cập nhật.
+
+Danh sách chỉ hiện 30 bộ gần nhất và chỉ đọc dữ liệu lịch sử đã có trong `settings/booxbook.lua`,
+nên không có lượt mạng hay đọc file nào lúc mở menu.
+
 ## OneDrive
 
 1. Mở **Sách & cloud → OneDrive → Đăng nhập OneDrive**. Plugin đã cấu hình public

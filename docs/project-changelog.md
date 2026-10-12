@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.0.21 — 2026-09-24
+
+- **“Đang đọc dở” — hàng đầu màn hình chính** (`booxbook/ui/reading-history.lua` mới):
+  `reading-state.lua` vẫn ghi `reading_history` (phần trăm, chương, file, thời điểm) từ lâu nhưng
+  `last_read_time` **không được đọc ở đâu** — tiến độ chỉ hiện thành nhãn `[42%]` bên trong danh
+  sách file. Nay danh sách gom mọi bộ đang đọc, mới nhất trước, một chạm là mở lại đúng file
+  (chương/tập) đang dở. Đây là hành động dùng nhiều nhất trên máy đọc sách nên nó đứng đầu menu.
+- `ReadingState.listHistory(limit)` chỉ đọc Settings, **không** chạm filesystem: không kiểm tra file
+  còn tồn tại, không đọc `index.json`/`manifest.json`, và cắt trần 30 mục **trước** khi trả về —
+  mở menu vẫn tức thì dù lịch sử dài. Việc kiểm tra file nằm ở lúc chạm: file đã bị dọn thì báo
+  “Không tìm thấy tệp.” thay vì để trình đọc lỗi.
+- **Lịch sử được cắt khi ghi** (`MAX_STORED = 200`): `reading_history` khóa theo bộ truyện nên nó
+  lớn lên theo số bộ đã từng mở, không theo số lần đọc — chỉ cắt lúc đọc là không chặn được file
+  settings phình ra. `saveSettingsProgress` giờ bỏ các entry cũ nhất khi vượt trần; entry bị bỏ vẫn
+  còn bản sao trong `index.json`/`manifest.json` nên lần đọc sau nó tự quay lại. Trần hiển thị (30)
+  và trần lưu (200) tách nhau có chủ ý.
+- `ReadingState.historyPath(entry)`: dựng đường dẫn tuyệt đối từ `kind`/`source_id`/`series_id`
+  và `last_read_file`, từ chối `/`, `\` và tên bắt đầu bằng `.` nên một entry lịch sử không thể
+  trỏ ra ngoài thư mục bộ truyện.
+- **Ghi tên bộ truyện vào lịch sử** (`reading-state.lua`): `resolveNovel`/`resolveComic` đã có
+  `index.json`/`manifest.json` trong bộ nhớ nên lấy `title` luôn tại đó — không thêm lượt đọc file
+  nào. `copyProgress`, `recordProgress`, `markComplete` và `markReading` đều giữ trường này (nếu
+  thiếu, `markComplete`/`markReading` sẽ xoá mất tên vừa ghi). Entry cũ không có tên thì hiện
+  `series_id`; entry không có mốc thời gian thì xuống cuối danh sách chứ không được gán `now()`.
+- Menu chính từ 5 lên **6 hàng** (`main.lua`), hàng đầu là **Đang đọc dở**; **Gửi sách qua Wi-Fi**
+  vẫn trước **Cài đặt**, **Cài đặt** vẫn cuối. 6 hàng vẫn nằm gọn một trang trên Boox
+  (`ItemList` tự tính `page_size` theo chiều cao và chuyển trang bằng vuốt).
+- Kiểm thử: `tests/reading-state.lua` thêm 7 nhóm (ghi tên bộ truyện; `listHistory` sắp xếp/cắt
+  trần/an toàn với mốc thiếu; `historyPath` chặn traversal và `kind` lạ; fixture `index.json` giờ
+  nằm trong bộ nhớ nên test mới thật sự kiểm tra được nhánh đọc tên). `tests/reading-history-ui.lua`
+  mới dựng màn hình với catalog/`io.open` giả: dòng có tên + chương + `[42%]`, dòng thiếu chương
+  vẫn render, file đã xoá thì báo chứ không mở trình đọc, lịch sử rỗng thì một dòng mờ.
+  `luajit tests/run.lua` đạt toàn bộ (65 file test).
+- Hệ quả người dùng thấy được: **Cài đặt** giờ là hàng thứ 6 trong menu chính, và test cấu trúc
+  menu trong `tests/run.lua` được cập nhật theo (trước đó nó ghim đúng 5 hàng).
+- Chưa làm trong đợt này: **tình trạng nguồn** (ghi nhận thụ động nguồn nào vừa lỗi) — đã bàn
+  hướng nhưng chưa chọn điểm chặn, sẽ làm sau khi bản này được xác nhận trên Boox thật. Vẫn giữ
+  nguyên: không polling nền, cloud chỉ đọc, không TTS, không xuất highlight.
+
 ## 0.0.20 — 2026-09-24
 
 - **Hết đơ khi mở menu BooxBook trên mạng hỏng** (`main.lua`): `maybeCheckUpdate` gọi
