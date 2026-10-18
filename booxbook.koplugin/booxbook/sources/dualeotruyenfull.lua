@@ -251,7 +251,8 @@ function T.getSeries(ref)
     local CHAPTER_MARKER = { '<div class="chapter-item' }
     while true do
         local added = 0
-        for _, row in ipairs(slices(html, CHAPTER_MARKER)) do
+        -- Never `for _, row` here: `_` would shadow gettext `_()` below.
+        for _index, row in ipairs(slices(html, CHAPTER_MARKER)) do
             local cid, chapter_path
             for href in row:gmatch('href="([^"]+)"') do
                 local book, chapter, path = T.parseRef(Html.decode(href))

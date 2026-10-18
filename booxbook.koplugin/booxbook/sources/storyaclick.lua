@@ -103,7 +103,8 @@ end
 
 local function items(stories)
     local list, seen = {}, {}
-    for _, story in ipairs(stories) do
+    -- Never `for _, story` here: `_` would shadow gettext `_()` below.
+    for _index, story in ipairs(stories) do
         local slug = type(story.slug) == "string" and M.parseRef("/truyen/" .. story.slug)
         if not slug or type(story.title) ~= "string" then return nil, CHANGED end
         if not seen[slug] then
@@ -269,7 +270,8 @@ function M.getSeries(ref)
             .. "&limit=" .. PAGE .. "&minimal=true")
         if not page_data then return nil, page_err end
         local added = 0
-        for _, item in ipairs(page_data.data) do
+        -- Never `for _, item` here: `_` would shadow gettext `_()` below.
+        for _index, item in ipairs(page_data.data) do
             local cid = type(item.slug) == "string" and item.slug:match("^[%w%-]+$")
             local order = tonumber(item.order)
             if not cid or #cid > 64 or not order or type(item.title) ~= "string" then return nil, CHANGED end

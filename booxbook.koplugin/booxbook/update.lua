@@ -211,6 +211,7 @@ function Update.fetchLatest()
     local version = Update.currentVersion()
     local ok, code, body = Http.get(Update.API_URL, {
         delay_ms = 0,
+        verify_tls = true,
         headers = {
             Accept = "application/vnd.github+json",
             ["User-Agent"] = "BooxBook/" .. version,
@@ -343,6 +344,9 @@ function Update.install(release)
 
     local ok, code = Http.downloadToFile(release.zip_url, zip_path, {
         delay_ms = 0,
+        -- The zip is unpacked into the live plugin directory: an unauthenticated
+        -- connection would let anyone on the Wi-Fi ship code into KOReader.
+        verify_tls = true,
         max_body = Update.MAX_ZIP,
         headers = { ["User-Agent"] = "BooxBook/" .. Update.currentVersion() },
     })
