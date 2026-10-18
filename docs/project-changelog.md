@@ -2,6 +2,18 @@
 
 ## 0.0.22 — 2026-10-12
 
+- **EPUB Volume Splitter (Chia tập truyện dài)** (`novel-export.lua`, `novel-download.lua`, `ui/novels.lua`, `ui/series.lua`):
+  - Tự động chia các bộ truyện dài thành nhiều tập EPUB vừa phải (100, 200, 300, 500 chương/tập hoặc không chia) theo cấu hình `novel_volume_size`.
+  - Ngăn ngừa tình trạng file EPUB quá lớn gây giật lag, chậm mục lục hoặc tràn RAM (OOM crash) trên máy đọc sách E-ink.
+  - Tích hợp liền mạch với cơ chế `Continuation` (EndOfBook): khi đọc hết tập 1, KOReader tự động gợi ý mở tiếp tập 2.
+  - Tùy chọn cấu hình trực quan trong menu truyện (`Kích thước tập EPUB`) và hỗ trợ tạo tập từ chương đã tải.
+- **Web Clipper qua Wi-Fi** (`web-clipper.lua` mới, `wifi-upload.lua`, `wifi-transfer-server.lua`, `wifi-transfer-page.lua`, `ui/news.lua`):
+  - Nhập URL bài báo trực tiếp trên trang Wi-Fi Transfer (`:8080`) từ điện thoại hoặc máy tính.
+  - Bóc tách nội dung chính thuần Lua (tiêu đề, tác giả, ảnh, thân bài), loại bỏ quảng cáo, menu, script và iframe.
+  - Chuẩn hóa đường dẫn ảnh relative thành absolute, lưu HTML chuẩn vào `koreader/booxbook/news/web-clipper/`.
+  - Chống SSRF (chặn URL loopback và dải IP mạng riêng tư).
+  - Tích hợp mục duyệt riêng **Báo → Bài đã lưu (Web Clipper)** và tự động hiện trong **Tin đã tải**.
+- **Kiểm thử tự động:** Bổ sung `tests/epub-volume-splitter.lua` và `tests/web-clipper.lua`. `luajit tests/run.lua` xanh 100%.
 - **DTV eBook — nguồn tải sách thẳng về máy** (`sources/dtvebook.lua`, `ebook-download.lua`, `ui/ebook-detail.lua`, `ui/dtvebook.lua`):
   - Port từ plugin `DTVEbook` (Nekori) nhưng không dựng "chương chứa nút tải": adapter mới `kind = "ebook"` liệt kê/tìm
     sách, trang chi tiết có một dòng mỗi định dạng (EPUB, AZW3, MOBI, PDF); chạm là tải về `books/dtvebook/` rồi mở bằng ReaderUI.

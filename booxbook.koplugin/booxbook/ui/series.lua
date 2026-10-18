@@ -96,6 +96,13 @@ function SeriesUI.show(series, opts)
                     callback = opts.on_package,
                 }
             end
+            if opts.on_volume_size then
+                actions[#actions + 1] = {
+                    text = _("Kích thước tập EPUB"),
+                    keep_menu_open = true,
+                    callback = opts.on_volume_size,
+                }
+            end
             Catalog.show({
                 title = _("Tải ") .. unit,
                 items = actions,

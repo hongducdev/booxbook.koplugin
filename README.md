@@ -7,7 +7,7 @@
 
 Plugin [KOReader](https://github.com/koreader/koreader) để đọc báo RSS và truyện chữ trên máy đọc sách (Onyx Boox và thiết bị khác). Tải HTML về máy, đọc offline trong KOReader.
 
-**Phiên bản:** 0.0.21 (`hongducdev/booxbook.koplugin`) · giấy phép [AGPL-3.0-or-later](./LICENSE)
+**Phiên bản:** 0.0.22 (`hongducdev/booxbook.koplugin`) · giấy phép [AGPL-3.0-or-later](./LICENSE)
 
 **Website giới thiệu + hướng dẫn:** xem [`website/`](website/) (deploy tự động lên GitHub Pages qua workflow `pages.yml`). Số version và link Release trên web tự đồng bộ từ `version` trong `booxbook.koplugin/_meta.lua` lúc deploy — không sửa tay. Preview local: `pwsh -File scripts/preview-website.ps1`.
 
@@ -25,12 +25,12 @@ Dùng như trình đọc RSS / thư viện cá nhân. Không phát tán nội du
 | Mục | Nguồn | Ghi chú |
 |---|---|---|
 | **Đang đọc dở** | Truyện đã tải | Hàng đầu menu chính: mọi bộ đang đọc (chữ và tranh), mới nhất trước, một chạm mở lại đúng chương/tập đang dở |
-| **Báo** | 17 tờ, 633 kênh RSS | 9 báo Việt, 8 nguồn nước ngoài; thêm RSS tùy chỉnh; tìm toàn văn trong bài đã tải |
-| **Truyện** | DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full, AkayTruyen, AzTruyen, Bàn Long VIP, Con Đường Bá Chủ, DualeoTruyenFull, Mê Truyện Chữ VN, Mê Truyện VN, Storya, TruyenC, Truyendich, XTruyen | Tìm / duyệt / **duyệt thể loại**, tải chương, đọc lại offline |
+| **Báo** | 17 tờ, 633 kênh RSS | 9 báo Việt, 8 nguồn nước ngoài; thêm RSS tùy chỉnh; tìm toàn văn trong bài đã tải; **Web Clipper** lưu bài báo từ link điện thoại/máy tính qua Wi-Fi |
+| **Truyện** | DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full, AkayTruyen, AzTruyen, Bàn Long VIP, Con Đường Bá Chủ, DualeoTruyenFull, Mê Truyện Chữ VN, Mê Truyện VN, Storya, TruyenC, Truyendich, XTruyen | Tìm / duyệt / **duyệt thể loại**, tải chương, đọc lại offline; **Chia tập EPUB** tự động phân đoạn truyện dài tránh lag máy |
 | **Truyện tranh** | Truyện Tuổi Thơ, TruyenQQ, Cbunu, Dưa Leo Truyện | Duyệt/tìm, mục lục, tải một/khoảng/toàn bộ tập, tải tiếp, đọc CBZ offline; **Đọc xong không lưu** xoá chương tải trong phiên khi đóng |
 | **Ebook** | DTV eBook | Duyệt/tìm/thể loại, **tải thẳng EPUB/AZW3/MOBI/PDF về máy** (kể cả file lớn qua trang xác nhận của Google Drive) rồi mở trong KOReader |
 | **Sách & cloud** | File local + OneDrive | Duyệt thư mục trên máy, tìm sách offline; duyệt thư mục OneDrive và tải sách về |
-| **Gửi sách qua Wi-Fi** | Điện thoại / máy tính cùng mạng | Mở web hoặc quét QR, gửi nhiều sách vào thư viện; tối đa 512 MiB/file |
+| **Gửi sách qua Wi-Fi** | Điện thoại / máy tính cùng mạng | Mở web hoặc quét QR, gửi nhiều sách vào thư viện (tối đa 512 MiB/file), thêm vào hàng đợi hoặc **cắt bài báo đọc offline** |
 
 Cách dùng chi tiết: [hướng dẫn](docs/usage.md). Phạm vi RSS: [danh mục báo](docs/news-categories.md).
 
@@ -54,10 +54,12 @@ Cập nhật: mỗi bản mới đều có `booxbook.koplugin.zip` ở [Release]
 - Sangtacviet tắt mặc định; lần đầu mở sẽ hỏi xác nhận. Có thể tắt lại trong **Cài đặt → Nguồn và cookie**.
 - Nội dung 18+: tắt mặc định. **Tải ảnh minh họa**: bật mặc định.
 - **Lưu truyện thành EPUB**: tắt mặc định. Mỗi khoảng chương tải xong có EPUB với mục lục; áp dụng cả sáu nguồn.
+- **Kích thước tập EPUB (Volume Splitter)**: trong menu tải của truyện, cho phép chọn kích thước tập (100, 200, 300, 500 chương/tập hoặc không chia). Khi truyện dài hàng nghìn chương, việc chia nhỏ thành các tập vừa phải giúp KOReader mở tức thì, không bị tràn RAM. Khi đọc hết tập, KOReader tự động gợi ý mở tập tiếp theo.
 - Tải lại một khoảng tự bỏ qua chương còn file trên máy. `index.json.bak` giữ danh sách hợp lệ gần nhất để fallback khi index chính hỏng.
 - Trong menu tải của mục lục, **Tạo EPUB từ chương đã tải** đóng gói khoảng HTML đã có mà không tải lại nội dung; HTML luôn được giữ.
 - EPUB giữ tên truyện gốc, tác giả, mô tả/thẻ nếu nguồn cung cấp, liên kết nguồn và ảnh bìa nhúng offline. Không dùng BooxBook làm tác giả.
 - **Giữ bản HTML khi lưu EPUB**: bật mặc định. Tắt để chỉ giữ EPUB sau khi xuất và cập nhật danh sách thành công; lỗi vẫn giữ HTML để phục hồi.
+- **Web Clipper (qua Wi-Fi)**: dán liên kết bài báo bất kỳ trên trang Wi-Fi Transfer từ điện thoại/máy tính, BooxBook tự động bóc tách nội dung chính sạch quảng cáo/script, lưu vào `koreader/booxbook/news/web-clipper/` và xem lại trong mục **Báo → Bài đã lưu (Web Clipper)**.
 - **Tự xóa HTML báo sau khi đọc xong**: tắt mặc định. Xóa khi đóng bài đã đánh dấu đã đọc, hoặc vừa tới cuối và vẫn ở cuối; quay lại giữa bài thì giữ. Thư mục ảnh `.images` của bài bị xóa cùng HTML (chỉ khi xóa HTML thành công); tải lại bài làm mới sạch ảnh cũ sau khi ghi HTML xong.
 - **Đọc xong không lưu** (mục cuối menu nguồn truyện tranh): tắt mặc định. Chương tải trong phiên bị xoá khi đóng tài liệu; chương dài hơn 12 trang mở ngay sau 12 trang đầu, phần còn lại tải khi chọn lại chương đó. Chương đã có trên máy từ trước không bị xoá.
 - **Đang đọc dở**: danh sách ở hàng đầu menu chính, gom mọi bộ đang đọc theo lần đọc gần nhất,

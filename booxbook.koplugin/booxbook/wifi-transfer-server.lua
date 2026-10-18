@@ -323,7 +323,7 @@ function Server:consume(client, chunk)
             if request.opds then
                 local ok_opds, Opds = pcall(require, "booxbook.opds")
                 if ok_opds and Opds and Opds.fullCatalog then
-                    local ok_cat, xml = pcall(Opds.fullCatalog, libraryRoot(self.dir), "/opds")
+                    local ok_cat, xml = pcall(Opds.fullCatalog, libraryRoot(self.dir), "/opds", nil, "?token=" .. self.token)
                     if ok_cat and type(xml) == "string" then
                         atom(client, xml)
                         return
@@ -364,6 +364,17 @@ function Server:consume(client, chunk)
                 fileResponse(client, file, size, mime)
                 return
             end
+            if request.clip then
+                client.request = request
+                client.request.clip_body = ""
+                chunk = client.buffer:sub(boundary + 4)
+                client.buffer = nil
+                if chunk ~= "" then
+                    self:consume(client, "")
+                    if not client.closed then self:consume(client, chunk) end
+                end
+                return
+            end
             if request.queue then
                 client.request = request
                 client.request.queue_body = ""
@@ -391,6 +402,38 @@ function Server:consume(client, chunk)
         if not ok then return respond(self, client, code, message) end
         chunk = client.buffer:sub(boundary + 4)
         client.buffer = nil
+    end
+    if client.request.clip then
+        client.request.clip_body = (client.request.clip_body or "") .. (chunk or "")
+        client.received_body = client.received_body + #(chunk or "")
+        if #client.request.clip_body > client.request.remaining then
+            return respond(self, client, 413, _("URL quá dài."))
+        end
+        if #client.request.clip_body >= client.request.remaining then
+            local ok_clipper, Clipper = pcall(require, "booxbook.web-clipper")
+            if not ok_clipper or not Clipper then
+                return respond(self, client, 500, _("Không tải được module Web Clipper."))
+            end
+            local target_dir = libraryRoot(self.dir) .. "/news/web-clipper"
+            local url_text = client.request.clip_body
+            -- The page fetch can take many seconds: run it as a resumable action so the
+            -- UI keeps answering, and answer the phone once it finishes.
+            client.waiting = true
+            local Async = require("booxbook.async")
+            Async.run(function() return Clipper.clip(url_text, target_dir) end, function(ok, res, err)
+                client.waiting = nil
+                if client.closed then return end
+                if not ok or not res then
+                    return respond(self, client, 400,
+                        (ok and err) or _("Không thể cắt bài báo từ URL này."))
+                end
+                self.received = self.received + 1
+                self.last_name = "[Bài báo] " .. (res.title or "Web Clipper")
+                if self.on_received then pcall(self.on_received, self.last_name) end
+                respond(self, client, 201, string.format(_("Đã lưu bài: %s"), res.title or ""))
+            end)
+        end
+        return
     end
     if client.request.queue then
         client.request.queue_body = (client.request.queue_body or "") .. (chunk or "")
@@ -425,6 +468,12 @@ end
 
 function Server:step(client)
     local now = socket.gettime()
+    -- Waiting on an asynchronous action (Web Clipper): neither idle nor readable.
+    if client.waiting then
+        if now - client.started > 1800 then return close(client) end
+        client.active = now
+        return
+    end
     if now - client.active > 30 or now - client.started > 1800 then return close(client) end
     if client.output then
         local sent, err, partial = client.socket:send(client.output, client.sent + 1)

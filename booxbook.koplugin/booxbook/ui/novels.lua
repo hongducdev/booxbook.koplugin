@@ -289,6 +289,26 @@ local function showSaved(result)
     if #items > 0 then Catalog.show{ title = _("Chương đã tải / bỏ qua"), items = items } end
 end
 
+function Novels.promptVolumeSize()
+    local options = { 0, 100, 200, 300, 500 }
+    local rows = {}
+    -- Never `for _, opt` here: `_` would shadow gettext `_()` below.
+    for _index, opt in ipairs(options) do
+        local val = opt
+        local label = val > 0 and (val .. " " .. _("chương/tập")) or _("Không chia (toàn bộ vào 1 file)")
+        rows[#rows + 1] = {
+            text = label,
+            checked_func = function() return Settings.novelVolumeSize() == val end,
+            keep_menu_open = false,
+            callback = function()
+                Settings.set("novel_volume_size", val)
+                notify(string.format(_("Đã đặt: %s"), label))
+            end,
+        }
+    end
+    Catalog.show{ title = _("Kích thước tập EPUB"), items = rows }
+end
+
 function Novels.packageSaved(series, first, last)
     online(_("Đang tạo EPUB…"), function()
         return Download.packageSaved(series, first, last)
@@ -297,18 +317,24 @@ function Novels.packageSaved(series, first, last)
             notify(_("Không tạo được EPUB: ") .. tostring(result.error))
             return
         end
-        local epub = result.saved and result.saved[1]
-        if not epub or not epub.path:match("%.epub$") then
+        local epubs = {}
+        for _, item in ipairs(result.saved or {}) do
+            if item.path and item.path:match("%.epub$") then
+                local current_epub = item
+                epubs[#epubs + 1] = {
+                    text = current_epub.title,
+                    keep_menu_open = true,
+                    callback = function()
+                        UIManager:nextTick(function() Catalog.clearStack(); ReaderUI:showReader(current_epub.path) end)
+                    end,
+                }
+            end
+        end
+        if #epubs == 0 then
             notify(_("Không tạo được EPUB."))
             return
         end
-        Catalog.show{ title = _("EPUB đã tạo"), items = { {
-            text = epub.title,
-            keep_menu_open = true,
-            callback = function()
-                UIManager:nextTick(function() Catalog.clearStack(); ReaderUI:showReader(epub.path) end)
-            end,
-        } } }
+        Catalog.show{ title = _("EPUB đã tạo"), items = epubs }
         if #(result.skipped or {}) > 0 then
             notify(string.format(_("Đã bỏ qua %d chương chưa có HTML."), #result.skipped))
         end
@@ -428,6 +454,7 @@ function Novels.showSeries(ref, adapter)
                     Novels.packageSaved(series, first, last)
                 end, _("Đóng gói"))
             end,
+            on_volume_size = Novels.promptVolumeSize,
             on_offline = function() Novels.showOffline(series) end,
             follow_label = require("booxbook.ui.follow").followLabel(series),
             on_follow = function() require("booxbook.ui.follow").toggle(series) end,

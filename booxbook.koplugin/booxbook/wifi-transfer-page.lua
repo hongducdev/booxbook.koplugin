@@ -22,6 +22,9 @@ button:disabled{opacity:.5;cursor:wait}progress{width:100%;accent-color:#294c34}
 <button id="send">Gửi sách</button></form>
 <label for="progress">Tiến độ file hiện tại</label><progress id="progress" max="100" value="0"></progress>
 <p id="status" role="status" aria-live="polite">Sẵn sàng nhận sách.</p><ul id="results"></ul>
+<form id="clipform"><label for="curl">Cắt bài báo đọc offline (Web Clipper)</label>
+<input id="curl" type="text" inputmode="url" placeholder="https://…" autocomplete="off" spellcheck="false" required>
+<button id="clipbtn" type="submit">Cắt bài báo &amp; lưu vào máy đọc</button></form>
 <form id="queueform"><label for="qurl">Hoặc gửi link để máy đọc tải sau (hàng đợi)</label>
 <input id="qurl" type="text" inputmode="url" placeholder="https://…" autocomplete="off" spellcheck="false">
 <button id="queuebtn" type="submit">Thêm vào hàng đợi</button></form>
@@ -62,4 +65,11 @@ qf.addEventListener('submit',async e=>{e.preventDefault();qb.disabled=true;
   status.textContent=r.status===201?'Đã thêm vào hàng đợi.':await r.text();}
  catch(error){status.textContent='Không thêm được vào hàng đợi.'}
  finally{qb.disabled=false}});
+const cf=document.getElementById('clipform'),cu=document.getElementById('curl'),cb=document.getElementById('clipbtn');
+cf.addEventListener('submit',async e=>{e.preventDefault();cb.disabled=true;status.textContent='Đang lấy nội dung bài báo…';
+ try{const r=await fetch('/clip',{method:'POST',headers:{'X-BooxBook-Token':token.value.trim(),'Content-Type':'text/plain'},body:cu.value.trim()});
+  const msg=await r.text();status.textContent=msg;
+  if(r.status===201){cu.value='';const li=document.createElement('li');li.textContent=msg;results.appendChild(li)}
+ }catch(error){status.textContent='Không kết nối được tới máy đọc sách.'}
+ finally{cb.disabled=false}});
 </script></html>]=]

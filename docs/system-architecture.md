@@ -35,6 +35,7 @@ từ chối, địa chỉ Host gần nhất và số lần bắt gặp TLS hands
 Ghi stream vào `received/.upload-<session>-<id>.part`, đóng file thành công mới
 rename; giữ file đích đã có. Disconnect/timeout/stop xóa file tạm thuộc request.
 Nếu tiến trình bị kill cứng, file `.part` có thể còn lại, không xuất hiện như sách.
+POST `/clip` nhận liên kết bài báo từ trang web Wi-Fi, kiểm tra token phiên, kiểm tra an toàn URL (chặn SSRF vào private LAN và loopback), bóc tách nội dung bài viết chính qua `booxbook.web-clipper`, chuẩn hóa đường dẫn ảnh, gói thành HTML chuẩn và lưu vào `news/web-clipper/`.
 Callback bật Wi-Fi mang generation ID nên không mở server sau khi người dùng đã rời.
 Sau rename thành công, callback UI hiện tên sách trong 3 giây.
 Suspend/Exit/CloseWidget/NetworkDisconnected và đóng Catalog dừng server, hủy timer,
@@ -460,7 +461,7 @@ trong LuaJIT thuần) và `tests/reading-history-ui.lua`.
 - **Tìm kiếm toàn văn** (`fulltext-search.lua`): Quét nội dung HTML/txt cục bộ, áp dụng accent-folding tiếng Việt, giới hạn trần bộ nhớ/kết quả (mặc định tối đa 30 kết quả, đọc 256KB/file), trích xuất snippet nổi bật hiển thị trên UI thư viện.
 - **Hạn ngạch & Dọn dẹp** (`storage.lua`): Quản lý quota độc lập từng danh mục (`news`: 300MB, `received`: 500MB, `novels`/`comics`: mặc định không giới hạn). Tự động dọn FIFO cho báo/file nhận khi vượt trần nhưng bảo vệ truyện trừ khi bật opt-in. Quét sạch digest > 30 ngày và `.part` mồ côi > 24 giờ.
 - **Cloud Upload** (`onedrive.lua`, `gdrive.lua`, `http.lua`): Bổ sung `Http.put` và multipart POST. Upload thủ công bản sao lưu cài đặt và danh sách theo dõi lên OneDrive và Google Drive. Nhận diện token cũ thiếu quyền và nhắc nhở đăng nhập lại.
-- **OPDS Toàn thư viện** (`opds.lua`, `wifi-upload.lua`): Mở rộng máy chủ Wi-Fi cấp danh mục Atom OPDS 1.2 cho toàn bộ thư viện sách với MIME type chuẩn (`.epub`, `.cbz`, `.html`, `.pdf`). `Upload.safeRelativePath` chặn triệt để tấn công directory traversal; nâng trần stream file lên 512MB.
+- **OPDS Toàn thư viện** (`opds.lua`, `wifi-upload.lua`): Mở rộng máy chủ Wi-Fi cấp danh mục Atom OPDS 1.2 cho toàn bộ thư viện sách với MIME type chuẩn (`.epub`, `.cbz`, `.html`, `.pdf`). `/opds` và `/opds/file/…` yêu cầu mã phiên (header `X-BooxBook-Token` hoặc `?token=`), link trong catalog tự kèm mã. `Upload.safeRelativePath` chặn triệt để tấn công directory traversal; nâng trần stream file lên 512MB.
 
 ## Liên kết
 

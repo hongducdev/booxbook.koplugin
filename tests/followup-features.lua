@@ -50,8 +50,10 @@ assert(Update.shouldCheck(100, 100 + Update.CHECK_INTERVAL) == true, "interval e
 assert(Update.shouldCheck(100, 101) == false, "fresh check means skip")
 
 local Upload = require("booxbook.wifi-upload")
-local opds = assert(Upload.headers("GET /opds HTTP/1.1\r\nHost: 1:2\r\n\r\n", "1:2", "000000"))
-assert(opds.opds == true, "GET /opds routes without token")
+local denied, denied_code = Upload.headers("GET /opds HTTP/1.1\r\nHost: 1:2\r\n\r\n", "1:2", "000000")
+assert(denied == nil and denied_code == 401, "GET /opds needs the session code")
+local opds = assert(Upload.headers("GET /opds?token=000000 HTTP/1.1\r\nHost: 1:2\r\n\r\n", "1:2", "000000"))
+assert(opds.opds == true, "GET /opds routes with the code in the query")
 local queued = assert(Upload.headers(
     "POST /queue HTTP/1.1\r\nHost: 1:2\r\nX-BooxBook-Token: 000000\r\nContent-Length: 5\r\n\r\n", "1:2", "000000"))
 assert(queued.queue == true and queued.remaining == 5, "POST /queue requires token")

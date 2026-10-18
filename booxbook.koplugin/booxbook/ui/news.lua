@@ -365,6 +365,42 @@ function News.showArticles()
     Catalog.show{ title = _("Tin đã tải"), items = items }
 end
 
+function News.showClipped()
+    local ok, lfs = pcall(require, "libs/libkoreader-lfs")
+    if not ok then
+        notify(_("Không đọc được thư mục tin."))
+        return
+    end
+    local root = Settings.downloadDir() .. "/news/web-clipper"
+    local items = {}
+    if lfs.attributes(root, "mode") == "directory" then
+        for name in lfs.dir(root) do
+            if name:match("%.html$") then
+                local path = root .. "/" .. name
+                local article_path = path
+                items[#items + 1] = {
+                    text = name:gsub("%.html$", ""),
+                    keep_menu_open = true,
+                    callback = function()
+                        UIManager:nextTick(function()
+                            Catalog.clearStack()
+                            ReaderUI:showReader(article_path)
+                        end)
+                    end,
+                }
+            end
+        end
+    end
+    table.sort(items, function(a, b)
+        return a.text > b.text
+    end)
+    if #items == 0 then
+        notify(_("Chưa có bài báo nào từ Web Clipper."))
+        return
+    end
+    Catalog.show{ title = _("Bài đã lưu (Web Clipper)"), items = items }
+end
+
 function News.menu()
     local groups = {
         { title = _("Báo Việt"), publishers = {} },
@@ -391,6 +427,9 @@ function News.menu()
     end
     items[#items + 1] = { text = _("Tin đã tải"), keep_menu_open = true, callback = function()
         UIManager:nextTick(News.showArticles)
+    end }
+    items[#items + 1] = { text = _("Bài đã lưu (Web Clipper)"), keep_menu_open = true, callback = function()
+        UIManager:nextTick(News.showClipped)
     end }
     items[#items + 1] = { text = _("Tìm trong tin đã tải"), keep_menu_open = true, callback = function()
         UIManager:nextTick(News.searchDownloaded)

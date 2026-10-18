@@ -15,6 +15,7 @@ local DEFAULTS = {
     transient_comics = false,
     covers_max_bytes = 50 * 1024 * 1024,
     novel_epub = false,
+    novel_volume_size = 0,
     novel_keep_html = true,
     news_delete_finished = false,
     quota_news_mb = 300,
@@ -127,6 +128,11 @@ end
 
 function Settings.adultContent()
     return Settings.get("adult_content") == true
+end
+
+function Settings.novelVolumeSize()
+    local val = tonumber(Settings.get("novel_volume_size"))
+    return (val and val > 0) and math.floor(val) or 0
 end
 
 function Settings.cookie(source_id)

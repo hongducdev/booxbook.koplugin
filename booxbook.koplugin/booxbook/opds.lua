@@ -46,7 +46,7 @@ function Opds.mimeType(filename)
     return MIME_TYPES[ext:lower()]
 end
 
-function Opds.catalog(files, base, title)
+function Opds.catalog(files, base, title, query)
     base = base or "/opds"
     title = title or "BooxBook Thư viện"
     local updated = os.date("!%Y-%m-%dT%H:%M:%SZ")
@@ -66,7 +66,7 @@ function Opds.catalog(files, base, title)
                 local file_title = type(file) == "table" and file.title or nil
                 file_title = file_title or titleFor(path)
                 local size = type(file) == "table" and tonumber(file.size) or nil
-                local href = base .. "/file/" .. urlEncode(path)
+                local href = base .. "/file/" .. urlEncode(path) .. (query or "")
                 parts[#parts + 1] = entry("urn:booxbook:" .. path, file_title, updated, href, mime, size)
             end
         end
@@ -111,7 +111,7 @@ local function scan(files, root, path, relpath, lfs)
     end
 end
 
-function Opds.fullCatalog(root_dir, base, collector_fn)
+function Opds.fullCatalog(root_dir, base, collector_fn, query)
     local files = {}
     if type(collector_fn) == "function" then
         local returned = collector_fn(root_dir, LIBRARY_DIRS, function(file)
@@ -119,7 +119,7 @@ function Opds.fullCatalog(root_dir, base, collector_fn)
         end)
         if type(returned) == "table" then files = returned end
         if returned ~= nil or #files > 0 then
-            return Opds.catalog(files, base, "BooxBook Thư viện")
+            return Opds.catalog(files, base, "BooxBook Thư viện", query)
         end
     end
     local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
@@ -130,7 +130,7 @@ function Opds.fullCatalog(root_dir, base, collector_fn)
         end
     end
     table.sort(files, function(a, b) return (a.relpath or "") < (b.relpath or "") end)
-    return Opds.catalog(files, base, "BooxBook Thư viện")
+    return Opds.catalog(files, base, "BooxBook Thư viện", query)
 end
 
 -- Queue endpoint: POST /queue with plain-text http(s) URL in body.

@@ -141,10 +141,21 @@ function Upload.headers(raw, authority, token)
         return nil, 400, _("Kiểu truyền không được hỗ trợ.")
     end
     if method == "GET" and path == "/" then return route({ page = true }, headers) end
-    if method == "GET" and path == "/opds" then return route({ opds = true }, headers) end
+    -- The catalog and its files are library content: an OPDS client that cannot send a
+    -- header passes the session code as ?token=.
+    local route_path, query = path:match("^([^?]*)%??(.*)$")
+    local function opdsAllowed()
+        return headers["x-booxbook-token"] == token
+            or ("&" .. query .. "&"):find("&token=" .. token .. "&", 1, true) ~= nil
+    end
+    if method == "GET" and route_path == "/opds" then
+        if not opdsAllowed() then return nil, 401, _("Mã phiên không đúng. Xem lại máy đọc sách.") end
+        return route({ opds = true }, headers)
+    end
     if method == "GET" then
-        local encoded = path:match("^/opds/file/(.+)$")
+        local encoded = route_path:match("^/opds/file/(.+)$")
         if encoded then
+            if not opdsAllowed() then return nil, 401, _("Mã phiên không đúng. Xem lại máy đọc sách.") end
             local relpath = Upload.safeRelativePath(encoded)
             if not relpath then return nil, 404, _("Không tìm thấy.") end
             return route({ opds_file = relpath }, headers)
@@ -155,6 +166,12 @@ function Upload.headers(raw, authority, token)
         local length = tonumber(headers["content-length"] or "")
         if not length or length < 1 or length > 2048 then return nil, 413, _("URL quá dài.") end
         return route({ queue = true, remaining = length }, headers)
+    end
+    if method == "POST" and path == "/clip" then
+        if headers["x-booxbook-token"] ~= token then return nil, 401, _("Mã phiên không đúng. Xem lại máy đọc sách.") end
+        local length = tonumber(headers["content-length"] or "")
+        if not length or length < 1 or length > 4096 then return nil, 413, _("URL quá dài.") end
+        return route({ clip = true, remaining = length }, headers)
     end
     if method ~= "POST" or path ~= "/upload" then return nil, 404, _("Không tìm thấy.") end
     if headers["x-booxbook-token"] ~= token then return nil, 401, _("Mã phiên không đúng. Xem lại máy đọc sách.") end

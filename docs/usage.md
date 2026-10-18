@@ -98,11 +98,20 @@ Không vào được web: mở **Kiểm tra kết nối và kết quả** trên 
 Máy chủ tự chọn cổng trống trong 8080–8088 khi cổng 8080 bận, nên hãy dùng đúng địa chỉ và
 cổng đang hiển thị. Chưa xác nhận trên Boox/Kindle/Kobo thật.
 
+### Web Clipper (Cắt bài báo đọc offline qua Wi-Fi)
+
+Trên giao diện web Wi-Fi Transfer (`http://…:8080/`), có ô nhập **Cắt bài báo đọc offline (Web Clipper)**:
+1. Dán URL bài báo bất kỳ (từ điện thoại hoặc máy tính).
+2. Bấm **Cắt bài báo & lưu vào máy đọc**.
+3. BooxBook tự động tải bài viết, bóc tách tiêu đề, tác giả, nội dung chính sạch quảng cáo và script, chuẩn hóa đường dẫn ảnh, rồi lưu vào `koreader/booxbook/news/web-clipper/`.
+4. Màn hình máy đọc sách hiện thông báo `Đã lưu bài: <Tiêu đề>`.
+5. Vào **Báo → Bài đã lưu (Web Clipper)** hoặc **Báo → Tin đã tải** để mở đọc offline trong KOReader. Chặn tự động các liên kết trỏ vào mạng nội bộ (SSRF).
+
 Sau khi mỗi file được ghi hoàn tất, KOReader hiện thông báo **Đã nhận sách** kèm
 tên file trong 3 giây. Không báo thành công cho file dở hoặc file bị từ chối.
 
-**OPDS và hàng đợi:** app đọc sách hỗ trợ OPDS mở catalog tại `http://…:8080/opds`
-cùng địa chỉ (tải file ≤32MB; file lớn hơn copy qua USB). Form **hàng đợi** trên
+**OPDS và hàng đợi:** app đọc sách hỗ trợ OPDS mở catalog tại `http://…:8080/opds?token=<mã phiên>`
+(hoặc gửi mã qua header `X-BooxBook-Token`); đường dẫn file trong catalog đã kèm mã (tải file ≤32MB; file lớn hơn copy qua USB). Form **hàng đợi** trên
 trang web nhận URL `http(s)` (cần mã phiên) để lưu vào `received/queue.txt`.
 Mở **Sách & cloud → Hàng đợi Wi-Fi** để tải từng link (chỉ file sách hỗ trợ),
 xóa link đã xong hoặc xóa cả hàng đợi. Không tự tải nền.
@@ -215,6 +224,14 @@ cần tải lại để nhận metadata và bìa mới.
   công sẽ thay EPUB của khoảng đó; các khoảng khác có file riêng.
 - **Sách & cloud → Thư mục trên máy** hiển thị danh mục sách đã tải trên máy (Truyện chữ, Truyện tranh, Sách đã nhận, Báo & tin tức) dưới dạng giao diện trực quan của BooxBook, không cần mạng. Chạm vào bộ truyện để xem danh sách chương/tập và mở đọc ngay. Cuối danh mục có mục **Mở trong Trình quản lý file** dành cho ai cần thao tác file nâng cao (xóa, đổi tên, di chuyển).
 - Đổi tên/di chuyển/xóa HTML bằng KOReader không sửa `index.json` của truyện; khi đó mở file ở vị trí mới qua Thư mục trên máy hoặc tìm kiếm offline.
+
+### Chia tập EPUB (Volume Splitter)
+
+Khi đọc các bộ truyện dài hàng trăm đến hàng nghìn chương, việc đóng gói toàn bộ vào một file EPUB duy nhất có thể làm file quá lớn, gây giật lag hoặc tràn bộ nhớ (OOM) trên các máy đọc sách e-ink. BooxBook cung cấp tính năng **Volume Splitter**:
+- Trong mục lục truyện, mở icon menu góc trên bên trái, chọn **Kích thước tập EPUB**.
+- Lựa chọn: Không chia (tất cả 1 file) hoặc 100, 200, 300, 500 chương/tập.
+- Khi tải truyện hoặc chọn **Tạo EPUB từ chương đã tải**, nếu số chương vượt quá kích thước tập đã cấu hình, plugin tự động chia thành các tập độc lập: `chapters-1-200.epub`, `chapters-201-400.epub`...
+- Tương thích hoàn toàn với cơ chế **Tiếp nối tập (Continuation)**: Khi đọc tới trang cuối của tập trước, KOReader kích hoạt EndOfBook và tự động hiển thị hộp thoại gợi ý mở tập kế tiếp.
 
 ## Tự xóa báo đã đọc
 

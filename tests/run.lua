@@ -587,6 +587,8 @@ dofile("tests/fulltext-search.lua")
 dofile("tests/quota-cleanup.lua")
 dofile("tests/cloud-upload.lua")
 dofile("tests/opds-library.lua")
+dofile("tests/epub-volume-splitter.lua")
+dofile("tests/web-clipper.lua")
 dofile("tests/features-integration.lua")
 
 if failures > 0 then

@@ -95,13 +95,21 @@ assert(Upload.safeRelativePath("novels%2fch1.html") == nil, "reject encoded slas
 local authority = "192.168.1.100:8080"
 local token = "123456"
 
-local req_cat = Upload.headers("GET /opds HTTP/1.1\r\nHost: " .. authority .. "\r\n\r\n", authority, token)
+local req_cat = Upload.headers("GET /opds?token=" .. token .. " HTTP/1.1\r\nHost: " .. authority .. "\r\n\r\n", authority, token)
 assert(req_cat ~= nil and req_cat.opds == true, "GET /opds parsed")
+local req_hdr = Upload.headers("GET /opds HTTP/1.1\r\nHost: " .. authority .. "\r\nX-BooxBook-Token: " .. token .. "\r\n\r\n", authority, token)
+assert(req_hdr ~= nil and req_hdr.opds == true, "GET /opds accepts the code as a header")
+local no_code, no_code_status = Upload.headers("GET /opds HTTP/1.1\r\nHost: " .. authority .. "\r\n\r\n", authority, token)
+assert(no_code == nil and no_code_status == 401, "GET /opds without code is refused")
+local bad_code, bad_status = Upload.headers("GET /opds?token=000000 HTTP/1.1\r\nHost: " .. authority .. "\r\n\r\n", authority, token)
+assert(bad_code == nil and bad_status == 401, "GET /opds with a wrong code is refused")
+local linked = Opds.catalog({ { relpath = "a.epub", mime = "application/epub+zip" } }, "/opds", "t", "?token=" .. token)
+assert(linked:find('href="/opds/file/a.epub?token=' .. token .. '"', 1, true), "catalog links carry the code")
 
-local req_file = Upload.headers("GET /opds/file/novels/docln/1/ch-1.html HTTP/1.1\r\nHost: " .. authority .. "\r\n\r\n", authority, token)
+local req_file = Upload.headers("GET /opds/file/novels/docln/1/ch-1.html?token=" .. token .. " HTTP/1.1\r\nHost: " .. authority .. "\r\n\r\n", authority, token)
 assert(req_file ~= nil and req_file.opds_file == "novels/docln/1/ch-1.html", "GET /opds/file/<path> parsed")
 
-local req_bad = Upload.headers("GET /opds/file/..%2f..%2fetc%2fpasswd HTTP/1.1\r\nHost: " .. authority .. "\r\n\r\n", authority, token)
+local req_bad = Upload.headers("GET /opds/file/..%2f..%2fetc%2fpasswd?token=" .. token .. " HTTP/1.1\r\nHost: " .. authority .. "\r\n\r\n", authority, token)
 assert(req_bad == nil, "traversal request rejected with 404")
 
 print("OPDS library checks passed: full catalog, mime types and traversal guards verified")
