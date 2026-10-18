@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.23 — 2026-10-18
+
+Bản này gồm các tính năng của 0.0.22 (chưa phát hành riêng) cùng các bản sửa sau đợt rà soát mã.
+
+- **Bảo mật — tự cập nhật** (`update.lua`): tra cứu bản mới và tải zip đều bắt buộc xác minh TLS; trước đó kết nối không xác minh có thể bị chèn mã vào thư mục plugin.
+- **Bảo mật — OPDS** (`wifi-upload.lua`, `opds.lua`): `/opds` và `/opds/file/…` yêu cầu mã phiên (header `X-BooxBook-Token` hoặc `?token=`); link trong catalog tự kèm mã.
+- **Web Clipper** (`web-clipper.lua`, `wifi-transfer-server.lua`): chặn IPv6, IP dạng số/hex, dải `100.64/10`, `127/8` và tên `.local`/`.lan`; kiểm tra lại mỗi lần redirect; tải trang chạy bất đồng bộ nên KOReader không đứng hình.
+- **Sửa crash do biến vòng `_` che gettext:** menu *Kích thước tập EPUB* (`ui/novels.lua`), nhánh báo lỗi đóng gói (`novel-export.lua`), tiêu đề rỗng ở `dualeotruyenfull` và `storyaclick`.
+
 ## 0.0.22 — 2026-10-12
 
 - **EPUB Volume Splitter (Chia tập truyện dài)** (`novel-export.lua`, `novel-download.lua`, `ui/novels.lua`, `ui/series.lua`):
