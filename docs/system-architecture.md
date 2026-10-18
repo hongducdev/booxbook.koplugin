@@ -81,6 +81,7 @@ main.lua  →  booxbook.ui (Báo + Truyện / Thư viện file / Cài đặt / C
          booxbook.html → HTML bài/chương (mặc định) / booxbook.epub (tùy chọn)
               ↓
          booxbook.source → 25 nguồn: rss (báo), 19 nguồn truyện chữ, 5 nguồn truyện tranh CBZ
+                           + DTV eBook (kind `ebook`: tải file EPUB/PDF/MOBI/AZW3, không có chương)
 ```
 
 Điểm vào mạng bọc `Network.whenOnline`. Selftest GET `https://example.com` kèm Referer, ghi `_selftest.html` (`Tiếng Việt`) và `_selftest.epub` dưới `koreader/booxbook/`.
@@ -483,3 +484,37 @@ Không phụ thuộc crypto; dùng grid và pipeline HTML/EPUB/offline hiện c�
 Duyệt `/danh-sach/truyen-moi|truyen-hot/trang-N/`, tìm `/tim-kiem?tukhoa=`. TOC
 theo `/<slug>/trang-N/`, chống lặp, giới hạn 1000 trang; sắp theo số `chuong-N`.
 Chương trống/khóa bỏ qua (không dừng cả khoảng). Host chỉ `truyenfull.live`.
+
+## DTV eBook (kind `ebook`)
+
+Nguồn đầu tiên không có chương: `dtv-ebook.com.vn` chỉ cho **tải file** (EPUB/PDF/AZW3/MOBI qua
+Google Drive), không đọc online. Port từ plugin `DTVEbook` của `Yuneko-dev/Nekori-plugins`; khác bản
+gốc ở chỗ file được lưu thẳng vào máy rồi mở bằng ReaderUI, thay vì một "chương" chứa nút tải.
+
+- `sources/dtvebook.lua` (`kind = "ebook"`): `browse` (`/<thể-loại-id>/<trang>.html`, 48 sách/trang,
+  `has_more` theo mũi tên `&raquo;` của phân trang), `search` (`/tim-kiem.html?keyword=…&type=&page=`),
+  `getSeries` → `{ title, author, tags, status, description, cover, files = {{format, id, url}} }`.
+  Site chỉ khớp từ khoá **không dấu** nên `stripDiacritics` bỏ dấu (kể cả `đ`) trước khi gửi. Mỗi sách
+  render hai lần (khối desktop + mobile) trong cùng `<li class="itemtruyen">`; ảnh bìa có thể lặp tiền
+  tố domain (`https://x/https://x/a.jpg`) nên lấy từ lần `http` cuối. Trang không có link Drive
+  (bài review) trả lỗi "không có link tải" thay vì màn hình rỗng.
+- `ui/source-page.lua` dùng lại nguyên cho danh mục/tìm kiếm; `Novels.showSeries` chuyển sang
+  `ui/ebook-detail.lua` khi `adapter.kind == "ebook"`: dòng **Giới thiệu** (tác giả, tình trạng, thể
+  loại, mô tả) và một dòng mỗi định dạng (EPUB, AZW3, MOBI, PDF — định dạng reflow lên trước). Chạm
+  → tải → hỏi **Mở sách ngay?**; định dạng đã tải thì mở luôn. Chạy trong `Async.run` để tải vài chục
+  MiB không treo luồng UI.
+- `ebook-download.lua`: lưu `<download_dir>/books/dtvebook/<Tiêu đề> [<id>].<đuôi>` qua `.part` rồi
+  rename. Link `docs.google.com/uc?export=download&id=…` chuyển hướng 303 sang
+  `drive.usercontent.google.com`; file lớn (đã thử PDF 98 MB) được Drive trả **trang HTML "Virus scan
+  warning"** thay cho file. Module nhận ra trang đó (sniff byte đầu: `PK` epub, `%PDF`, `BOOKMOBI` ở
+  offset 60 mobi/azw3, `<html` là trang), đọc `#download-form` (`id`, `export`, `confirm`, `uuid`) và gọi
+  lại đúng URL của nút "Download anyway", tối đa 2 lần. Mọi bước chuyển hướng/form chỉ được tới host
+  Google (`allow_url`); file không phải sách bị xoá; trần 200 MiB; hạn mức Drive ("Too many users…")
+  báo bằng câu rõ ràng, không thử lại vòng. Đuôi file theo nội dung thực, không theo nhãn nút; AZW3 lưu
+  đuôi `.azw` vì KOReader không liệt kê/mở `.azw3`. Không gửi `Referer` của site cho Google: với referer
+  đó Drive trả lại trang xác nhận mãi. Bước xác nhận mất khoảng 30 giây mới có byte đầu tiên (Drive chuẩn bị file).
+- Chưa làm (YAGNI): tiến trình theo phần trăm, tải tiếp khi đứt, sách nhiều tập, theo dõi sách.
+- Đã kiểm với site thật (18/10/2026): danh mục, tìm kiếm, trang chi tiết, EPUB 10 MB, trang virus-scan
+  và PDF 98 MB tải đủ byte. Đã chạy thật trên KOReader Android (Samsung SM-S721B): danh mục, thể loại,
+  phân trang, tìm kiếm, tải EPUB/PDF/MOBI/AZW và PDF 98 MB qua trang xác nhận. Chưa chạy trên thiết bị
+  Boox/Kindle/Kobo.

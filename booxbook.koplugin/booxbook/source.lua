@@ -87,5 +87,6 @@ Source.register(require("booxbook.sources.truyenqq"))
 Source.register(require("booxbook.sources.cbunu"))
 Source.register(require("booxbook.sources.dualeo"))
 Source.register(require("booxbook.sources.sangtacviet"))
+Source.register(require("booxbook.sources.dtvebook"))
 
 return Source

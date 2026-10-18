@@ -180,6 +180,18 @@ Nguồn truyện tranh mới — **Cbunu** và **Dưa Leo Truyện** — nằm c
 Truyện Tuổi Thơ / TruyenQQ và tải CBZ từng tập như nhau. **Cbunu** giữ cơ chế mở khoá của nguồn
 gốc khi trang trả 403; chương vẫn không đọc được thì báo khoá.
 
+## DTV eBook
+
+- **Truyện → DTV eBook**: duyệt tất cả ebook, **Thể loại** (26 mục) hoặc tìm theo tên. Gõ có dấu cũng được —
+  plugin tự bỏ dấu vì site chỉ tìm không dấu. Dán URL `https://dtv-ebook.com.vn/<tên>_<số>.html` để mở thẳng một sách.
+- Chọn sách → **Giới thiệu** (tác giả, thể loại, mô tả) và các dòng **Tải EPUB / AZW3 / MOBI / PDF**.
+  Chạm một dòng: sách tải thẳng về máy rồi hỏi có mở ngay không. Dòng đã tải hiện **Mở …** + `đã tải`.
+- Sách lưu ở `koreader/booxbook/books/dtvebook/<Tiêu đề> [<số>].<epub|pdf|mobi|azw>` (AZW3 được lưu đuôi `.azw` vì KOReader không mở `.azw3`); vẫn nằm trong thư mục tải
+  nên mở được từ **Sách & cloud → Thư mục trên máy**. Nên chọn EPUB cho màn hình E-ink; PDF scan thường nặng (hàng chục MB).
+- File lớn có thể mất vài phút. Gặp "vượt hạn mức tải của Google Drive" thì thử lại sau; trang review không có link
+  tải sẽ báo "không có link tải". Dung lượng tối đa 200 MiB/file.
+- Plugin chỉ tải từ link công khai mà site đưa ra; bản quyền thuộc về tác giả/nhà xuất bản — chỉ dùng cá nhân.
+
 ## EPUB và Thư viện
 
 EPUB mới giữ tên truyện gốc và metadata nguồn có cung cấp (tác giả, mô tả,

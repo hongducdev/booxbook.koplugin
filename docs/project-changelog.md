@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.0.22 — 2026-10-12
+
+- **DTV eBook — nguồn tải sách thẳng về máy** (`sources/dtvebook.lua`, `ebook-download.lua`, `ui/ebook-detail.lua`, `ui/dtvebook.lua`):
+  - Port từ plugin `DTVEbook` (Nekori) nhưng không dựng "chương chứa nút tải": adapter mới `kind = "ebook"` liệt kê/tìm
+    sách, trang chi tiết có một dòng mỗi định dạng (EPUB, AZW3, MOBI, PDF); chạm là tải về `books/dtvebook/` rồi mở bằng ReaderUI.
+  - Google Drive trả trang "Virus scan warning" cho file lớn: đọc `#download-form` và gọi lại đúng URL "Download anyway"
+    (thử thật với PDF 98 MB, đủ byte). Kiểm tra byte đầu (`PK`, `%PDF`, `BOOKMOBI`), tải qua `.part` rồi rename, chỉ đi tới host Google, trần 200 MiB.
+  - Tìm kiếm tự bỏ dấu tiếng Việt vì site chỉ khớp từ khoá không dấu. Mục menu **Truyện → DTV eBook**.
+  - Test mới: `tests/dtvebook.lua`, `tests/ebook-download.lua`, `tests/ebook-detail.lua`.
+  - Đã chạy thật trên KOReader Android: không gửi `Referer` của site cho Google (nếu có, Drive trả lại trang xác nhận mãi) và AZW3 lưu đuôi `.azw` vì KOReader không mở `.azw3`. Chưa kiểm trên Boox/Kindle/Kobo.
+
 ## 0.0.21 — 2026-09-24
 
 - **“Đang đọc dở” — hàng đầu màn hình chính** (`booxbook/ui/reading-history.lua` mới):

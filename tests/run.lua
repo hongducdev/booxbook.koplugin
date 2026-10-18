@@ -478,7 +478,7 @@ for _, label in ipairs({ "DocLN", "Wattpad", "Sangtacviet", "MeTruyenCV", "TVTru
         "Truyện Full", "Mê Truyện VN", "Bàn Long VIP", "Storya", "AkayTruyen",
         "DualeoTruyenFull", "AzTruyen", "XTruyen", "Truyendich",
         "TruyenC", "Con Đường Bá Chủ", "Mê Truyện Chữ VN",
-        "Truyện Tuổi Thơ", "TruyenQQ", "Cbunu", "Dưa Leo Truyện",
+        "Truyện Tuổi Thơ", "TruyenQQ", "Cbunu", "Dưa Leo Truyện", "DTV eBook",
         "Truyện đang theo dõi" }) do
     assert_true(truyen_items[label], "Truyện menu entry: " .. label)
 end
@@ -545,6 +545,9 @@ dofile("tests/dualeotruyenfull.lua")
 dofile("tests/aztruyen.lua")
 dofile("tests/xtruyen.lua")
 dofile("tests/truyendich.lua")
+dofile("tests/dtvebook.lua")
+dofile("tests/ebook-download.lua")
+dofile("tests/ebook-detail.lua")
 dofile("tests/truyenc.lua")
 dofile("tests/conduongbachu.lua")
 dofile("tests/metruyenchuvn.lua")

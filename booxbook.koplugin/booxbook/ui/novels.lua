@@ -395,6 +395,10 @@ end
 
 function Novels.showSeries(ref, adapter)
     adapter = adapter or Docln
+    -- Whole-file sources have no chapters: they get a file picker instead.
+    if adapter.kind == "ebook" then
+        return require("booxbook.ui.ebook-detail").show(ref, adapter)
+    end
     onlineResumable(_("Đang lấy mục lục…"), function()
         -- A long series paginates for a while; the table of contents gets its own
         -- ceiling so a slow source keeps what it read instead of timing out early.

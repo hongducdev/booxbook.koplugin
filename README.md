@@ -28,6 +28,7 @@ Dùng như trình đọc RSS / thư viện cá nhân. Không phát tán nội du
 | **Báo** | 17 tờ, 633 kênh RSS | 9 báo Việt, 8 nguồn nước ngoài; thêm RSS tùy chỉnh; tìm toàn văn trong bài đã tải |
 | **Truyện** | DocLN, Wattpad, Sangtacviet, MeTruyenCV, TVTruyen, Truyện Full, AkayTruyen, AzTruyen, Bàn Long VIP, Con Đường Bá Chủ, DualeoTruyenFull, Mê Truyện Chữ VN, Mê Truyện VN, Storya, TruyenC, Truyendich, XTruyen | Tìm / duyệt / **duyệt thể loại**, tải chương, đọc lại offline |
 | **Truyện tranh** | Truyện Tuổi Thơ, TruyenQQ, Cbunu, Dưa Leo Truyện | Duyệt/tìm, mục lục, tải một/khoảng/toàn bộ tập, tải tiếp, đọc CBZ offline; **Đọc xong không lưu** xoá chương tải trong phiên khi đóng |
+| **Ebook** | DTV eBook | Duyệt/tìm/thể loại, **tải thẳng EPUB/AZW3/MOBI/PDF về máy** (kể cả file lớn qua trang xác nhận của Google Drive) rồi mở trong KOReader |
 | **Sách & cloud** | File local + OneDrive | Duyệt thư mục trên máy, tìm sách offline; duyệt thư mục OneDrive và tải sách về |
 | **Gửi sách qua Wi-Fi** | Điện thoại / máy tính cùng mạng | Mở web hoặc quét QR, gửi nhiều sách vào thư viện; tối đa 512 MiB/file |
 

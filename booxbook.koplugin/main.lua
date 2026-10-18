@@ -241,6 +241,9 @@ function BooxBook:showMainMenu()
                             { text = _("Dưa Leo Truyện"), keep_menu_open = true, callback = function()
                                 require("booxbook.ui.dualeo").openSource()
                             end },
+                            { text = "DTV eBook", keep_menu_open = true, callback = function()
+                                require("booxbook.ui.dtvebook").openSource()
+                            end },
                             { text = _("Truyện đang theo dõi"), keep_menu_open = true, callback = function()
                                 require("booxbook.ui.follow").open()
                             end },

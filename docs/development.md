@@ -35,10 +35,11 @@ booxbook.koplugin/
     covers.lua              cache bìa grid
     source.lua              registry adapter
     novel-download.lua      tải khoảng chương → HTML + index.json
+    ebook-download.lua      tải file ebook từ Google Drive → books/<nguồn>/ (trang virus-scan, sniff, .part)
     update.lua              kiểm tra / cài zip GitHub Release
     store/settings.lua      LuaSettings → settings/booxbook.lua
     sources/                RSS + DocLN + Wattpad + Sangtacviet + MeTruyenCV + TVTruyen + Truyện Full + feeds*
-    ui/                     source-page (truyện chữ), comic-page (truyện tranh),
+    ui/                     source-page (truyện chữ), comic-page (truyện tranh), ebook-detail (nguồn file),
                             catalog, series, grid, news, novels, `ui/<id>.lua` = shim
 ```
 
